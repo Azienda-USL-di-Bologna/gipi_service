@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
+  <persistence-unit name="Modelsss">
+    <class>it.nextsw.entities.organigramma.AfferenzaStruttura</class>
+    <class>it.nextsw.entities.organigrammaAzienda</class>
+    <class>it.nextsw.entities.organigrammaRuolo</class>
+    <class>it.nextsw.entities.organigrammaStruttura</class>
+    <class>it.nextsw.entities.organigrammaUtente</class>
+    <class>it.nextsw.entities.organigrammaUtenteStruttura</class>
+    <!--    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>-->
+    <class>it.nextsw.entities.gipi.TipiProcedimento</class>
+    <class>it.nextsw.entities.gipi.AziendeTipiProcedimento</class>
+    <class>it.nextsw.entities.gipi.Titoli</class>
+    <class>it.nextsw.entities.gipi.Procedimenti</class>
+    <properties>
+      <property name="javax.persistence.jdbc.url" value="@settings.db.connectionURL@"/>
+      <property name="javax.persistence.jdbc.user" value="@settings.db.username@"/>
+      <property name="javax.persistence.jdbc.driver" value="@settings.db.driverClass@"/>
+      <property name="javax.persistence.jdbc.password" value="@settings.db.password@"/>
+      <property name="toplink.jdbc.url" value="jdbc:postgresql://gdml:5432/babel"/>
+      <property name="toplink.jdbc.driver" value="org.postgresql.Driver"/>
+      <property name="hibernate.connection.url" value="jdbc:postgresql://gdml:5432/babel"/>
+      <property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>
+      <property name="openjpa.ConnectionURL" value="jdbc:postgresql://gdml:5432/babel"/>
+      <property name="openjpa.ConnectionDriverName" value="org.postgresql.Driver"/>
+      <property name="eclipselink.jdbc.url" value="jdbc:postgresql://gdml:5432/babel"/>
+      <property name="eclipselink.jdbc.driver" value="org.postgresql.Driver"/>
+    </properties>
+  </persistence-unit>
+</persistence>
