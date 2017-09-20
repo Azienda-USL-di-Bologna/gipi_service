@@ -15,7 +15,7 @@
 
 
     <!--<odata:server address="/OData.svc" factory="jPAServiceFactory" id="SomeIdForTheService"/>-->
-    <bean name="jPAServiceFactory" class="it.nextsw.gipi.odata.processor.JPAServiceFactory"/>
+    <bean name="jPAServiceFactory" class="it.bologna.ausl.gipi.odata.processor.JPAServiceFactory"/>
 
     <bean id="rootLocator" class="org.apache.olingo.odata2.spring.OlingoRootLocator" >
         <property name="serviceFactory" ref="jPAServiceFactory" />

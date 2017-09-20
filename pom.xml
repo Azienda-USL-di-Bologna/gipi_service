@@ -337,7 +337,7 @@
             <version>1.5.5</version>
         </dependency>
         <dependency>
-            <groupId>it.nwxtsw</groupId>
+            <groupId>it.nextsw</groupId>
             <artifactId>entities</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
