@@ -23,7 +23,7 @@
         <java.version>1.8</java.version>
         <spring.boot.version>1.5.2.RELEASE</spring.boot.version>
         <olingo.version>4.3.0</olingo.version>
-        <olingo.odata2.version>2.0.9</olingo.odata2.version>
+        <olingo.odata2.version>2.0.10-NEXT-SNAPSHOT</olingo.odata2.version>
         <eclipse.link.version>2.7.0</eclipse.link.version>
     </properties>
 
@@ -207,7 +207,7 @@
         <dependency>
             <groupId>it.nextsw</groupId>
             <artifactId>next-olingo-middleware</artifactId>
-            <version>${olingo.odata2.version}.alfa4</version>
+            <version>${olingo.odata2.version}.alfa5</version>
             <type>jar</type>
         </dependency>
         <dependency>
@@ -416,6 +416,17 @@
         <repository>
             <id>snapshots</id>
             <url>https://repository.apache.org/content/repositories/snapshots</url>
+        </repository>
+        <repository>
+            <id>Next Apache olingo repo</id>
+            <url>https://raw.githubusercontent.com/nextswsrl/olingo-odata2/mvn-repo/</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
         </repository>
     </repositories>
 
