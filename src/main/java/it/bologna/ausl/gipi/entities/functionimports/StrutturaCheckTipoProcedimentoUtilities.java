@@ -9,12 +9,16 @@ import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QStruttura;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
+import it.bologna.ausl.gipi.odata.complextypes.Test;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import it.nextsw.olingo.querybuilder.JPAQueryInfo;
 import java.util.List;
+import javax.persistence.ColumnResult;
+import javax.persistence.ConstructorResult;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import javax.persistence.SqlResultSetMapping;
 import javax.persistence.TypedQuery;
 import org.apache.log4j.Logger;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
@@ -47,19 +51,19 @@ public class StrutturaCheckTipoProcedimentoUtilities {
             final Integer idTipoProcedimento
     ) {
 
-        
-        Query q = em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1", Struttura.class);
-        
+        //Test q = (Test) em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1", "Test").getSingleResult();
+        Struttura s = (Struttura) em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1", Struttura.class).getSingleResult();
+        // Test s = (Test) em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1").getSingleResult();
         //q.setParameter(1, 1);
-
 //        StrutturaCheckTipoProcedimento s = (StrutturaCheckTipoProcedimento) q.getSingleResult();
-          Struttura s = (Struttura) q.getSingleResult();
-          
-          StrutturaCheckTipoProcedimento ssss = new StrutturaCheckTipoProcedimento();
-          
-          ssss.setNome(s.getNome());
-          ssss.setChecked(true);
-          
-        return ssss;
+        //Struttura s = (Struttura) q.getSingleResult();
+//        StrutturaCheckTipoProcedimento ssss = new StrutturaCheckTipoProcedimento();
+        StrutturaCheckTipoProcedimento ss = new StrutturaCheckTipoProcedimento(s);
+        ss.setChecked(true);
+
+//        ssss.setNome(s.getNome());
+//        ssss.setChecked(true);
+        return ss;
     }
+
 }
