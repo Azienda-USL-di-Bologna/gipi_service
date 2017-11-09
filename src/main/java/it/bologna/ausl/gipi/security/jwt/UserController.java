@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/gipi/user")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
