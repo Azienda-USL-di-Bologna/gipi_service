@@ -30,62 +30,32 @@ import org.springframework.stereotype.Component;
  */
 @EdmComplexType
 @Component
-//@SqlResultSetMapping(
-//        name = "StrutturaCheckTipoProcedimento",
-//        classes = {
-//            @ConstructorResult(
-//                    targetClass = StrutturaCheckTipoProcedimento.class,
-//                    columns = {
-//                        @ColumnResult(name = "id")
-//                        ,
-//                    @ColumnResult(name = "name")
-//                        ,
-//                    @ColumnResult(name = "orderCount")
-//                        ,
-//                    @ColumnResult(name = "avgOrder", type = Double.class)
-//                    }
-//            )
-//        }
-//)
 public class StrutturaCheckTipoProcedimento {
 
     @EdmSimpleProperty(type = EdmSimpleTypeKind.Int32)
     private Integer id;
 
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.Int32)
-    private int codice;
-
     @EdmSimpleProperty(type = EdmSimpleTypeKind.String)
     private String nome;
 
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.String)
-    private String codiceDislocazione;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.String)
-    private String dislocazione;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.DateTime)
-    private Date dataAttivazione;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.DateTime)
-    private Date dataCessazione;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.Boolean)
-    private boolean attiva;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.Boolean)
-    private boolean spettrale;
-
-    @EdmSimpleProperty(type = EdmSimpleTypeKind.Boolean)
-    private boolean usaSegreteriaBucataPadre;
+    @EdmSimpleProperty(type = EdmSimpleTypeKind.Int32)
+    private Integer idAzienda;
 
     @EdmSimpleProperty(type = EdmSimpleTypeKind.Int32)
     private Integer idStrutturaPadre;
 
     @EdmSimpleProperty(type = EdmSimpleTypeKind.Boolean)
-    private boolean checked;
+    private Boolean checked;
 
     public StrutturaCheckTipoProcedimento() {
+    }
+
+    public StrutturaCheckTipoProcedimento(Integer id, String nome, Integer idAzienda, Integer idStrutturaPadre, Boolean checked) {
+        this.id = id;
+        this.nome = nome;
+        this.idAzienda = idAzienda;
+        this.idStrutturaPadre = idStrutturaPadre;
+        this.checked = checked;
     }
 
     public Integer getId() {
@@ -96,76 +66,12 @@ public class StrutturaCheckTipoProcedimento {
         this.id = id;
     }
 
-    public int getCodice() {
-        return codice;
-    }
-
-    public void setCodice(int codice) {
-        this.codice = codice;
-    }
-
     public String getNome() {
         return nome;
     }
 
     public void setNome(String nome) {
         this.nome = nome;
-    }
-
-    public String getCodiceDislocazione() {
-        return codiceDislocazione;
-    }
-
-    public void setCodiceDislocazione(String codiceDislocazione) {
-        this.codiceDislocazione = codiceDislocazione;
-    }
-
-    public String getDislocazione() {
-        return dislocazione;
-    }
-
-    public void setDislocazione(String dislocazione) {
-        this.dislocazione = dislocazione;
-    }
-
-    public Date getDataAttivazione() {
-        return dataAttivazione;
-    }
-
-    public void setDataAttivazione(Date dataAttivazione) {
-        this.dataAttivazione = dataAttivazione;
-    }
-
-    public Date getDataCessazione() {
-        return dataCessazione;
-    }
-
-    public void setDataCessazione(Date dataCessazione) {
-        this.dataCessazione = dataCessazione;
-    }
-
-    public boolean isAttiva() {
-        return attiva;
-    }
-
-    public void setAttiva(boolean attiva) {
-        this.attiva = attiva;
-    }
-
-    public boolean isSpettrale() {
-        return spettrale;
-    }
-
-    public void setSpettrale(boolean spettrale) {
-        this.spettrale = spettrale;
-    }
-
-    public boolean isUsaSegreteriaBucataPadre() {
-        return usaSegreteriaBucataPadre;
-    }
-
-    public void setUsaSegreteriaBucataPadre(boolean usaSegreteriaBucataPadre) {
-        this.usaSegreteriaBucataPadre = usaSegreteriaBucataPadre;
     }
 
     public Integer getIdStrutturaPadre() {
@@ -176,11 +82,20 @@ public class StrutturaCheckTipoProcedimento {
         this.idStrutturaPadre = idStrutturaPadre;
     }
 
-    public boolean isChecked() {
+    public Integer getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(Integer idAzienda) {
+        this.idAzienda = idAzienda;
+    }
+
+    public Boolean isChecked() {
         return checked;
     }
 
-    public void setChecked(boolean checked) {
+    public void setChecked(Boolean checked) {
         this.checked = checked;
     }
+
 }

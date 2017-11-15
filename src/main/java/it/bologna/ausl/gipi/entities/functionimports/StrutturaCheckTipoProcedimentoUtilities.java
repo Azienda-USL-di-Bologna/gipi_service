@@ -8,12 +8,18 @@ package it.bologna.ausl.gipi.entities.functionimports;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QStruttura;
 import it.bologna.ausl.entities.baborg.Struttura;
+import it.bologna.ausl.entities.baborg.StrutturaExt;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
 import it.bologna.ausl.gipi.odata.complextypes.Test;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import it.nextsw.olingo.querybuilder.JPAQueryInfo;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import javax.persistence.ColumnResult;
 import javax.persistence.ConstructorResult;
 import javax.persistence.EntityManager;
@@ -21,12 +27,17 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.SqlResultSetMapping;
 import javax.persistence.TypedQuery;
+import javax.sql.DataSource;
 import org.apache.log4j.Logger;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -37,8 +48,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class StrutturaCheckTipoProcedimentoUtilities {
 
-    //@Value("${nomeparamaetro})
-    //private string querytext;
     @Value("${functionimports.query-strutture-con-check}")
     private String queryStruttureText;
 
@@ -57,44 +66,78 @@ public class StrutturaCheckTipoProcedimentoUtilities {
             @EdmFunctionImportParameter(name = "idTipoProcedimento", facets = @EdmFacets(nullable = false))
             final Integer idTipoProcedimento,
             @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false))
-            final Integer idAzienda
-    ) {
+            final Integer idAzienda) {
 
-        //Test q = (Test) em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1", "Test").getSingleResult();
-        // Test s = (Test) em.createNativeQuery("SELECT * FROM organigramma.strutture limit 1").getSingleResult();
-        //q.setParameter(1, 1);
-//        StrutturaCheckTipoProcedimento s = (StrutturaCheckTipoProcedimento) q.getSingleResult();
-        //Struttura s = (Struttura) q.getSingleResult();
-//        StrutturaCheckTipoProcedimento ssss = new StrutturaCheckTipoProcedimento();
-        Query q = em.createNativeQuery(queryStruttureText);
-        q.setParameter(1, idTipoProcedimento);
-        q.setParameter(2, idTipoProcedimento);
-        q.setParameter(3, idAzienda);
-        
+        List<Object[]> rawResultList;
+        List<StrutturaCheckTipoProcedimento> result = new ArrayList<>();
 
-        List<Object[]> arrayObj = q.getResultList();
+        Query query = em.createNativeQuery(queryStruttureText);
+        query.setParameter(1, idTipoProcedimento);
+        query.setParameter(2, idTipoProcedimento);
+        query.setParameter(3, idAzienda);
 
-        List<StrutturaCheckTipoProcedimento> arrayStruttureConCheck = new ArrayList<StrutturaCheckTipoProcedimento>();
+        rawResultList = query.getResultList();
 
-        for (Object[] o : arrayObj) {
+        try {
+            List<Object> lista = getStruttureWithCheck(StrutturaCheckTipoProcedimento.class, rawResultList);
 
-            StrutturaCheckTipoProcedimento strutturaConCheck = new StrutturaCheckTipoProcedimento();
+            for (Iterator<Object> iterator = lista.iterator(); iterator.hasNext();) {
+                result.add((StrutturaCheckTipoProcedimento) iterator.next());
+            }
 
-            //id [0]
-            //id_azienda [1]
-            //id_struttura_padre [2]
-            //nome [3]
-            //checked [4]
-            
-            strutturaConCheck.setId((Integer) o[0]);
-            strutturaConCheck.setIdStrutturaPadre((Integer) o[2]);
-            strutturaConCheck.setNome(o[3].toString());
-            strutturaConCheck.setChecked((boolean) o[4]);
+            return result;
 
-            arrayStruttureConCheck.add(strutturaConCheck);
+        } catch (Exception ex) {
+            logger.error("can not create complex type from SQL");
         }
 
-        return arrayStruttureConCheck;
+        return null;
     }
 
+    private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {
+
+        ArrayList<Object> res = new ArrayList<>();
+
+        for (Object[] record : listOfRecords) {
+
+            Class[] arrayOfType = new Class[record.length];
+            Object[] arrayOfValue = new Object[record.length];
+
+            // array di tipi
+            for (int i = 0; i < arrayOfType.length; i++) {
+                arrayOfType[i] = record[i].getClass();
+            }
+
+            // array di valori
+            for (int i = 0; i < arrayOfValue.length; i++) {
+                arrayOfValue[i] = record[i];
+            }
+
+            Constructor<Object> constr = classz.asSubclass(classz).getConstructor(arrayOfType);
+            try {
+                res.add(constr.newInstance(arrayOfValue));
+            } catch (Exception ex) {
+                logger.error("cannot instantiating object");
+            }
+        }
+
+        return res;
+    }
+
+    //        List<StrutturaExt> listStrutturaExt = getResultList(query, StrutturaExt.class);
+//        for (Object resultElement : rawResultList) {
+//            // Safety check before casting the object
+//            if (resultElement instanceof StrutturaExt) {
+//                System.out.println("");
+//            } else {
+//                System.out.println("");
+//                // other type of object. Handle it separately
+//            }
+//        }
+//        Query q = em.createNativeQuery(queryStruttureText, StrutturaExt.class);
+//        q.setParameter(1, idTipoProcedimento);
+//        q.setParameter(2, idTipoProcedimento);
+//        q.setParameter(3, idAzienda);
+//
+//        StrutturaExt s = (StrutturaExt) q.getSingleResult();
 }
