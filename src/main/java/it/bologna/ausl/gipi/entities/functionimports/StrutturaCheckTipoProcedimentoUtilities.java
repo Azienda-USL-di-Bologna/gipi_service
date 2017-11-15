@@ -8,7 +8,6 @@ package it.bologna.ausl.gipi.entities.functionimports;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QStruttura;
 import it.bologna.ausl.entities.baborg.Struttura;
-import it.bologna.ausl.entities.baborg.StrutturaExt;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
 import it.bologna.ausl.gipi.odata.complextypes.Test;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
