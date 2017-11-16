@@ -13,6 +13,7 @@ import it.bologna.ausl.gipi.odata.complextypes.Test;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import it.nextsw.olingo.querybuilder.JPAQueryInfo;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -96,16 +97,17 @@ public class StrutturaCheckTipoProcedimentoUtilities {
     private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {
 
         ArrayList<Object> res = new ArrayList<>();
+        
+        Class[] arrayOfType = new Class[classz.getDeclaredFields().length];
+
+        // array di tipi calcolati sulle proprietà definite nella classe
+        for (int i = 0; i < classz.getDeclaredFields().length; i++) {
+            arrayOfType[i] = classz.getDeclaredFields()[i].getType();
+        }
 
         for (Object[] record : listOfRecords) {
 
-            Class[] arrayOfType = new Class[record.length];
             Object[] arrayOfValue = new Object[record.length];
-
-            // array di tipi
-            for (int i = 0; i < arrayOfType.length; i++) {
-                arrayOfType[i] = record[i].getClass();
-            }
 
             // array di valori
             for (int i = 0; i < arrayOfValue.length; i++) {
