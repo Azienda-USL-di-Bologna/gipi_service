@@ -39,6 +39,8 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
 
 /**
  *
@@ -56,6 +58,9 @@ public class StrutturaCheckTipoProcedimentoUtilities {
     @Autowired
     private EntityManager em;
 
+    @Autowired
+    private Sql2o sql2o;
+
     @EdmFunctionImport(
             name = "GetStruttureByTipoProcedimento",
             returnType = @EdmFunctionImport.ReturnType(type = EdmFunctionImport.ReturnType.Type.COMPLEX, formatResult = EdmFunctionImport.FormatResult.COLLECTION),
@@ -68,36 +73,44 @@ public class StrutturaCheckTipoProcedimentoUtilities {
             @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false))
             final Integer idAzienda) {
 
-        List<Object[]> rawResultList;
-        List<StrutturaCheckTipoProcedimento> result = new ArrayList<>();
-
-        Query query = em.createNativeQuery(queryStruttureText);
-        query.setParameter(1, idTipoProcedimento);
-        query.setParameter(2, idTipoProcedimento);
-        query.setParameter(3, idAzienda);
-
-        rawResultList = query.getResultList();
-
-        try {
-            List<Object> lista = getStruttureWithCheck(StrutturaCheckTipoProcedimento.class, rawResultList);
-
-            for (Iterator<Object> iterator = lista.iterator(); iterator.hasNext();) {
-                result.add((StrutturaCheckTipoProcedimento) iterator.next());
-            }
-
-            return result;
-
-        } catch (Exception ex) {
-            logger.error("can not create complex type from SQL");
+//        List<Object[]> rawResultList;
+//        List<StrutturaCheckTipoProcedimento> result = new ArrayList<>();
+        try (Connection con = sql2o.open()) {
+            return con.createQuery(queryStruttureText)
+                    .addParameter("id_tipo_procedimento", idTipoProcedimento)
+                    .addParameter("id_azienda", idAzienda)
+                    .addColumnMapping("id_azienda", "idAzienda")
+                    .addColumnMapping("id_struttura_padre", "idStrutturaPadre")
+                    .executeAndFetch(StrutturaCheckTipoProcedimento.class);
         }
 
-        return null;
+//        Query query = em.createNativeQuery(queryStruttureText);
+//        query.setParameter(1, idTipoProcedimento);
+//        query.setParameter(2, idTipoProcedimento);
+//        query.setParameter(3, idAzienda);
+//
+//        rawResultList = query.getResultList();
+//
+//        try {
+//            List<Object> lista = getStruttureWithCheck(StrutturaCheckTipoProcedimento.class, rawResultList);
+//
+//            for (Iterator<Object> iterator = lista.iterator(); iterator.hasNext();) {
+//                result.add((StrutturaCheckTipoProcedimento) iterator.next());
+//            }
+//
+//            return result;
+//
+//        } catch (Exception ex) {
+//            logger.error("can not create complex type from SQL");
+//        }
+//
+//        return null;
     }
 
     private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {
 
         ArrayList<Object> res = new ArrayList<>();
-        
+
         Class[] arrayOfType = new Class[classz.getDeclaredFields().length];
 
         // array di tipi calcolati sulle proprietà definite nella classe
