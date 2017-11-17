@@ -35,6 +35,7 @@ import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -48,16 +49,18 @@ import org.sql2o.Sql2o;
  */
 @EdmFunctionImportClass
 @Component
+@PropertySource("classpath:query.properties")
 public class StrutturaCheckTipoProcedimentoUtilities {
 
+//    @Value("${functionimports.query-strutture-con-check}")
+//    private String queryStruttureText;
     @Value("${functionimports.query-strutture-con-check}")
     private String queryStruttureText;
 
     private static final Logger logger = Logger.getLogger(StrutturaCheckTipoProcedimentoUtilities.class);
 
-    @Autowired
-    private EntityManager em;
-
+//    @Autowired
+//    private EntityManager em;
     @Autowired
     private Sql2o sql2o;
 
@@ -107,37 +110,36 @@ public class StrutturaCheckTipoProcedimentoUtilities {
 //        return null;
     }
 
-    private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {
-
-        ArrayList<Object> res = new ArrayList<>();
-
-        Class[] arrayOfType = new Class[classz.getDeclaredFields().length];
-
-        // array di tipi calcolati sulle proprietà definite nella classe
-        for (int i = 0; i < classz.getDeclaredFields().length; i++) {
-            arrayOfType[i] = classz.getDeclaredFields()[i].getType();
-        }
-
-        for (Object[] record : listOfRecords) {
-
-            Object[] arrayOfValue = new Object[record.length];
-
-            // array di valori
-            for (int i = 0; i < arrayOfValue.length; i++) {
-                arrayOfValue[i] = record[i];
-            }
-
-            Constructor<Object> constr = classz.asSubclass(classz).getConstructor(arrayOfType);
-            try {
-                res.add(constr.newInstance(arrayOfValue));
-            } catch (Exception ex) {
-                logger.error("cannot instantiating object");
-            }
-        }
-
-        return res;
-    }
-
+//    private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {
+//
+//        ArrayList<Object> res = new ArrayList<>();
+//
+//        Class[] arrayOfType = new Class[classz.getDeclaredFields().length];
+//
+//        // array di tipi calcolati sulle proprietà definite nella classe
+//        for (int i = 0; i < classz.getDeclaredFields().length; i++) {
+//            arrayOfType[i] = classz.getDeclaredFields()[i].getType();
+//        }
+//
+//        for (Object[] record : listOfRecords) {
+//
+//            Object[] arrayOfValue = new Object[record.length];
+//
+//            // array di valori
+//            for (int i = 0; i < arrayOfValue.length; i++) {
+//                arrayOfValue[i] = record[i];
+//            }
+//
+//            Constructor<Object> constr = classz.asSubclass(classz).getConstructor(arrayOfType);
+//            try {
+//                res.add(constr.newInstance(arrayOfValue));
+//            } catch (Exception ex) {
+//                logger.error("cannot instantiating object");
+//            }
+//        }
+//
+//        return res;
+//    }
     //        List<StrutturaExt> listStrutturaExt = getResultList(query, StrutturaExt.class);
 //        for (Object resultElement : rawResultList) {
 //            // Safety check before casting the object
