@@ -1,4 +1,4 @@
-package it.bologna.ausl.gipi.file.exception;
+package it.bologna.ausl.gipi.file.exceptions;
 
 /**
  * Created by f.longhitano on 27/08/2017.

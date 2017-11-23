@@ -1,8 +1,8 @@
 package it.bologna.ausl.gipi.file;
 
-import it.bologna.ausl.gipi.file.exception.FileRepositoryCreateException;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryFileNotFoundException;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryCreateException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryFileNotFoundException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryException;
 
 import java.io.InputStream;
 import java.io.OutputStream;

@@ -1,10 +1,10 @@
 package it.bologna.ausl.gipi.file.ftp;
 
 import it.bologna.ausl.gipi.file.FileRepository;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryConnectionException;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryCreateException;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryException;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryFileNotFoundException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryConnectionException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryCreateException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryFileNotFoundException;
 import it.bologna.ausl.gipi.file.utils.NameGenerationUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.net.ftp.FTP;

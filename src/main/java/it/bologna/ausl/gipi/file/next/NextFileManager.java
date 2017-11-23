@@ -2,8 +2,8 @@ package it.bologna.ausl.gipi.file.next;
 
 
 import it.bologna.ausl.gipi.file.FileRepository;
-import it.bologna.ausl.gipi.file.exception.FileRepositoryException;
-import it.bologna.ausl.gipi.file.exception.NextFileException;
+import it.bologna.ausl.gipi.file.exceptions.FileRepositoryException;
+import it.bologna.ausl.gipi.file.exceptions.NextFileException;
 import it.bologna.ausl.gipi.file.utils.NextFileUtils;
 import org.apache.commons.io.IOUtils;
 
