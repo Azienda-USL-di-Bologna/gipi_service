@@ -27,8 +27,11 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.SqlResultSetMapping;
 import javax.persistence.TypedQuery;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
@@ -71,8 +74,8 @@ public class StrutturaCheckTipoProcedimentoUtilities {
     )
 
     public List<StrutturaCheckTipoProcedimento> GetStruttureByTipoProcedimento(
-            @EdmFunctionImportParameter(name = "idTipoProcedimento", facets = @EdmFacets(nullable = false))
-            final Integer idTipoProcedimento,
+            @EdmFunctionImportParameter(name = "idAziendaTipoProcedimento", facets = @EdmFacets(nullable = false))
+            final Integer idAziendaTipoProcedimento,
             @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false))
             final Integer idAzienda) {
 
@@ -80,7 +83,7 @@ public class StrutturaCheckTipoProcedimentoUtilities {
 //        List<StrutturaCheckTipoProcedimento> result = new ArrayList<>();
         try (Connection con = sql2o.open()) {
             return con.createQuery(queryStruttureText)
-                    .addParameter("id_tipo_procedimento", idTipoProcedimento)
+                    .addParameter("id_azienda_tipo_procedimento", idAziendaTipoProcedimento)
                     .addParameter("id_azienda", idAzienda)
                     .addColumnMapping("id_azienda", "idAzienda")
                     .addColumnMapping("id_struttura_padre", "idStrutturaPadre")
@@ -108,6 +111,16 @@ public class StrutturaCheckTipoProcedimentoUtilities {
 //        }
 //
 //        return null;
+    }
+
+    @EdmFunctionImport(
+            name = "doStruttureByTipoProcedimento",
+            returnType = @EdmFunctionImport.ReturnType(type = EdmFunctionImport.ReturnType.Type.SIMPLE, formatResult = EdmFunctionImport.FormatResult.SINGLE_OBJECT),
+            httpMethod = EdmFunctionImport.HttpMethod.POST
+    )
+    public boolean Persist() {
+
+        return true;
     }
 
 //    private List<Object> getStruttureWithCheck(Class classz, List<Object[]> listOfRecords) throws NoSuchMethodException, SecurityException, InstantiationException {

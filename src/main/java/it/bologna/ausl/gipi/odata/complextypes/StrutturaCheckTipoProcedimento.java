@@ -45,7 +45,7 @@ public class StrutturaCheckTipoProcedimento {
     private Integer idStrutturaPadre;
 
     @EdmSimpleProperty(type = EdmSimpleTypeKind.Boolean)
-    private Boolean checked;
+    private Boolean selected;
 
     public StrutturaCheckTipoProcedimento() {
     }
@@ -55,7 +55,7 @@ public class StrutturaCheckTipoProcedimento {
         this.nome = nome;
         this.idAzienda = idAzienda;
         this.idStrutturaPadre = idStrutturaPadre;
-        this.checked = checked;
+        this.selected = checked;
     }
 
     public Integer getId() {
@@ -90,12 +90,12 @@ public class StrutturaCheckTipoProcedimento {
         this.idAzienda = idAzienda;
     }
 
-    public Boolean isChecked() {
-        return checked;
+    public Boolean isSelected() {
+        return selected;
     }
 
-    public void setChecked(Boolean checked) {
-        this.checked = checked;
+    public void setSelected(Boolean selected) {
+        this.selected = selected;
     }
 
 }
