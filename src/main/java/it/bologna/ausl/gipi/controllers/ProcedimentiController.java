@@ -10,6 +10,7 @@ import it.bologna.ausl.entities.gipi.QProcedimento;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,7 +46,7 @@ public class ProcedimentiController {
 
     @RequestMapping(value = "updateProcedimenti", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void updateProcedimenti(
+    public ResponseEntity updateProcedimenti(
             @RequestBody UpdateProcedimentiParams data
     ) throws GipiRequestParamsException, GipiDatabaseException {
 
@@ -83,10 +86,12 @@ public class ProcedimentiController {
                             throw new GipiRequestParamsException("Tipo di operazione non prevista");
                     }
                 }
-
             }
+            
         }
-
+        //RITORNIAMO UN OGGETTO CHE IN REALTA' E' VUOTO PERCHE ALTRIMENTI LATO CLIENT PERCHE' LA SUBSCRIBE SI ASPETTA UN OGGETTO (ANCHE VUOTO) IN CASO
+        //DI ESITO POSITIVO DELL'OPERAZIONE
+        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
         // oppure  em.remove(employee);
 //        em.getTransaction().commit();
     }
