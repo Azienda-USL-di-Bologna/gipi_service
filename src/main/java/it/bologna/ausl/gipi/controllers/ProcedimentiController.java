@@ -1,5 +1,6 @@
 package it.bologna.ausl.gipi.controllers;
 
+import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
