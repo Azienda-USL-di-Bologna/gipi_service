@@ -7,7 +7,10 @@ import it.bologna.ausl.entities.baborg.Utente;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -43,6 +46,11 @@ public class UserController {
 
     @Autowired
     CustomUserDetailsService userDb;
+    
+    @Autowired
+    CustomUserInfoService cuis = new CustomUserInfoService();
+    
+
 
     public UserController() {
     }
@@ -67,11 +75,11 @@ public class UserController {
         if (!PasswordHash.validatePassword(userLogin.password, ud.getPassword())) {
             throw new ServletException("Invalid login");
         }
-
+        
         return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(ud.getUsername())
                 .claim("roles", "admin").setIssuedAt(new Date())
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
-                ud.getUsername()), HttpStatus.OK);
+                ud.getUsername(), cuis.loadUserInfoMapByUsername(ud.getUsername())), HttpStatus.OK);
     }
 
     @RequestMapping(value = "login", method = RequestMethod.GET)
@@ -90,7 +98,8 @@ public class UserController {
         return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(ud.getUsername())
                 .claim("roles", "admin").setIssuedAt(new Date())
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
-                ud.getUsername()), HttpStatus.OK);
+                ud.getUsername(), 
+                cuis.loadUserInfoMapByUsername(ud.getUsername())), HttpStatus.OK);
     }
 
     @SuppressWarnings("unused")
@@ -105,10 +114,12 @@ public class UserController {
 
         public String token;
         public String username;
+        public Map userInfoMap;
 
-        public LoginResponse(final String token, final String username) {
+        public LoginResponse(final String token, final String username, Map userInfoMap) {
             this.token = token;
             this.username = username;
+            this.userInfoMap = userInfoMap;
         }
     }
 }
