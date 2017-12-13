@@ -22,10 +22,10 @@ import org.springframework.web.bind.annotation.RestController;
  * @author f.gusella
  */
 @RestController
-@RequestMapping("/gipi/resources/custom/")
+@RequestMapping("/gipi/resources/custom/iter")
 @PropertySource("classpath:query.properties")
 public class IterController {
-    
+
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity AvviaNuovoIter(@RequestBody IterParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
@@ -38,9 +38,28 @@ public class IterController {
         System.out.println(data.getDataCreazione());
         System.out.println(data.getOggetto());
         System.out.println(data.getFK_id_responsabile_procedimento());
-        System.out.println(data.getId());      
+        System.out.println(data.getId());
         // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
 //        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
-        return new ResponseEntity(data , HttpStatus.OK);
+        return new ResponseEntity(data, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "stepOn", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity stepOn(@RequestBody SteponParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+//        Class<?> clazz = data.getClass();
+//        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
+//        Object fieldValue = field.get(data);
+
+        System.out.println("QWWEEEEEEEEEE");
+        System.out.println(data.getIdIter());
+        System.out.println(data.getDataPassaggio());
+        System.out.println(data.getDocumento());
+        System.out.println(data.getEsito());
+        System.out.println(data.getMotivazioneEsito());
+        System.out.println(data.getNotePassaggio());
+        // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
+//        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
+        return new ResponseEntity(data, HttpStatus.OK);
     }
 }
