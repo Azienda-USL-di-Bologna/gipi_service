@@ -46,11 +46,9 @@ public class UserController {
 
     @Autowired
     CustomUserDetailsService userDb;
-    
+
     @Autowired
     CustomUserInfoService cuis = new CustomUserInfoService();
-    
-
 
     public UserController() {
     }
@@ -75,11 +73,17 @@ public class UserController {
         if (!PasswordHash.validatePassword(userLogin.password, ud.getPassword())) {
             throw new ServletException("Invalid login");
         }
-        
-        return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(ud.getUsername())
-                .claim("roles", "admin").setIssuedAt(new Date())
-                .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
-                ud.getUsername(), cuis.loadUserInfoMapByUsername(ud.getUsername())), HttpStatus.OK);
+
+        return new ResponseEntity(new LoginResponse(
+                Jwts.builder()
+                        .setSubject(ud.getUsername())
+                        .claim("roles", "admin")
+                        .setIssuedAt(new Date())
+                        .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
+                        .compact(),
+                ud.getUsername(),
+                cuis.loadUserInfoMapByUsername(ud.getUsername())),
+                HttpStatus.OK);
     }
 
     @RequestMapping(value = "login", method = RequestMethod.GET)
@@ -98,7 +102,7 @@ public class UserController {
         return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(ud.getUsername())
                 .claim("roles", "admin").setIssuedAt(new Date())
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
-                ud.getUsername(), 
+                ud.getUsername(),
                 cuis.loadUserInfoMapByUsername(ud.getUsername())), HttpStatus.OK);
     }
 

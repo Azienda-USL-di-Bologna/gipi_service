@@ -88,13 +88,18 @@ public class ProcedimentiController {
                     }
                 }
             }
-            
+
         }
         //RITORNIAMO UN OGGETTO CHE IN REALTA' E' VUOTO PERCHE ALTRIMENTI LATO CLIENT PERCHE' LA SUBSCRIBE SI ASPETTA UN OGGETTO (ANCHE VUOTO) IN CASO
         //DI ESITO POSITIVO DELL'OPERAZIONE
-        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
+        return new ResponseEntity(new ArrayList<Object>(), HttpStatus.OK);
         // oppure  em.remove(employee);
 //        em.getTransaction().commit();
     }
 
+//    @RequestMapping(value = "view", method = RequestMethod.GET)
+//
+//    public void view(HttpServletRequest request) {
+//        System.out.println("abc");
+//    }
 }
