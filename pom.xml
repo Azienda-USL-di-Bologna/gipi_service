@@ -317,11 +317,7 @@
         </dependency>
 
 
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.36</version>
-        </dependency>
+   
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -368,6 +364,22 @@
             <artifactId>spring-instrument</artifactId>
             <version>4.3.11.RELEASE</version>
         </dependency>
+        
+        <dependency>
+            <groupId>it.bologna.ausl.iodaobjectlibrary</groupId>
+            <artifactId>IodaObjectLibrary</artifactId>
+            <version>1</version>
+        </dependency>
+        
+        
+        <!--da tenere-->
+        <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
+<dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp</artifactId>
+    <version>3.9.1</version>
+</dependency>
+
     </dependencies>
 
     <build>
