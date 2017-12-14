@@ -5,18 +5,20 @@ import java.util.Date;
 
 public class SteponParams {
 
-    private String idIter;
+    private int idIter;
     private String dataPassaggio;
-    private String documento;
+    private String codiceRegistroDocumento;
+    private String numeroDocumento;
+    private int annoDocumento;
     private String notePassaggio;
     private String esito;
     private String motivazioneEsito;
 
-    public String getIdIter() {
+    public int getIdIter() {
         return idIter;
     }
 
-    public void setIter(String idIter) {
+    public void setIter(int idIter) {
         this.idIter = idIter;
     }
 
@@ -28,12 +30,28 @@ public class SteponParams {
         this.dataPassaggio = dataPassaggio;
     }
 
-    public String getDocumento() {
-        return documento;
+    public String getCodiceRegistroDocumento() {
+        return codiceRegistroDocumento;
     }
 
-    public void setDocumento(String documento) {
-        this.documento = documento;
+    public void setCodiceRegistroDocumento(String codiceRegistroDocumento) {
+        this.codiceRegistroDocumento = codiceRegistroDocumento;
+    }
+
+    public String getNumeroDocumento() {
+        return numeroDocumento;
+    }
+
+    public void setNumeroDocumento(String numeroDocumento) {
+        this.numeroDocumento = numeroDocumento;
+    }
+
+    public int getAnnoDocumento() {
+        return annoDocumento;
+    }
+
+    public void setAnnoDocumento(int annoDocumento) {
+        this.annoDocumento = annoDocumento;
     }
 
     public String getNotePassaggio() {

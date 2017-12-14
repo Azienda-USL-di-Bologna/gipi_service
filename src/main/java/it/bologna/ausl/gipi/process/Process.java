@@ -8,9 +8,13 @@ package it.bologna.ausl.gipi.process;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.gipi.DocumentoIter;
+import it.bologna.ausl.entities.gipi.Evento;
+import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.FaseIter;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
@@ -32,6 +36,7 @@ public class Process {
     QFase qFase = QFase.fase;
     QFaseIter qFaseIter = QFaseIter.faseIter;
     QIter qIter = QIter.iter;
+    QEvento qEvento = QEvento.evento;
 
     @Autowired
     EntityManager em;
@@ -82,42 +87,58 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, SteponParams params) {
+    public void stepOn(Iter iter, ProcessSteponParams processParams) {
 
-        JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        System.out.println("CHE NON RIESCO A SENTIRTI");
+        System.out.println("iter" + iter);
+        System.out.println("Params");
+        processParams.getParams().forEach((key, value) -> {
+            System.out.println("Key : " + key + " Value : " + value);
+        });
 
-        Iter iterRicaricato = queryIter
-                .from(qIter)
-                .where(qIter.id.eq(iter.getId()))
-                .fetchOne();
-
-        // INSERIMENTO NUOVA FASE-ITER
-        Fase nextFase = getNextFase(iterRicaricato);
-
-        FaseIter faseIterToInsert = new FaseIter();
-        faseIterToInsert.setDataInizioFase(new Date());
-        faseIterToInsert.setIdFase(nextFase);
-        faseIterToInsert.setIdIter(iterRicaricato);
-        em.persist(faseIterToInsert);
-
-        // AGGIORNA VECCHIA FASE ITER
-        Fase currentFase = getCurrentFase(iterRicaricato);
-
-        JPQLQuery<FaseIter> queryFaseIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
-
-        FaseIter currentFaseIter = queryFaseIter
-                .from(qFaseIter)
-                .where(qFaseIter.idFase.id.eq(currentFase.getId())
-                        .and(qFaseIter.idIter.id.eq(iterRicaricato.getId())))
-                .fetchOne();
-        currentFaseIter.setDataFineFase(new Date());
-
-        // AGGIORNA CAMPI SU ITER
-        iterRicaricato.setIdFase(nextFase);
-        em.persist(iterRicaricato);
+//        // INSERIMENTO NUOVA FASE-ITER
+//        Fase nextFase = getNextFase(iter);
+//
+//        FaseIter faseIterToInsert = new FaseIter();
+//        faseIterToInsert.setDataInizioFase(new Date());
+//        faseIterToInsert.setIdFase(nextFase);
+//        faseIterToInsert.setIdIter(iter);
+//        em.persist(faseIterToInsert);
+//
+//        // AGGIORNA VECCHIA FASE ITER
+//        Fase currentFase = getCurrentFase(iter);
+//
+//        JPQLQuery<FaseIter> queryFaseIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+//
+//        FaseIter currentFaseIter = queryFaseIter
+//                .from(qFaseIter)
+//                .where(qFaseIter.idFase.id.eq(currentFase.getId())
+//                        .and(qFaseIter.idIter.id.eq(iter.getId())))
+//                .fetchOne();
+//        currentFaseIter.setDataFineFase(new Date());
+//
+//        // AGGIORNA CAMPI SU ITER
+//        iter.setIdFase(nextFase);
+//        em.persist(iter);
+//
+        // inserisci DOCUMENTO-ITER
+        DocumentoIter documentoIter = new DocumentoIter();
 
         // INSERIMENTO EVENTO
-        // inserisci documento Iter
+        // mi recupero l'evento.
+        // Qui non so se devo
+        JPQLQuery<Evento> queryEvento = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        Evento evento = queryEvento
+                .from(qEvento)
+                .where(qEvento.nomeEvento.eq("Aggiunta documento"))
+                .fetchOne();
+
+        EventoIter eventoIter = new EventoIter();
+        eventoIter.setIdIter(iter);
+        eventoIter.setIdEvento(evento);
+        eventoIter.setAutore("g.zoli");
+        // inserisci fk documento-iter
+
     }
 
 //    public String getSteponParam(String key) {
