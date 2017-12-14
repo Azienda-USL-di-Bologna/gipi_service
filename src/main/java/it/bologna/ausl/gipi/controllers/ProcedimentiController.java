@@ -97,4 +97,9 @@ public class ProcedimentiController {
 //        em.getTransaction().commit();
     }
 
+//    @RequestMapping(value = "view", method = RequestMethod.GET)
+//
+//    public void view(HttpServletRequest request) {
+//        System.out.println("abc");
+//    }
 }
