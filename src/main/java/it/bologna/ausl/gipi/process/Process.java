@@ -63,6 +63,25 @@ public class Process {
         return nextFase;
     }
 
+    public Fase getFasi(Iter iter) {
+
+        Fase currentFase = getCurrentFase(iter);
+
+        QFase fase = QFase.fase;
+
+        JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+
+        Fase nextFase = query
+                .from(fase)
+                .where(fase.ordinale.gt(currentFase.getOrdinale())
+                        .and(fase.idAzienda.id.eq(currentFase.getIdAzienda().getId())))
+                .orderBy(fase.ordinale.asc())
+                .fetchFirst();
+
+        System.out.println("nextFase " + nextFase);
+        return nextFase;
+    }
+
     public Fase getCurrentFase(Iter iter) {
 
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);

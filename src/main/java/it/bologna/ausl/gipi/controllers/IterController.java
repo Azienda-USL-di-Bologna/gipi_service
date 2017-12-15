@@ -8,10 +8,9 @@ package it.bologna.ausl.gipi.controllers;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.QIter;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 import it.bologna.ausl.gipi.process.ProcessSteponParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import it.bologna.ausl.gipi.process.Process;
-import java.util.HashMap;
 import javax.persistence.EntityManager;
+import org.springframework.web.bind.annotation.RequestParam;
+import com.google.gson.JsonObject;
 
 /**
  *
@@ -107,5 +107,48 @@ public class IterController {
         // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
 //        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
         return new ResponseEntity(data, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "getCurrentFase", method = RequestMethod.GET)
+    public ResponseEntity getCurrentFase(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+
+        JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+
+        Iter iter = queryIter
+                .from(qIter)
+                .where(qIter.id.eq(idIter))
+                .fetchOne();
+
+        Fase currentFase = process.getCurrentFase(iter);
+
+        JsonObject jsonFase = new JsonObject();
+        jsonFase.addProperty("nomeFase", currentFase.getNomeFase());
+
+        return new ResponseEntity(jsonFase.toString(), HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET)
+    public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+
+        // TODO: QUI BISOGNERA USARE L'OGGETTO PROCESS STATUS, ora non lo uso perchè devo restituire solo i nomi delle fasi perchè se no da errore
+        JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+
+        Iter iter = queryIter
+                .from(qIter)
+                .where(qIter.id.eq(idIter))
+                .fetchOne();
+
+        Fase currentFase = process.getCurrentFase(iter);
+        Fase nextFase = process.getNextFase(iter);
+
+        JsonObject jsonCurrFase = new JsonObject();
+        JsonObject jsonNextFase = new JsonObject();
+        jsonCurrFase.addProperty("nomeFase", currentFase.getNomeFase());
+        jsonNextFase.addProperty("nomeFase", nextFase.getNomeFase());
+        JsonObject processStatus = new JsonObject();
+        processStatus.addProperty("currentFase", jsonCurrFase.toString());
+        processStatus.addProperty("nextFase", jsonNextFase.toString());
+
+        return new ResponseEntity(processStatus.toString(), HttpStatus.OK);
     }
 }
