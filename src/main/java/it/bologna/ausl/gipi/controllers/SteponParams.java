@@ -8,8 +8,8 @@ public class SteponParams {
     private int idIter;
     private String dataPassaggio;
     private String codiceRegistroDocumento;
-    private String numeroDocumento;
-    private int annoDocumento;
+    private Integer numeroDocumento;
+    private Integer annoDocumento;
     private String notePassaggio;
     private String esito;
     private String motivazioneEsito;
@@ -38,11 +38,11 @@ public class SteponParams {
         this.codiceRegistroDocumento = codiceRegistroDocumento;
     }
 
-    public String getNumeroDocumento() {
+    public Integer getNumeroDocumento() {
         return numeroDocumento;
     }
 
-    public void setNumeroDocumento(String numeroDocumento) {
+    public void setNumeroDocumento(Integer numeroDocumento) {
         this.numeroDocumento = numeroDocumento;
     }
 
