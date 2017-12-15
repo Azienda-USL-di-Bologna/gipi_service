@@ -167,11 +167,12 @@ public class Process {
                 .fetchOne();
 
         EventoIter eventoIter = new EventoIter();
-        eventoIter.setIdIter(iter);
         eventoIter.setIdEvento(evento);
+        eventoIter.setIdIter(iter);
+        eventoIter.setIdFaseIter(faseIterToInsert);
+        eventoIter.setIdDocumentoIter(documentoIter);
         eventoIter.setAutore(utente);
         eventoIter.setNoteEventoIter((String) processParams.readParam("notePassaggio"));
-        eventoIter.setIdDocumentoIter(documentoIter);
         em.persist(eventoIter);
 
         // inserisci fk documento-iter
