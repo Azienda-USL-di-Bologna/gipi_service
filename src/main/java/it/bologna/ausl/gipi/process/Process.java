@@ -20,8 +20,13 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +113,7 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, ProcessSteponParams processParams) {
+    public void stepOn(Iter iter, ProcessSteponParams processParams) throws ParseException {
 
         System.out.println("CHE NON RIESCO A SENTIRTI");
         System.out.println("iter" + iter);
@@ -120,8 +125,11 @@ public class Process {
         // INSERIMENTO NUOVA FASE-ITER
         Fase nextFase = getNextFase(iter);
 
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+        Date dataPassaggio = format.parse((String) processParams.readParam("dataPassaggio"));
         FaseIter faseIterToInsert = new FaseIter();
-        faseIterToInsert.setDataInizioFase(new Date());
+        //faseIterToInsert.setDataInizioFase(new Date());
+        faseIterToInsert.setDataInizioFase(dataPassaggio);
         faseIterToInsert.setIdFase(nextFase);
         faseIterToInsert.setIdIter(iter);
         em.persist(faseIterToInsert);
@@ -140,9 +148,17 @@ public class Process {
 
         // AGGIORNA CAMPI SU ITER
         iter.setIdFase(nextFase);
-        iter.setEsito((String) processParams.readParam("esito"));
-        iter.setEsitoMotivazione((String) processParams.readParam("motivazioneEsito"));
-        em.persist(iter);
+        String esito = (String) processParams.readParam("esito");
+        String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
+
+        if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
+            System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
+            // THROW
+        }
+        iter.setEsito(esito);
+        iter.setEsitoMotivazione(motivazioneEsito);
+
+        em.persist(iter); // questo salva anche la dataFineFase sulla fase appena finita
 
         // inserisci DOCUMENTO-ITER
         DocumentoIter documentoIter = new DocumentoIter();
@@ -151,7 +167,7 @@ public class Process {
         documentoIter.setNumeroRegistro((Integer) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
         em.persist(documentoIter);
-
+//
         // INSERIMENTO EVENTO
         // mi recupero l'evento.
         JPQLQuery<Evento> queryEvento = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -169,26 +185,12 @@ public class Process {
         EventoIter eventoIter = new EventoIter();
         eventoIter.setIdEvento(evento);
         eventoIter.setIdIter(iter);
-        eventoIter.setIdFaseIter(faseIterToInsert);
+        eventoIter.setIdFaseIter(currentFaseIter);
         eventoIter.setIdDocumentoIter(documentoIter);
         eventoIter.setAutore(utente);
         eventoIter.setNoteEventoIter((String) processParams.readParam("notePassaggio"));
+        eventoIter.setDataOraEvento(dataPassaggio);
         em.persist(eventoIter);
-
-        // inserisci fk documento-iter
     }
 
-//    public String getSteponParam(String key) {
-//
-//        String value = steponParams.get(key);
-//
-//        if (value == null) {
-//            throw new Exception("nessun parametro corrispondente alla chiave: " + key);
-//        }
-//        return value;
-//    }
-//
-//    public String putSteponParam(String key, String value) {
-//        steponParams.put(key, value);
-//    }
 }

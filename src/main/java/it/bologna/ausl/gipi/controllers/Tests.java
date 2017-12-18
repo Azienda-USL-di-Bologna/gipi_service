@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import it.bologna.ausl.gipi.process.Process;
+import java.text.ParseException;
 import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -51,7 +52,7 @@ public class Tests {
     }
 
     @RequestMapping(value = "stepOn", method = RequestMethod.GET)
-    public ResponseEntity stepOn() {
+    public ResponseEntity stepOn() throws ParseException {
 
         Iter iter = new Iter();
         iter.setId(6);

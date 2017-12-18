@@ -25,6 +25,7 @@ import it.bologna.ausl.gipi.process.Process;
 import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
+import java.text.ParseException;
 
 /**
  *
@@ -63,7 +64,7 @@ public class IterController {
 
     @RequestMapping(value = "stepOn", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity stepOn(@RequestBody SteponParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public ResponseEntity stepOn(@RequestBody SteponParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, ParseException {
 //        Class<?> clazz = data.getClass();
 //        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
 //        Object fieldValue = field.get(data);
@@ -144,7 +145,9 @@ public class IterController {
         JsonObject jsonCurrFase = new JsonObject();
         JsonObject jsonNextFase = new JsonObject();
         jsonCurrFase.addProperty("nomeFase", currentFase.getNomeFase());
+        jsonCurrFase.addProperty("faseDiChiusura", currentFase.getFaseDiChiusura());
         jsonNextFase.addProperty("nomeFase", nextFase.getNomeFase());
+        jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
         JsonObject processStatus = new JsonObject();
         processStatus.addProperty("currentFase", jsonCurrFase.toString());
         processStatus.addProperty("nextFase", jsonNextFase.toString());
