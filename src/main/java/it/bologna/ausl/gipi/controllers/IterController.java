@@ -9,7 +9,7 @@ import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.Fase;
-import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.Iter; 
 import it.bologna.ausl.entities.gipi.QIter;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
@@ -28,8 +28,11 @@ import com.google.gson.JsonObject;
 import io.jsonwebtoken.Claims;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
+import it.bologna.ausl.gipi.process.CreaIter;
+import java.io.IOException;
 import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
+
 
 /**
  *
@@ -39,9 +42,12 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/gipi/resources/custom/iter")
 @PropertySource("classpath:query.properties")
 public class IterController {
-
+    
     @Autowired
     Process process;
+    
+    @Autowired
+    CreaIter creaIter;
 
     @Autowired
     EntityManager em;
@@ -50,19 +56,11 @@ public class IterController {
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity AvviaNuovoIter(@RequestBody IterParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
-//        Class<?> clazz = data.getClass();
-//        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
-//        Object fieldValue = field.get(data);
+    public ResponseEntity AvviaNuovoIter(@RequestBody IterParams data) 
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
 
-        System.out.println("QWWEEEEEEEEEE");
-        System.out.println(data.getDataAvvio());
-        System.out.println(data.getDataCreazione());
-        System.out.println(data.getOggetto());
-        System.out.println(data.getFK_id_responsabile_procedimento());
-        System.out.println(data.getId());
-        // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
-//        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
+        creaIter.creaIter(data);
+        
         return new ResponseEntity(data, HttpStatus.OK);
     }
 

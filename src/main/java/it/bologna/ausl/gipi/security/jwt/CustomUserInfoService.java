@@ -38,6 +38,8 @@ public class CustomUserInfoService{
         this.userInfo = new HashMap<String, Object>();
         userInfo.put("username", utenteCaricato.getUsername());
         
+        userInfo.put("idUtente", utenteCaricato.getId());
+        
         //Ruolo
         userInfo.put("ruolo", utenteCaricato.getIdRuolo());
 
