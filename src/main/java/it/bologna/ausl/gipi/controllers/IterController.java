@@ -25,7 +25,11 @@ import it.bologna.ausl.gipi.process.Process;
 import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
+import io.jsonwebtoken.Claims;
+import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
+import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import java.text.ParseException;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  *
@@ -64,7 +68,7 @@ public class IterController {
 
     @RequestMapping(value = "stepOn", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity stepOn(@RequestBody SteponParams data) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, ParseException {
+    public ResponseEntity stepOn(@RequestBody SteponParams data, HttpServletRequest request) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, ParseException, GipiRequestParamsException {
 //        Class<?> clazz = data.getClass();
 //        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
 //        Object fieldValue = field.get(data);
@@ -103,7 +107,10 @@ public class IterController {
         processSteponParams.insertParam("esito", data.getEsito());
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
 
-        process.stepOn(iter, processSteponParams);
+        Claims attribute = (Claims) request.getAttribute("claims");
+        String usernameLoggedUser = (String) attribute.get("sub");
+
+        process.stepOn(iter, processSteponParams, usernameLoggedUser);
 
         // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
 //        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
@@ -111,7 +118,7 @@ public class IterController {
     }
 
     @RequestMapping(value = "getCurrentFase", method = RequestMethod.GET)
-    public ResponseEntity getCurrentFase(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public ResponseEntity<Fase> getCurrentFase(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
 
@@ -122,14 +129,15 @@ public class IterController {
 
         Fase currentFase = process.getCurrentFase(iter);
 
-        JsonObject jsonFase = new JsonObject();
-        jsonFase.addProperty("nomeFase", currentFase.getNomeFase());
-
-        return new ResponseEntity(jsonFase.toString(), HttpStatus.OK);
+//        JsonObject jsonFase = new JsonObject();
+//        jsonFase.addProperty("nomeFase", currentFase.getNomeFase());
+//
+//        return new ResponseEntity(jsonFase.toString(), HttpStatus.OK);
+        return new ResponseEntity(currentFase, HttpStatus.OK);
     }
 
     @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET)
-    public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, GipiDatabaseException {
 
         // TODO: QUI BISOGNERA USARE L'OGGETTO PROCESS STATUS, ora non lo uso perchè devo restituire solo i nomi delle fasi perchè se no da errore
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -141,6 +149,9 @@ public class IterController {
 
         Fase currentFase = process.getCurrentFase(iter);
         Fase nextFase = process.getNextFase(iter);
+        if (nextFase == null) {
+            throw new GipiDatabaseException("La fase successiva e' null");
+        }
 
         JsonObject jsonCurrFase = new JsonObject();
         JsonObject jsonNextFase = new JsonObject();

@@ -7,6 +7,7 @@ package it.bologna.ausl.gipi.controllers;
 
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class Tests {
     }
 
     @RequestMapping(value = "stepOn", method = RequestMethod.GET)
-    public ResponseEntity stepOn() throws ParseException {
+    public ResponseEntity stepOn() throws ParseException, GipiRequestParamsException {
 
         Iter iter = new Iter();
         iter.setId(6);
@@ -60,7 +61,7 @@ public class Tests {
         fase.setId(2);
         iter.setIdFase(fase);
 
-        process.stepOn(iter, null);
+        process.stepOn(iter, null, null);
         return new ResponseEntity(HttpStatus.OK);
     }
 

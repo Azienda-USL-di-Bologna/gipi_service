@@ -20,6 +20,7 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -113,7 +114,7 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, ProcessSteponParams processParams) throws ParseException {
+    public void stepOn(Iter iter, ProcessSteponParams processParams, String usernameLoggedUser) throws ParseException, GipiRequestParamsException {
 
         System.out.println("CHE NON RIESCO A SENTIRTI");
         System.out.println("iter" + iter);
@@ -144,7 +145,7 @@ public class Process {
                 .where(qFaseIter.idFase.id.eq(currentFase.getId())
                         .and(qFaseIter.idIter.id.eq(iter.getId())))
                 .fetchOne();
-        currentFaseIter.setDataFineFase(new Date());
+        currentFaseIter.setDataFineFase(dataPassaggio);
 
         // AGGIORNA CAMPI SU ITER
         iter.setIdFase(nextFase);
@@ -153,6 +154,7 @@ public class Process {
 
         if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
             System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
+            throw new GipiRequestParamsException("i campi esito e motivazioneEsito sono previsti solo se la nextFase è di chiusura");
             // THROW
         }
         iter.setEsito(esito);
@@ -164,7 +166,7 @@ public class Process {
         DocumentoIter documentoIter = new DocumentoIter();
         documentoIter.setRegistro((String) processParams.readParam("codiceRegistroDocumento"));
         documentoIter.setAnno((Integer) processParams.readParam("annoDocumento"));
-        documentoIter.setNumeroRegistro((Integer) processParams.readParam("numeroDocumento"));
+        documentoIter.setNumeroRegistro((String) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
         em.persist(documentoIter);
 //
@@ -179,7 +181,7 @@ public class Process {
         JPQLQuery<Utente> queryUtente = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Utente utente = queryUtente
                 .from(qUtente)
-                .where(qUtente.username.eq("g.zoli"))
+                .where(qUtente.username.eq(usernameLoggedUser))
                 .fetchOne();
 
         EventoIter eventoIter = new EventoIter();
