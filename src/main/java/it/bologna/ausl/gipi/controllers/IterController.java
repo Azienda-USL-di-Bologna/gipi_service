@@ -56,12 +56,15 @@ public class IterController {
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity AvviaNuovoIter(@RequestBody IterParams data) 
+    public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
 
         Iter i = creaIter.creaIter(data);
         
-        return new ResponseEntity(i, HttpStatus.OK);
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId().toString());
+        
+        return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
 
     @RequestMapping(value = "stepOn", method = RequestMethod.POST)
