@@ -88,7 +88,7 @@ public class CreaIter {
         return i;
     }
     
-    public void creaIter(IterParams iterParams) throws IOException {
+    public Iter creaIter(IterParams iterParams) throws IOException {
         System.out.println("SONO ENTRATO");
         System.out.println(getNumeroIterMax());
         
@@ -176,5 +176,6 @@ public class CreaIter {
                 System.out.println("evento Persist");
         em.persist(ei);
         
+        return i;
     }
 }

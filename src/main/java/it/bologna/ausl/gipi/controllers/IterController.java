@@ -59,9 +59,9 @@ public class IterController {
     public ResponseEntity AvviaNuovoIter(@RequestBody IterParams data) 
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
 
-        creaIter.creaIter(data);
+        Iter i = creaIter.creaIter(data);
         
-        return new ResponseEntity(data, HttpStatus.OK);
+        return new ResponseEntity(i, HttpStatus.OK);
     }
 
     @RequestMapping(value = "stepOn", method = RequestMethod.POST)
