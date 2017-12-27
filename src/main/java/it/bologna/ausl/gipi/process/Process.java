@@ -94,7 +94,7 @@ public class Process {
 
         Fase currentFase = query
                 .from(qFase)
-                .where(qFase.id.eq(iter.getIdFase().getId()))
+                .where(qFase.id.eq(iter.getIdFaseCorrente().getId()))
                 .fetchOne();
 
 //        QIter iter = QIter.iter;
@@ -148,7 +148,7 @@ public class Process {
         currentFaseIter.setDataFineFase(dataPassaggio);
 
         // AGGIORNA CAMPI SU ITER
-        iter.setIdFase(nextFase);
+        iter.setIdFaseCorrente(nextFase);
         String esito = (String) processParams.readParam("esito");
         String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
 
@@ -190,7 +190,7 @@ public class Process {
         eventoIter.setIdFaseIter(currentFaseIter);
         eventoIter.setIdDocumentoIter(documentoIter);
         eventoIter.setAutore(utente);
-        eventoIter.setNoteEventoIter((String) processParams.readParam("notePassaggio"));
+        eventoIter.setNote((String) processParams.readParam("notePassaggio"));
         eventoIter.setDataOraEvento(dataPassaggio);
         em.persist(eventoIter);
     }

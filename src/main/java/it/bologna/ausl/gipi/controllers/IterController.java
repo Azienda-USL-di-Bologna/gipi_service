@@ -9,7 +9,7 @@ import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.Fase;
-import it.bologna.ausl.entities.gipi.Iter; 
+import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.QIter;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
 
-
 /**
  *
  * @author f.gusella
@@ -42,10 +41,10 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/gipi/resources/custom/iter")
 @PropertySource("classpath:query.properties")
 public class IterController {
-    
+
     @Autowired
     Process process;
-    
+
     @Autowired
     CreaIter creaIter;
 
@@ -60,10 +59,10 @@ public class IterController {
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
 
         Iter i = creaIter.creaIter(data);
-        
+
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId().toString());
-        
+
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
 
@@ -156,9 +155,9 @@ public class IterController {
 
         JsonObject jsonCurrFase = new JsonObject();
         JsonObject jsonNextFase = new JsonObject();
-        jsonCurrFase.addProperty("nomeFase", currentFase.getNomeFase());
+        jsonCurrFase.addProperty("nomeFase", currentFase.getNome());
         jsonCurrFase.addProperty("faseDiChiusura", currentFase.getFaseDiChiusura());
-        jsonNextFase.addProperty("nomeFase", nextFase.getNomeFase());
+        jsonNextFase.addProperty("nomeFase", nextFase.getNome());
         jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
         JsonObject processStatus = new JsonObject();
         processStatus.addProperty("currentFase", jsonCurrFase.toString());

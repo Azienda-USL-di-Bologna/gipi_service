@@ -47,7 +47,7 @@ public class Tests {
         iter.setId(6);
         Fase fase = new Fase();
         fase.setId(2);
-        iter.setIdFase(fase);
+        iter.setIdFaseCorrente(fase);
         process.getNextFase(iter);
         return new ResponseEntity(HttpStatus.OK);
     }
@@ -59,7 +59,7 @@ public class Tests {
         iter.setId(6);
         Fase fase = new Fase();
         fase.setId(2);
-        iter.setIdFase(fase);
+        iter.setIdFaseCorrente(fase);
 
         process.stepOn(iter, null, null);
         return new ResponseEntity(HttpStatus.OK);

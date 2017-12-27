@@ -21,36 +21,36 @@ import javax.persistence.EntityManager;
  * @author f.gusella
  */
 public class GetEntityById {
-    
+
     /* SCHEMA ORGANIGRAMMA */
     public static Utente getUtente(int idUtente, EntityManager em) {
         QUtente qUtente = QUtente.utente;
         JPQLQuery<Utente> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
         Utente u = query
-            .from(qUtente)
-            .where(qUtente.id.eq(idUtente))
-            .fetchOne();
+                .from(qUtente)
+                .where(qUtente.id.eq(idUtente))
+                .fetchOne();
         return u;
     }
-    
+
     /* SCHEMA GIPI */
     public static Procedimento getProcedimento(int idProcedimento, EntityManager em) {
         QProcedimento qProcedimento = QProcedimento.procedimento;
         JPQLQuery<Procedimento> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
         Procedimento p = query
-            .from(qProcedimento)
-            .where(qProcedimento.idProcedimento.eq(idProcedimento))
-            .fetchOne();
+                .from(qProcedimento)
+                .where(qProcedimento.id.eq(idProcedimento))
+                .fetchOne();
         return p;
     }
-    
+
     public static AziendaTipoProcedimento getAziendaTipoProcedimento(int idAziendaTipoProcedimento, EntityManager em) {
         QAziendaTipoProcedimento qAziendaTipoProcedimento = QAziendaTipoProcedimento.aziendaTipoProcedimento;
         JPQLQuery<AziendaTipoProcedimento> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
         AziendaTipoProcedimento a = query
                 .from(qAziendaTipoProcedimento)
                 .where(qAziendaTipoProcedimento.id.eq(idAziendaTipoProcedimento))
-                .fetchFirst();  
+                .fetchFirst();
         return a;
     }
 }
