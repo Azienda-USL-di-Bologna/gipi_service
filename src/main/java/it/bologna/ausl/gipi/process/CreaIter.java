@@ -5,7 +5,6 @@
  */
 package it.bologna.ausl.gipi.process;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.Expression;
 import com.querydsl.jpa.EclipseLinkTemplates;
@@ -32,10 +31,8 @@ import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -109,14 +106,10 @@ public class CreaIter {
         String parametri = query.select(this.qAzienda.parametri)
                 .from(this.qAzienda)
                 .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
-        /* Questa parte può essere utilizzata se viene usato un oggetto nel campo parametri */
-//        MyJson params = new ObjectMapper().readValue(parametri, MyJson.class);
-//        String url = params.getBaseUrl();
-        /* Questa parte se viene utilizzato un array di oggetti */
-        ObjectMapper param = new ObjectMapper();
-        List<MyJson> list = param.readValue(parametri, new TypeReference<ArrayList<MyJson>>() {});
-        String url = list.get(0).getBaseUrl();
-        System.out.println("URL GET = " + url);
+  
+        MyJson params = new ObjectMapper().readValue(parametri, MyJson.class);
+        String url = params.getBaseUrl();
+       
         return url;
     }
 
