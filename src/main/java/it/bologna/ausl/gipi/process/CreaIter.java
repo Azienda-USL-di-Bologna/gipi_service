@@ -5,11 +5,16 @@
  */
 package it.bologna.ausl.gipi.process;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.types.Expression;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.Azienda;
+import it.bologna.ausl.entities.baborg.MyJson;
+import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -27,8 +32,10 @@ import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -38,20 +45,27 @@ import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 
 /**
  *
  * @author f.gusella
  */
 @Component
+@PropertySource("classpath:application.properties") 
 public class CreaIter {
 
     QFase qFase = QFase.fase;
     QEvento qEvento = QEvento.evento;
     QIter qIter = QIter.iter;
-
+    QAzienda qAzienda = QAzienda.azienda;
+    
     private static final String EVENTO_CREAZIONE_ITER = "avvio_iter";
     private static final String STATO_INIZIALE_ITER = "in_corso";
+    
+    @Value("${insertFascicolo}")
+    private String baseUrlBds;
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -88,6 +102,23 @@ public class CreaIter {
 //                  .from(this.qIter);
         return i;
     }
+    
+    public String getBaseUrl(int idAzienda) throws IOException {
+        JPQLQuery<Azienda> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+ 
+        String parametri = query.select(this.qAzienda.parametri)
+                .from(this.qAzienda)
+                .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
+        /* Questa parte può essere utilizzata se viene usato un oggetto nel campo parametri */
+//        MyJson params = new ObjectMapper().readValue(parametri, MyJson.class);
+//        String url = params.getBaseUrl();
+        /* Questa parte se viene utilizzato un array di oggetti */
+        ObjectMapper param = new ObjectMapper();
+        List<MyJson> list = param.readValue(parametri, new TypeReference<ArrayList<MyJson>>() {});
+        String url = list.get(0).getBaseUrl();
+        System.out.println("URL GET = " + url);
+        return url;
+    }
 
     public Iter creaIter(IterParams iterParams) throws IOException {
         System.out.println("SONO ENTRATO");
@@ -106,11 +137,13 @@ public class CreaIter {
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione());
         fascicolo.setIdTipoFascicolo(1);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
-        String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
+        // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
+        String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBds;
+        //System.out.println("BASE URL = "+ baseUrl);
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
-                .url(url)
+                .url(baseUrl)
                 .post(body)
                 .build();
         Response response = client.newCall(request).execute();
