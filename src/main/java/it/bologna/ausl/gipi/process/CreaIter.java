@@ -135,11 +135,11 @@ public class CreaIter {
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
                 0, null, -1, null, null, u.getCodiceFiscale(), u.getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione());
-        fascicolo.setIdTipoFascicolo(1);
+        fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
         String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBds;
-        //System.out.println("BASE URL = "+ baseUrl);
+        System.out.println("BASE URL = "+ baseUrl);
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
