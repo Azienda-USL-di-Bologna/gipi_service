@@ -308,6 +308,7 @@
             <groupId>com.querydsl</groupId>
             <artifactId>querydsl-jpa</artifactId>
             <version>4.1.4</version>
+            <type>jar</type>
         </dependency>
 
         <dependency>

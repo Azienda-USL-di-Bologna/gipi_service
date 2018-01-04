@@ -25,10 +25,20 @@ import it.bologna.ausl.gipi.process.Process;
 import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
+import com.querydsl.jpa.JPAExpressions;
 import io.jsonwebtoken.Claims;
+import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.gipi.DocumentoIter;
+import it.bologna.ausl.entities.gipi.Evento;
+import it.bologna.ausl.entities.gipi.EventoIter;
+import it.bologna.ausl.entities.gipi.FaseIter;
+import it.bologna.ausl.entities.gipi.QEvento;
+import it.bologna.ausl.entities.gipi.QEventoIter;
+import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
+import it.bologna.ausl.gipi.utils.GetEntityById;
 import java.io.IOException;
 import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +62,8 @@ public class IterController {
     EntityManager em;
 
     QIter qIter = QIter.iter;
+    QEventoIter qEventoIter = QEventoIter.eventoIter;
+    QEvento qEvento = QEvento.evento;
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
@@ -164,5 +176,146 @@ public class IterController {
         processStatus.addProperty("nextFase", jsonNextFase.toString());
 
         return new ResponseEntity(processStatus.toString(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "getUltimaSospensione", method = RequestMethod.GET)
+    public ResponseEntity getUltimaSospensione(@RequestParam("idIter") Integer idIter) {
+        JPQLQuery<EventoIter> q = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+
+
+        EventoIter ei = q
+                .from(qEventoIter)
+                .where(qEventoIter.idIter.id.eq(idIter)
+                    .and(qEventoIter.idEvento.eq(JPAExpressions.selectFrom(qEvento).where(qEvento.codice.eq("apertura_sospensione")))))
+                .orderBy(qEventoIter.dataOraEvento.desc()).fetchFirst();
+        
+//        JPQLQuery<EventoIter> q2 = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+//        EventoIter ei = q
+//                .from(qEventoIter)
+//                .where(qEventoIter.idIter.id.eq(idIter)
+//                    .and(qEventoIter.idEvento.eq(q2.from(qEvento).where(qEvento.codice.eq("apertura_sospensione").isTrue()))
+//                .orderBy(qEventoIter.dataOraEvento.desc())
+//                .fetchAll();
+        
+        JsonObject eventoSospensione = new JsonObject();
+        eventoSospensione.addProperty("dataSospensione", ei.getDataOraEvento().toString());
+        return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
+    }
+    
+    public FaseIter getFaseIter(Iter i) {
+        QFaseIter qFaseIter = QFaseIter.faseIter;
+        JPQLQuery<FaseIter> q = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        
+        FaseIter fi = q
+                .from(qFaseIter)
+                .where(qFaseIter.idIter.id.eq(i.getId())
+                        .and(qFaseIter.idFase.id.eq(i.getIdFaseCorrente().getId())))
+                .orderBy(qFaseIter.dataInizioFase.desc())
+                .fetchFirst();
+        return fi;
+    }
+    
+    @RequestMapping(value = "terminaSospensione", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity terminaSospensione(@RequestBody SospensioneParams sospensioneParams){
+        
+        Evento e = GetEntityById.getEventoByCodice("chiusura_sospensione", em);
+        Utente u = GetEntityById.getUtente(sospensioneParams.idUtente, em);
+        Iter i = GetEntityById.getIter(sospensioneParams.idIter, em);
+        FaseIter fi = getFaseIter(i);
+        
+        i.setStato("in_corso");
+        em.persist(i);
+        
+        DocumentoIter d = new DocumentoIter();
+        d.setAnno(sospensioneParams.getAnnoDocumento());
+        d.setIdIter(i);
+        d.setNumeroRegistro(sospensioneParams.getNumeroDocumento());
+        d.setRegistro(sospensioneParams.getCodiceRegistroDocumento());
+        em.persist(d);
+        em.flush();
+         System.out.println("s££££££££££££££££££££££££££££££££££££££££££££££££££££");
+        System.out.println(e.toString());
+        System.out.println(i.toString());
+        System.out.println(fi.toString());
+        System.out.println(d.toString());
+        System.out.println(u.toString());
+        System.out.println(sospensioneParams.getSospesoAl());
+         System.out.println("sono ££££££££££££££££££££££££££££££££££££££££££££££££££qua");
+        EventoIter ei = new EventoIter();
+        ei.setIdDocumentoIter(d);
+        ei.setNote(sospensioneParams.getNote());
+        ei.setIdEvento(e);
+        ei.setIdIter(i);
+        ei.setAutore(u);
+        ei.setDataOraEvento(sospensioneParams.getSospesoAl());
+        ei.setIdFaseIter(fi);
+        System.out.println("sono qua");
+        System.out.println(ei.toString());
+        em.persist(ei);
+        System.out.println("sono qua3333");
+        
+        JsonObject eventoSospensione = new JsonObject();
+        eventoSospensione.addProperty("dataFineSospensione", ei.getDataOraEvento().toString());
+        
+        return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
+    }
+    
+    
+    @RequestMapping(value = "lanciaSospensione", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity lanciaSospensione(@RequestBody SospensioneParams sospensioneParams){
+        
+        System.out.println("SOSPENSIONEPARAMS: ");
+        System.out.println(sospensioneParams.toString());
+        
+        Evento e = GetEntityById.getEventoByCodice("apertura_sospensione", em);
+        System.out.println("EVENTO: ");
+        System.out.println(e.toString());
+        Utente u = GetEntityById.getUtente(sospensioneParams.idUtente, em);
+        System.out.println("UTENTE: ");
+        System.out.println(u.toString());
+        Iter i = GetEntityById.getIter(sospensioneParams.idIter, em);
+        System.out.println("ITER: ");
+        System.out.println(i.toString());
+        FaseIter fi = getFaseIter(i);
+        System.out.println("FASEITER: ");
+        System.out.println(fi.toString());
+        
+        i.setStato("sospeso");
+        em.persist(i);
+        
+        DocumentoIter d = new DocumentoIter();
+        d.setAnno(sospensioneParams.getAnnoDocumento());
+        d.setIdIter(i);
+        d.setNumeroRegistro(sospensioneParams.getNumeroDocumento());
+        d.setRegistro(sospensioneParams.getCodiceRegistroDocumento());
+        em.persist(d);
+        em.flush();
+        System.out.println("s££££££££££££££££££££££££££££££££££££££££££££££££££££");
+        System.out.println(e.toString());
+        System.out.println(i.toString());
+        System.out.println(fi.toString());
+        System.out.println(d.toString());
+        System.out.println(u.toString());
+        System.out.println(sospensioneParams.getSospesoAl());
+         System.out.println("sono ££££££££££££££££££££££££££££££££££££££££££££££££££qua");
+        EventoIter ei = new EventoIter();
+        ei.setIdDocumentoIter(d);
+        ei.setNote(sospensioneParams.getNote());
+        ei.setIdEvento(e);
+        ei.setIdIter(i);
+        ei.setAutore(u);
+        ei.setDataOraEvento(sospensioneParams.getSospesoAl());
+        ei.setIdFaseIter(fi);
+        System.out.println("sono qua");
+        System.out.println(ei.toString());
+        em.persist(ei);
+        System.out.println("sono qua3333");
+        
+        JsonObject eventoSospensione = new JsonObject();
+        eventoSospensione.addProperty("dataSospensione", ei.getDataOraEvento().toString());
+        
+        return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
     }
 }
