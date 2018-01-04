@@ -298,7 +298,7 @@ public class IterController {
         System.out.println(fi.toString());
         System.out.println(d.toString());
         System.out.println(u.toString());
-        System.out.println(sospensioneParams.getSospesoAl());
+        System.out.println(sospensioneParams.getSospesoDal());
          System.out.println("sono ££££££££££££££££££££££££££££££££££££££££££££££££££qua");
         EventoIter ei = new EventoIter();
         ei.setIdDocumentoIter(d);
@@ -306,7 +306,7 @@ public class IterController {
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setAutore(u);
-        ei.setDataOraEvento(sospensioneParams.getSospesoAl());
+        ei.setDataOraEvento(sospensioneParams.getSospesoDal());
         ei.setIdFaseIter(fi);
         System.out.println("sono qua");
         System.out.println(ei.toString());
