@@ -1,25 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.security.jwt;
 
 
-import it.bologna.ausl.entities.baborg.Azienda;
-import it.bologna.ausl.entities.baborg.Ruolo;
 import it.bologna.ausl.gipi.service.UtenteRepository;
 import it.bologna.ausl.entities.baborg.Utente;
-import it.bologna.ausl.entities.baborg.UtenteStruttura;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
 
 @Service 
 public class CustomUserInfoService{
@@ -35,16 +23,19 @@ public class CustomUserInfoService{
         if (utenteCaricato == null) {
             throw new UsernameNotFoundException(String.format("No user found with username '%s'.", username));
         } else {     
-        this.userInfo = new HashMap<String, Object>();
+        this.userInfo = new HashMap<>();
         userInfo.put("username", utenteCaricato.getUsername());
         
         userInfo.put("idUtente", utenteCaricato.getId());
         
         //Ruolo
-        userInfo.put("ruolo", utenteCaricato.getIdRuolo());
+        userInfo.put("ruoloAziendale", utenteCaricato.getIdRuoloAziendale());
 
         //Azienda
-        userInfo.put("azienda", utenteCaricato.getIdAzienda());
+//        for (UtenteAzienda utenteAzienda: utenteCaricato.getUtenteAziendaList()) {
+//            utenteAzienda.getIdAzienda();
+//        }
+        userInfo.put("aziende", utenteCaricato.getIdAzienda());
         
         //List<UtenteStruttura>
         userInfo.put("strutture", utenteCaricato.getUtenteStrutturaList());
