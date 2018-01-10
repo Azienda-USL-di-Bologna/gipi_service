@@ -126,7 +126,7 @@ public class CreaIter {
         // Creo il fascicolo dell'iter.
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
-                0, null, -1, null, null, u.getCodiceFiscale(), u.getCodiceFiscale(), null,
+                0, null, -1, null, null, u.getIdPersona().getCodiceFiscale(), u.getIdPersona().getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione());
         fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);

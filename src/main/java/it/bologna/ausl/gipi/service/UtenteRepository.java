@@ -8,5 +8,5 @@ public interface UtenteRepository extends CrudRepository<Utente, Integer> {
 
     public Utente findByUsername(@Param("username") String username);
 
-    public Utente getByCodiceFiscale(@Param("codiceFiscale") String codiceFiscale);
+//    public Utente getByCodiceFiscale(@Param("codiceFiscale") String codiceFiscale);
 }

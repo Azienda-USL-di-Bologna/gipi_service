@@ -29,7 +29,7 @@ public class CustomUserInfoService{
         userInfo.put("idUtente", utenteCaricato.getId());
         
         //Ruolo
-        userInfo.put("ruoloAziendale", utenteCaricato.getIdRuoloAziendale());
+        userInfo.put("bit_ruoli", utenteCaricato.getBitRuoli());
 
         //Azienda
 //        for (UtenteAzienda utenteAzienda: utenteCaricato.getUtenteAziendaList()) {

@@ -94,7 +94,8 @@ public class UserController {
             return new ResponseEntity("SAML authentication not enabled", HttpStatus.UNAUTHORIZED);
         }
         String user = request.getAttribute(samlUser).toString();
-        ud = userDb.loadByParameter(dbField, user);
+//        ud = userDb.loadByParameter(dbField, user);
+        ud = userDb.getUtenteTemp(user);
         if (ud == null) {
             throw new ServletException("User not found");
         }
