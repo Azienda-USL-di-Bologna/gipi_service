@@ -37,6 +37,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.sql2o.Connection;
@@ -52,7 +53,7 @@ public class Tests {
 
     @Autowired
     Process process;
-
+    
     @Autowired
     EntityManager em;
 
@@ -142,6 +143,19 @@ public class Tests {
 //                    .executeAndFetch(Procedimento.class);
 //        }
         return new ResponseEntity(aziende.get(0), HttpStatus.OK);
+        Azienda azienda = query.select(qAzienda)
+                .from(qAzienda)
+                .where(qAzienda.id.eq(2))
+                .fetchFirst();
+        
+//        List<Pec> pec = query.select(qPec)
+//                .from(qPec)
+//                .where(qPec.idAzienda.id.eq(2))
+//                .fetch();
+        int lista = azienda.getPecList().size();
+        //azienda.getPecList().stream().forEach(p -> {System.out.println("p.id: " + p.getId() + "\n" + "p.indirizzo: " + p.getIndirizzo());});
+        
+        return new ResponseEntity(azienda, HttpStatus.OK);
     }
 
 }
