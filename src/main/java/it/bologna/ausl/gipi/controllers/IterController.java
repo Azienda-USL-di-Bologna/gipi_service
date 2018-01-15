@@ -42,6 +42,7 @@ import it.bologna.ausl.gipi.utils.GetEntityById;
 import java.io.IOException;
 import java.text.ParseException;
 import javax.servlet.http.HttpServletRequest;
+import org.springframework.http.MediaType;
 
 /**
  *
@@ -148,7 +149,7 @@ public class IterController {
         return new ResponseEntity(currentFase, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET)
+    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET,  produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
     public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, GipiDatabaseException {
 
         // TODO: QUI BISOGNERA USARE L'OGGETTO PROCESS STATUS, ora non lo uso perchè devo restituire solo i nomi delle fasi perchè se no da errore
@@ -175,7 +176,7 @@ public class IterController {
         processStatus.addProperty("currentFase", jsonCurrFase.toString());
         processStatus.addProperty("nextFase", jsonNextFase.toString());
 
-        return new ResponseEntity(processStatus.toString(), HttpStatus.OK);
+        return new ResponseEntity(currentFase, HttpStatus.OK);
     }
     
     @RequestMapping(value = "getUltimaSospensione", method = RequestMethod.GET)

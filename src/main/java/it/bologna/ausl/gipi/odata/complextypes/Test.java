@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
             )
         }
 )
-public class Test extends Struttura {
+public class Test {
 
     @EdmSimpleProperty(type = EdmSimpleTypeKind.String)
     String prova;
