@@ -1,7 +1,7 @@
 package it.bologna.ausl.gipi.config.spring;
 
-import it.bologna.ausl.gipi.security.auth.TokenAuthenticationFilter;
-import org.springframework.context.annotation.Bean;
+//import it.bologna.ausl.gipi.security.auth.TokenAuthenticationFilter;
+//import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,11 +16,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 //    @Value("${jwt.cookie}")
 //    private String TOKEN_COOKIE;
-    @Bean
-    public TokenAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception {
-        return new TokenAuthenticationFilter();
-    }
-
+//    @Bean
+//    public TokenAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception {
+//        return new TokenAuthenticationFilter();
+//    }
 //    @Autowired
 //    private CustomUserDetailsService jwtUserDetailsService;
 //
