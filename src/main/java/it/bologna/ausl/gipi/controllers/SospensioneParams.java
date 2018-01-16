@@ -6,6 +6,8 @@
 package it.bologna.ausl.gipi.controllers;
 
 import java.util.Date;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 /**
  *
@@ -18,7 +20,9 @@ public class SospensioneParams {
     public String numeroDocumento;
     public int annoDocumento;
     public Date sospesoDal;
+    @Temporal(TemporalType.DATE)
     public Date sospesoAl;
+    @Temporal(TemporalType.DATE)
     public String note;
 
     public int getIdIter() {
