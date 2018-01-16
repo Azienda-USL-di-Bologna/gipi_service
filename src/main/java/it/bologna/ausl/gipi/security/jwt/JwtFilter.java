@@ -10,18 +10,23 @@ import org.springframework.web.filter.GenericFilterBean;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureException;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import it.bologna.ausl.gipi.security.auth.TokenBasedAuthentication;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 public class JwtFilter extends GenericFilterBean {
 
     private String SECRET_KEY;
+    
+    private UserDetailsService userDetailsService;
 
-    public JwtFilter(String secretKey) {
+    public JwtFilter(String secretKey, UserDetailsService userDetailsService) {
         super();
         this.SECRET_KEY = secretKey;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -45,7 +50,13 @@ public class JwtFilter extends GenericFilterBean {
                     .parseClaimsJws(token).getBody();
 //            HttpServletRequest httpReq = (HttpServletRequest) req;
 //            if (httpReq.getRequestURI().equalsIgnoreCase(authHeader))
-
+            String username = claims.getSubject();
+            UserDetails user = userDetailsService.loadUserByUsername(username);
+            
+            TokenBasedAuthentication authentication = new TokenBasedAuthentication(user);
+            authentication.setToken(token);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            
             request.setAttribute("claims", claims);
         } catch (final SignatureException e) {
             throw new ServletException("Invalid token.");

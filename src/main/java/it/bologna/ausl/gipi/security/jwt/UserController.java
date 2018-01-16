@@ -4,6 +4,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import it.bologna.ausl.gipi.utils.PasswordHash;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.gipi.security.auth.TokenBasedAuthentication;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -74,13 +76,20 @@ public class UserController {
             throw new ServletException("Invalid login");
         }
 
-        return new ResponseEntity(new LoginResponse(
-                Jwts.builder()
+
+                String token = Jwts.builder()
                         .setSubject(ud.getUsername())
                         .claim("roles", "admin")
                         .setIssuedAt(new Date())
                         .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
-                        .compact(),
+                        .compact();
+                
+                TokenBasedAuthentication authentication = new TokenBasedAuthentication(ud);
+                authentication.setToken(token);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+        return new ResponseEntity(new LoginResponse(
+                token,
                 ud.getUsername(),
                 cuis.loadUserInfoMapByUsername(ud.getUsername())),
                 HttpStatus.OK);
