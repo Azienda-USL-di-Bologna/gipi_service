@@ -13,7 +13,6 @@ import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Pec;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.QPec;
-import it.bologna.ausl.entities.baborg.View;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.Procedimento;
@@ -92,7 +91,7 @@ public class Tests {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @JsonView(View.Summary.class)
+//    @JsonView(View.Summary.class)
     @RequestMapping(value = "dammi", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
     public ResponseEntity dammi() throws ParseException, GipiRequestParamsException {
 //        List<Procedimento> p1 = em.createQuery(

@@ -12,7 +12,7 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.Azienda;
-import it.bologna.ausl.entities.baborg.MyJson;
+import it.bologna.ausl.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
@@ -68,6 +68,9 @@ public class CreaIter {
 
     @Autowired
     EntityManager em;
+    
+    @Autowired
+    ObjectMapper objectMapper;
 
     public Fase getFaseIniziale(int idAzienda) {
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -107,7 +110,7 @@ public class CreaIter {
                 .from(this.qAzienda)
                 .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
   
-        MyJson params = new ObjectMapper().readValue(parametri, MyJson.class);
+        AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
         String url = params.getBaseUrl();
        
         return url;
