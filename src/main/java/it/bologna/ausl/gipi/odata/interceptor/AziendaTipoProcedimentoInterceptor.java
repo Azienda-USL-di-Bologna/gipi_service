@@ -23,9 +23,6 @@ import org.springframework.stereotype.Component;
  */
 @Configuration
 public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptorBase {
-
-    @Autowired
-    private CustomUserDetailsService userDetails;
     
     @Override
     public Predicate onQueryInterceptor(OlingoQueryObject olingoQueryObject) {
@@ -41,6 +38,7 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentPrincipalName = authentication.getName();
+//        authentication.
         System.out.println("il nome è: " + currentPrincipalName);
         return null;
     }

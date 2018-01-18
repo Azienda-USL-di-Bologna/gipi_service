@@ -1,9 +1,12 @@
 package it.bologna.ausl.gipi.security.jwt;
 
 
+import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.gipi.service.UtenteRepository;
 import it.bologna.ausl.entities.baborg.Utente;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,29 +20,41 @@ public class CustomUserInfoService{
     private Map<String, Object> userInfo;
     
     
-    public Map loadUserInfoMapByUsername(String username) throws UsernameNotFoundException {
-        Utente utenteCaricato = utenteRepository.findByUsername(username);
-        
-        if (utenteCaricato == null) {
-            throw new UsernameNotFoundException(String.format("No user found with username '%s'.", username));
-        } else {     
+    public Map loadUserInfoMap(Utente utente, Azienda aziendaLogin) throws UsernameNotFoundException {
+//        Utente utenteCaricato = utenteRepository.findByUsername(username);
+
         this.userInfo = new HashMap<>();
-        userInfo.put("username", utenteCaricato.getUsername());
+        userInfo.put("username", utente.getUsername());
         
-        userInfo.put("idUtente", utenteCaricato.getId());
+        userInfo.put("idUtente", utente.getId());
         
         //Ruolo
-        userInfo.put("bit_ruoli", utenteCaricato.getBitRuoli());
+        userInfo.put("bit_ruoli_utente", utente.getBitRuoli());
+        
+    //Ruolo
+        userInfo.put("bit_ruoli_persona", utente.getIdPersona().getBitRuoli());
 
         //Azienda
 //        for (UtenteAzienda utenteAzienda: utenteCaricato.getUtenteAziendaList()) {
 //            utenteAzienda.getIdAzienda();
 //        }
-        userInfo.put("aziende", utenteCaricato.getIdAzienda());
+
+        List<Azienda> aziende = new ArrayList();
+        utente.getIdPersona().getUtenteList().stream().forEach(
+            u -> {
+                aziende.add(u.getIdAzienda());
+            }
+        );
+        
+        userInfo.put("aziende", aziende);
+        
+        userInfo.put("azienda_login", aziendaLogin);
         
         //List<UtenteStruttura>
-        userInfo.put("strutture", utenteCaricato.getUtenteStrutturaList());
-        }
+        userInfo.put("strutture", utente.getUtenteStrutturaList());
+        
+        userInfo.put("ruoli", utente.getAuthorities());
+        
         
         return userInfo;
     }
