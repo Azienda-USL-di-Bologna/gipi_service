@@ -130,8 +130,8 @@ public class UserController {
             return new ResponseEntity("SAML authentication not enabled", HttpStatus.UNAUTHORIZED);
         }
         Utente user;
-//        String codiceAziendaConRegione = request.getAttribute(this.companyIdentificationField).toString();
-        String codiceAziendaConRegione = "080105";
+        String codiceAziendaConRegione = request.getAttribute(this.companyIdentificationField).toString();
+//        String codiceAziendaConRegione = "080105";
 
         JPQLQuery<Azienda> queryAzienda = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Azienda azienda = queryAzienda
@@ -141,8 +141,8 @@ public class UserController {
 
         AziendaParametriJson aziendaParams = AziendaParametriJson.parse(objectMapper, azienda.getParametri());
 
-//        String ssoField = request.getAttribute(aziendaParams.getLoginSSOField()).toString();
-        String ssoFieldValue = "DMRGPP83E29D851C";
+        String ssoFieldValue = request.getAttribute(aziendaParams.getLoginSSOField()).toString();
+//        String ssoFieldValue = "DMRGPP83E29D851C";
 
         String[] loginDbFieldSplitted = aziendaParams.getLoginDBField().split("/");
         String entityClassName = loginDbFieldSplitted[0];
