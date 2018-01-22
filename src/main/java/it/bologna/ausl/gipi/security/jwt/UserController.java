@@ -66,7 +66,7 @@ public class UserController {
 
     @Autowired
     ObjectMapper objectMapper;
-    
+
     @Autowired
     UtilityFunctions utilityFunctions;
 
@@ -75,7 +75,6 @@ public class UserController {
 
     @RequestMapping(value = "login", method = RequestMethod.POST)
     public ResponseEntity<LoginResponse> loginPOST(@RequestBody final UserLogin userLogin) throws ServletException, NoSuchAlgorithmException, InvalidKeySpecException {
-        
 
         logger.debug("login username: " + userLogin.username);
         logger.debug("codice azienda: " + userLogin.codiceAzienda);
@@ -83,6 +82,11 @@ public class UserController {
         // considera username
         Utente utente = (Utente) userDb.loadUserByUsername(userLogin.username);
         if (userLogin.username == null || utente == null) {
+            throw new ServletException("Invalid login");
+        }
+
+        // considera azienda
+        if (userLogin.codiceAzienda == null || utente == null) {
             throw new ServletException("Invalid login");
         }
 
@@ -104,7 +108,7 @@ public class UserController {
 
         String token = Jwts.builder()
                 .setSubject(String.valueOf(utente.getId()))
-//                .claim("roles", "admin")
+                //                .claim("roles", "admin")
                 .setIssuedAt(new Date())
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
                 .compact();
@@ -112,13 +116,12 @@ public class UserController {
 //        TokenBasedAuthentication authentication = new TokenBasedAuthentication(userInfo, user);
 //        authentication.setToken(token);
 //        SecurityContextHolder.getContext().setAuthentication(authentication);
-
         UserInfo userInfo = UserInfo.loadUserInfoMap(utente, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
-                token,
-                utente.getUsername(),
-                userInfo),
+                        token,
+                        utente.getUsername(),
+                        userInfo),
                 HttpStatus.OK);
     }
 
@@ -160,7 +163,6 @@ public class UserController {
                             and(QUtente.utente.idAzienda.codice.eq(azienda.getCodice())))
                     .fetchOne();
 
-
         } else if (entityClass.isAssignableFrom(Utente.class)) {
             JPQLQuery<Utente> queryUser = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
             PathBuilder<Utente> qUtente = new PathBuilder(Utente.class, "utente");
@@ -180,23 +182,20 @@ public class UserController {
         if (user == null) {
             throw new ServletException("User not found");
         }
-        
-        
-        
+
 //        System.out.println("autorities:   " + Arrays.toString(user.getAuthorities().toArray()));
-        
 //        user.setAuthorities(utilityFunctions.buildAuthorities(user, em));
         //logger.info(String.format("User: %s logged in %s ", ud.getUsername(), ((Utente) ud).getDescrizione()));
         UserInfo userInfo = UserInfo.loadUserInfoMap(user, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
-                Jwts.builder().setSubject(String.valueOf(user.getId()))
-//                    .claim("idUtente", user.getId())
-//                    .claim("user", objectMapper.writerWithView(View.Authorization.class).writeValueAsString(user))
-                    .setIssuedAt(new Date())
-                    .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
-                user.getUsername(),
-                userInfo), 
+                        Jwts.builder().setSubject(String.valueOf(user.getId()))
+                                //                    .claim("idUtente", user.getId())
+                                //                    .claim("user", objectMapper.writerWithView(View.Authorization.class).writeValueAsString(user))
+                                .setIssuedAt(new Date())
+                                .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
+                        user.getUsername(),
+                        userInfo),
                 HttpStatus.OK);
 //        return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(user.getUsername())
 //                .claim("roles", "admin").setIssuedAt(new Date())
