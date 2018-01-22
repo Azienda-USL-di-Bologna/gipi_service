@@ -1,6 +1,7 @@
 package it.bologna.ausl.gipi.odata.interceptor;
 
 import com.querydsl.core.types.Predicate;
+import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
 import it.bologna.ausl.gipi.security.jwt.CustomUserDetailsService;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
@@ -37,9 +38,8 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
                 org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes();
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentPrincipalName = authentication.getName();
-//        authentication.
-        System.out.println("il nome è: " + currentPrincipalName);
+        Utente utente = (Utente) authentication.getPrincipal();
+        System.out.println("il nome è: " + utente.getIdPersona().getDescrizione());
         return null;
     }
 

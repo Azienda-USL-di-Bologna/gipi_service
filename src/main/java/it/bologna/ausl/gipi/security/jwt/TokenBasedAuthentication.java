@@ -1,5 +1,6 @@
-package it.bologna.ausl.gipi.security.auth;
+package it.bologna.ausl.gipi.security.jwt;
 
+import it.bologna.ausl.entities.baborg.Utente;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -10,11 +11,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
     private String token;
-    private final UserDetails principle;
+//    private final UserInfo userInfo;
+    private final UserDetails principal;
 
-    public TokenBasedAuthentication(UserDetails principle ) {
-        super( principle.getAuthorities() );
-        this.principle = principle;
+    public TokenBasedAuthentication(UserInfo userInfo, UserDetails principal) {
+        super(principal.getAuthorities());
+        this.principal = principal;
+        super.setDetails(userInfo);
     }
 
     public String getToken() {
@@ -37,7 +40,7 @@ public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
     @Override
     public UserDetails getPrincipal() {
-        return principle;
+        return principal;
     }
 
 }

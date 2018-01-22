@@ -1,5 +1,6 @@
 package it.bologna.ausl.gipi.security.auth;
 
+import it.bologna.ausl.gipi.security.jwt.TokenBasedAuthentication;
 import it.bologna.ausl.gipi.security.utils.TokenHelper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -70,7 +71,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 // get user
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 // create authentication
-                TokenBasedAuthentication authentication = new TokenBasedAuthentication(userDetails);
+                TokenBasedAuthentication authentication = new TokenBasedAuthentication(null, userDetails);
                 authentication.setToken(authToken);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {

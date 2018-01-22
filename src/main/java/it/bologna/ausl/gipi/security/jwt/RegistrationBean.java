@@ -17,13 +17,16 @@ public class RegistrationBean {
     
     @Autowired
     UserDetailsService userDetailsService;
+    
+    @Autowired
+    AuthorizationUtils authorizationUtils;
 
     @Bean
     public FilterRegistrationBean jwtFilter() {
 
         final FilterRegistrationBean registrationBean = new FilterRegistrationBean();
 
-        registrationBean.setFilter(new JwtFilter(SECRET_KEY, userDetailsService));
+        registrationBean.setFilter(new JwtFilter(SECRET_KEY, userDetailsService, authorizationUtils));
 
         // intercetta tutte le chiamate che iniziano per...
         registrationBean.addUrlPatterns(ROOT_NAME);

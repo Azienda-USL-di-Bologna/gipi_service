@@ -1,10 +1,7 @@
 package it.bologna.ausl.gipi.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.types.EntityPath;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.core.types.dsl.PathBuilderFactory;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -14,22 +11,14 @@ import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.entities.baborg.Persona;
 import it.bologna.ausl.entities.baborg.QAzienda;
-import it.bologna.ausl.entities.baborg.QPersona;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.gipi.utils.PasswordHash;
 import it.bologna.ausl.entities.baborg.Utente;
-import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.utilities.UtilityFunctions;
-import it.bologna.ausl.gipi.security.auth.TokenBasedAuthentication;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -113,15 +101,15 @@ public class UserController {
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
                 .compact();
 
-        TokenBasedAuthentication authentication = new TokenBasedAuthentication(ud);
-        authentication.setToken(token);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+//        TokenBasedAuthentication authentication = new TokenBasedAuthentication(userInfo, user);
+//        authentication.setToken(token);
+//        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         return new ResponseEntity(
                 new LoginResponse(
                 token,
                 ud.getUsername(),
-                new HashMap()),
+                new UserInfo()),
                 HttpStatus.OK);
     }
 
@@ -186,21 +174,20 @@ public class UserController {
         
         
         
-        System.out.println("autorities:   " + Arrays.toString(user.getAuthorities().toArray()));
+//        System.out.println("autorities:   " + Arrays.toString(user.getAuthorities().toArray()));
         
-//        Utente userCasted = (Utente) user;
-        user.setAuthorities(utilityFunctions.buildAuthorities(user, em));
-        user.getUtenteStrutturaList();
-        
+//        user.setAuthorities(utilityFunctions.buildAuthorities(user, em));
         //logger.info(String.format("User: %s logged in %s ", ud.getUsername(), ((Utente) ud).getDescrizione()));
+        UserInfo userInfo = UserInfo.loadUserInfoMap(user, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
-                Jwts.builder().setSubject(user.getUsername())
-                    .claim("user", user)
+                Jwts.builder().setSubject(String.valueOf(user.getId()))
+//                    .claim("idUtente", user.getId())
+//                    .claim("user", objectMapper.writerWithView(View.Authorization.class).writeValueAsString(user))
                     .setIssuedAt(new Date())
                     .signWith(SIGNATURE_ALGORITHM, SECRET_KEY).compact(),
                 user.getUsername(),
-                userInfoService.loadUserInfoMap(user, azienda)), 
+                userInfo), 
                 HttpStatus.OK);
 //        return new ResponseEntity(new LoginResponse(Jwts.builder().setSubject(user.getUsername())
 //                .claim("roles", "admin").setIssuedAt(new Date())
@@ -221,9 +208,9 @@ public class UserController {
 
         public String token;
         public String username;
-        public Map userInfo;
+        public UserInfo userInfo;
 
-        public LoginResponse(final String token, final String username, Map userInfo) {
+        public LoginResponse(final String token, final String username, UserInfo userInfo) {
             this.token = token;
             this.username = username;
             this.userInfo = userInfo;
