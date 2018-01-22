@@ -75,28 +75,36 @@ public class UserController {
 
     @RequestMapping(value = "login", method = RequestMethod.POST)
     public ResponseEntity<LoginResponse> loginPOST(@RequestBody final UserLogin userLogin) throws ServletException, NoSuchAlgorithmException, InvalidKeySpecException {
-        UserDetails ud = null;
+        
 
         logger.debug("login username: " + userLogin.username);
+        logger.debug("codice azienda: " + userLogin.codiceAzienda);
 
         // considera username
-        ud = userDb.loadUserByUsername(userLogin.username);
-        if (userLogin.username == null || ud == null) {
+        Utente utente = (Utente) userDb.loadUserByUsername(userLogin.username);
+        if (userLogin.username == null || utente == null) {
             throw new ServletException("Invalid login");
         }
 
         // considera password
-        if (userLogin.password == null || ud == null) {
+        if (userLogin.password == null || utente == null) {
             throw new ServletException("Invalid login");
         }
 
-        if (!PasswordHash.validatePassword(userLogin.password, ud.getPassword())) {
+        if (!PasswordHash.validatePassword(userLogin.password, utente.getPassword())) {
             throw new ServletException("Invalid login");
         }
+
+        String codiceAziendaConRegione = "080" + userLogin.codiceAzienda;
+        JPQLQuery<Azienda> queryAzienda = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        Azienda azienda = queryAzienda
+                .from(QAzienda.azienda)
+                .where(QAzienda.azienda.codiceRegione.append(QAzienda.azienda.codice).eq(codiceAziendaConRegione))
+                .fetchOne();
 
         String token = Jwts.builder()
-                .setSubject(ud.getUsername())
-                .claim("roles", "admin")
+                .setSubject(String.valueOf(utente.getId()))
+//                .claim("roles", "admin")
                 .setIssuedAt(new Date())
                 .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
                 .compact();
@@ -105,11 +113,12 @@ public class UserController {
 //        authentication.setToken(token);
 //        SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        UserInfo userInfo = UserInfo.loadUserInfoMap(utente, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
                 token,
-                ud.getUsername(),
-                new UserInfo()),
+                utente.getUsername(),
+                userInfo),
                 HttpStatus.OK);
     }
 
@@ -201,6 +210,7 @@ public class UserController {
 
         public String username;
         public String password;
+        public String codiceAzienda;
     }
 
     @SuppressWarnings("unused")
