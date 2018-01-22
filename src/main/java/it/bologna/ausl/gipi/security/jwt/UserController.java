@@ -116,7 +116,7 @@ public class UserController {
 //        TokenBasedAuthentication authentication = new TokenBasedAuthentication(userInfo, user);
 //        authentication.setToken(token);
 //        SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserInfo userInfo = UserInfo.loadUserInfoMap(utente, azienda, em);
+        UserInfo userInfo = UserInfo.loadUserInfo(utente, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
                         token,
@@ -186,7 +186,7 @@ public class UserController {
 //        System.out.println("autorities:   " + Arrays.toString(user.getAuthorities().toArray()));
 //        user.setAuthorities(utilityFunctions.buildAuthorities(user, em));
         //logger.info(String.format("User: %s logged in %s ", ud.getUsername(), ((Utente) ud).getDescrizione()));
-        UserInfo userInfo = UserInfo.loadUserInfoMap(user, azienda, em);
+        UserInfo userInfo = UserInfo.loadUserInfo(user, azienda, em);
         return new ResponseEntity(
                 new LoginResponse(
                         Jwts.builder().setSubject(String.valueOf(user.getId()))

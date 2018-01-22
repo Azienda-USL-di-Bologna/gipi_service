@@ -106,7 +106,7 @@ private List<Ruolo> ruoli;
         this.ruoli = ruoli;
     }
 
-    public static UserInfo loadUserInfoMap(Utente utente, Azienda aziendaLogin, EntityManager em) throws UsernameNotFoundException {
+    public static UserInfo loadUserInfo(Utente utente, Azienda aziendaLogin, EntityManager em) throws UsernameNotFoundException {
 
     UserInfo userInfo = new UserInfo();
     userInfo.setIdUtente(utente.getId());

@@ -9,18 +9,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.web.filter.GenericFilterBean;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.SignatureException;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 public class JwtFilter extends GenericFilterBean {
 
     private final String secretKey;
-    private final UserDetailsService userDetailsService;
     private final AuthorizationUtils authorizationUtils;
 
-    public JwtFilter(String secretKey, UserDetailsService userDetailsService, AuthorizationUtils authorizationUtils) {
+    public JwtFilter(String secretKey, AuthorizationUtils authorizationUtils) {
         super();
         this.secretKey = secretKey;
-        this.userDetailsService = userDetailsService;
         this.authorizationUtils = authorizationUtils;
     }
 
