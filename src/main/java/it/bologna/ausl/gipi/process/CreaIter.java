@@ -152,7 +152,7 @@ public class CreaIter {
         i.setIdFaseCorrente(f);
         i.setIdProcedimento(p);
         i.setIdResponsabileProcedimento(u);
-        i.setNumeroIter(getNumeroIterMax() + 1);
+        i.setNumero(getNumeroIterMax() + 1);
         i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
         i.setOggetto(iterParams.getOggettoIter());
         i.setStato(STATO_INIZIALE_ITER);
