@@ -3,7 +3,7 @@ package it.bologna.ausl.gipi.odata.interceptor;
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
-import it.bologna.ausl.gipi.security.jwt.CustomUserDetailsService;
+import it.bologna.ausl.gipi.security.jwt.UserInfo;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -11,18 +11,15 @@ import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManager;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 /**
  *
  * @author gdm
  */
-@Configuration
+@Component
 public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptorBase {
     
     @Override
@@ -33,14 +30,16 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
 
     @Override
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
-        org.springframework.web.context.request.ServletRequestAttributes attr = (
-                org.springframework.web.context.request.ServletRequestAttributes) 
-                org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes();
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
-        System.out.println("il nome è: " + utente.getIdPersona().getDescrizione());
-        return null;
+        UserInfo userInfo = (UserInfo) authentication.getDetails();
+        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve().equals("CI"))) {
+            return object;
+        }
+        else {
+            throw new OlingoRequestRollbackException();
+        }
     }
 
     @Override

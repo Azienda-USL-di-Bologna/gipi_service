@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 public class RegistrationBean {
@@ -14,10 +13,7 @@ public class RegistrationBean {
     private String ROOT_NAME;
     @Value("${jwt.secret:secret}")
     private String SECRET_KEY;
-    
-    @Autowired
-    UserDetailsService userDetailsService;
-    
+
     @Autowired
     AuthorizationUtils authorizationUtils;
 
@@ -26,7 +22,7 @@ public class RegistrationBean {
 
         final FilterRegistrationBean registrationBean = new FilterRegistrationBean();
 
-        registrationBean.setFilter(new JwtFilter(SECRET_KEY, userDetailsService, authorizationUtils));
+        registrationBean.setFilter(new JwtFilter(SECRET_KEY, authorizationUtils));
 
         // intercetta tutte le chiamate che iniziano per...
         registrationBean.addUrlPatterns(ROOT_NAME);
