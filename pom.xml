@@ -130,7 +130,7 @@
             <version>${spring.boot.version}</version>
             <type>jar</type>
         </dependency>
-        
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-instrument</artifactId>
@@ -324,13 +324,14 @@
         </dependency>
 
 
-   
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>42.2.1</version>
             <scope>runtime</scope>
         </dependency>
-        
+
         <!-- sql2O -->
         <dependency>
             <groupId>org.sql2o</groupId>
@@ -360,20 +361,20 @@
             <artifactId>entities</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>eclipselink</artifactId>
             <version>${eclipse.link.version}</version>
         </dependency>
-   
+
         <dependency>
             <groupId>it.bologna.ausl.iodaobjectlibrary</groupId>
             <artifactId>IodaObjectLibrary</artifactId>
             <version>1</version>
         </dependency>
-        
-        
+
+
         <!--da tenere-->
         <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
         <dependency>
@@ -381,7 +382,7 @@
             <artifactId>okhttp</artifactId>
             <version>3.9.1</version>
         </dependency>
-        
+
         <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
         <dependency>
             <groupId>joda-time</groupId>
@@ -434,9 +435,9 @@
                         </configuration>
                     </execution>
                 </executions>
-                
+
             </plugin>
-            
+
         </plugins>
         <resources>
             <resource>
