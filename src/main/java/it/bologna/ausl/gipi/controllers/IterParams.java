@@ -16,32 +16,31 @@ public class IterParams {
 //    @JsonProperty(value = "FK_id_responsabile_procedimento")
 //    private int FK_id_responsabile_procedimento;
     
-  private int idUtente;
-  private int idStrutturaUtente;
-  private int idProcedimento;
-  private int idAzienda;
-  private String oggettoIter;
-  private Date dataCreazioneIter;
-  private Date dataAvvioIter;
-  private String codiceRegistroDocumento;
-  private int numeroDocumento;
-  private int annoDocumento;
-  
+    private int idUtenteResponsabile;
+    private int idUtenteLoggato;
+    private int idProcedimento;
+    private int idAzienda;
+    private String oggettoIter;
+    private Date dataCreazioneIter;
+    private Date dataAvvioIter;
+    private String codiceRegistroDocumento;
+    private String numeroDocumento;
+    private int annoDocumento;
 
-    public int getIdUtente() {
-        return idUtente;
+    public int getIdUtenteResponsabile() {
+        return idUtenteResponsabile;
     }
 
-    public void setIdUtente(int idUtente) {
-        this.idUtente = idUtente;
+    public void setIdUtenteResponsabile(int idUtenteResponsabile) {
+        this.idUtenteResponsabile = idUtenteResponsabile;
     }
 
-    public int getIdStrutturaUtente() {
-        return idStrutturaUtente;
+    public int getIdUtenteLoggato() {
+        return idUtenteLoggato;
     }
 
-    public void setIdStrutturaUtente(int idStrutturaUtente) {
-        this.idStrutturaUtente = idStrutturaUtente;
+    public void setIdUtenteLoggato(int idUtenteLoggato) {
+        this.idUtenteLoggato = idUtenteLoggato;
     }
 
     public int getIdProcedimento() {
@@ -92,11 +91,11 @@ public class IterParams {
         this.codiceRegistroDocumento = codiceRegistroDocumento;
     }
 
-    public int getNumeroDocumento() {
+    public String getNumeroDocumento() {
         return numeroDocumento;
     }
 
-    public void setNumeroDocumento(int numeroDocumento) {
+    public void setNumeroDocumento(String numeroDocumento) {
         this.numeroDocumento = numeroDocumento;
     }
 
@@ -107,5 +106,4 @@ public class IterParams {
     public void setAnnoDocumento(int annoDocumento) {
         this.annoDocumento = annoDocumento;
     }
-    
 }

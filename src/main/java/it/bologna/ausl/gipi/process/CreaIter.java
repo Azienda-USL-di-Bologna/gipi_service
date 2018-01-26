@@ -28,13 +28,18 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
+import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Formatter;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -62,7 +67,10 @@ public class CreaIter {
     private static final String STATO_INIZIALE_ITER = "in_corso";
     
     @Value("${insertFascicolo}")
-    private String baseUrlBds;
+    private String baseUrlBdsInsertFascicolo;
+    
+    @Value("${updateGdDoc}")
+    private String baseUrlBdsUpdateGdDoc;
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -117,25 +125,27 @@ public class CreaIter {
     }
 
     public Iter creaIter(IterParams iterParams) throws IOException {
-        System.out.println("SONO ENTRATO");
-        System.out.println(getNumeroIterMax());
 
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
-        Utente u = GetEntityById.getUtente(iterParams.getIdUtente(), em);
+        Utente uLoggato = GetEntityById.getUtente(iterParams.getIdUtenteLoggato(), em);
+        Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
         Fase f = this.getFaseIniziale(iterParams.getIdAzienda());
         Evento e = this.getEventoCreazioneIter();
-
+        // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha aggiungo degli zeri da sinistra
+        iterParams.setNumeroDocumento(String.format("%07d", Integer.parseInt(iterParams.getNumeroDocumento())));
+        
+        // *********************************************
         // Creo il fascicolo dell'iter.
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
-                0, null, -1, null, null, u.getIdPersona().getCodiceFiscale(), u.getIdPersona().getCodiceFiscale(), null,
+                0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione());
         fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBds;
-        System.out.println("BASE URL = "+ baseUrl);
+        String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsInsertFascicolo;
+        
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
@@ -145,13 +155,35 @@ public class CreaIter {
         Response response = client.newCall(request).execute();
         String resString = response.body().string();
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
-        System.out.println();
-
+        
+        // *********************************************
+        // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
+        baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsUpdateGdDoc;
+        GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
+        Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
+        ArrayList a = new ArrayList();
+        a.add(fascicolazione);
+        g.setFascicolazioni(a);
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
+        RequestBody bodyg = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                    .build();
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .post(bodyg)
+                .build();
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La fascicolazione non è andata a buon fine.");
+        }
+        
+        // *********************************************
         // Buildo l'iter
         Iter i = new Iter();
         i.setIdFaseCorrente(f);
         i.setIdProcedimento(p);
-        i.setIdResponsabileProcedimento(u);
+        i.setIdResponsabileProcedimento(uResponsabile);
         i.setNumero(getNumeroIterMax() + 1);
         i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
         i.setOggetto(iterParams.getOggettoIter());
@@ -162,7 +194,6 @@ public class CreaIter {
         i.setNomeFascicolo(iterParams.getOggettoIter());
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
-        System.out.println("Iter Persist");
         em.persist(i);
         em.flush();
 
@@ -175,7 +206,6 @@ public class CreaIter {
         pc.setIdTitolarePotereSostitutivo(p.getIdTitolarePotereSostitutivo());
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
-        System.out.println("Proce cache Persist");
         em.persist(pc);
 
         // Buildo la fase Iter
@@ -183,7 +213,6 @@ public class CreaIter {
         fi.setIdIter(i);
         fi.setIdFase(f);
         fi.setDataInizioFase(i.getDataAvvio());
-        System.out.println("fase iter Persist");
         em.persist(fi);
 
         // Buildo il documento
@@ -201,8 +230,7 @@ public class CreaIter {
         ei.setIdFaseIter(fi);
         ei.setDataOraEvento(iterParams.getDataCreazioneIter());
         ei.setIdDocumentoIter(di);
-        ei.setAutore(u);
-        System.out.println("evento Persist");
+        ei.setAutore(uLoggato);
         em.persist(ei);
 
         return i;

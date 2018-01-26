@@ -66,7 +66,7 @@ public class IterController {
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
-
+    
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data)

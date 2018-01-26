@@ -24,13 +24,14 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
     
     @Override
     public Predicate onQueryInterceptor(OlingoQueryObject olingoQueryObject) {
-        System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM");
+        System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU!");
         return null;
     }
 
     @Override
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
-        
+        System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU! 2");
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
         UserInfo userInfo = (UserInfo) authentication.getDetails();
