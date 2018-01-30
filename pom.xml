@@ -437,6 +437,19 @@
                 </executions>
 
             </plugin>
+            <plugin>
+                <!-- Per avere versione di hg come property-->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>hgchangeset</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
         </plugins>
         <resources>
