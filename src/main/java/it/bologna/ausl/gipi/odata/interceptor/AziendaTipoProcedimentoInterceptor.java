@@ -1,6 +1,7 @@
 package it.bologna.ausl.gipi.odata.interceptor;
 
 import com.querydsl.core.types.Predicate;
+import it.bologna.ausl.entities.baborg.Ruolo;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
 import it.bologna.ausl.gipi.security.jwt.UserInfo;
@@ -34,7 +35,7 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
         UserInfo userInfo = (UserInfo) authentication.getDetails();
-        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve().equals("CI"))) {
+        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
             return object;
         }
         else {
