@@ -6,6 +6,7 @@
 package it.bologna.ausl.gipi.controllers;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,13 @@ public class utilityController {
     @RequestMapping(value = "version", method = RequestMethod.GET)
     public ResponseEntity<String> getVersion() {
         return new ResponseEntity<>(revision + "\n" + modificationTime, HttpStatus.OK);
+    }
+
+    @Cacheable("prima")
+    @RequestMapping(value = "caca", method = RequestMethod.GET)
+    public String getCaca() {
+        return revision + "\n" + modificationTime;
+        //return new ResponseEntity<>(revision + "\n" + modificationTime, HttpStatus.OK);
     }
 
 }
