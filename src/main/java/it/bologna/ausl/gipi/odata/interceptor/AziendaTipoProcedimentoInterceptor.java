@@ -36,6 +36,8 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
         UserInfo userInfo = (UserInfo) authentication.getDetails();
+        
+        
         if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
             return object;
         }

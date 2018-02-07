@@ -132,15 +132,35 @@ public class CreaIter {
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
         Fase f = this.getFaseIniziale(iterParams.getIdAzienda());
         Evento e = this.getEventoCreazioneIter();
-        // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha aggiungo degli zeri da sinistra
+        // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha, aggiungo degli zeri da sinistra
         iterParams.setNumeroDocumento(String.format("%07d", Integer.parseInt(iterParams.getNumeroDocumento())));
+        
+        // *********************************************
+        // Buildo l'iter
+        Iter i = new Iter();
+        i.setIdFaseCorrente(f);
+        i.setIdProcedimento(p);
+        i.setIdResponsabileProcedimento(uResponsabile);
+        i.setNumero(getNumeroIterMax() + 1);
+        i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
+        i.setOggetto(iterParams.getOggettoIter());
+        i.setStato(STATO_INIZIALE_ITER);
+        i.setDataCreazione(iterParams.getDataCreazioneIter());
+        i.setDataAvvio(iterParams.getDataAvvioIter());
+        // i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
+        i.setNomeFascicolo(iterParams.getOggettoIter());
+        i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
+        i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
+        em.persist(i);
+        em.flush();
+        
         
         // *********************************************
         // Creo il fascicolo dell'iter.
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
-                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione());
+                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
         fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
@@ -155,6 +175,10 @@ public class CreaIter {
         Response response = client.newCall(request).execute();
         String resString = response.body().string();
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
+        
+        // Aggiungo la numerazione gerarchica del fascicolo all'iter
+        i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
+        em.persist(i);
         
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
@@ -179,24 +203,7 @@ public class CreaIter {
         }
         
         // *********************************************
-        // Buildo l'iter
-        Iter i = new Iter();
-        i.setIdFaseCorrente(f);
-        i.setIdProcedimento(p);
-        i.setIdResponsabileProcedimento(uResponsabile);
-        i.setNumero(getNumeroIterMax() + 1);
-        i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
-        i.setOggetto(iterParams.getOggettoIter());
-        i.setStato(STATO_INIZIALE_ITER);
-        i.setDataCreazione(iterParams.getDataCreazioneIter());
-        i.setDataAvvio(iterParams.getDataAvvioIter());
-        i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
-        i.setNomeFascicolo(iterParams.getOggettoIter());
-        i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
-        i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
-        em.persist(i);
-        em.flush();
-
+        // Costruisco gli altri vari oggetti connessi all'iter
         // Buildo il Procedimento Cache
         ProcedimentoCache pc = new ProcedimentoCache();
         pc.setId(i.getId());                                // ?? Ma qui non dovrei passere l'iter intero e non solo l'id?? forse manca fk?

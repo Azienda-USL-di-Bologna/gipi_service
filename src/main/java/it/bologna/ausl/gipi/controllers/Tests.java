@@ -5,23 +5,16 @@
  */
 package it.bologna.ausl.gipi.controllers;
 
-import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.JsonObject;
-import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.Azienda;
-import it.bologna.ausl.entities.baborg.Pec;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.QPec;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
-import it.bologna.ausl.entities.gipi.Procedimento;
-import it.bologna.ausl.entities.gipi.QProcedimento;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
-import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,21 +23,15 @@ import org.springframework.web.bind.annotation.RestController;
 import it.bologna.ausl.gipi.process.Process;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
-import java.io.File;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -53,12 +40,7 @@ import okhttp3.Response;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.transaction.annotation.Transactional;
-import org.sql2o.Connection;
-import org.sql2o.Sql2o;
-import org.apache.http.entity.ContentType;
 
 /**
  *
@@ -74,17 +56,31 @@ public class Tests {
     @Autowired
     EntityManager em;
 
-//    @RequestMapping(value = "getNextFase", method = RequestMethod.GET)
-//    public ResponseEntity getNextFase() {
-//
-//        Fase fase = new Fase();
-//        fase.setId(1);
-//        fase.setNomeFase("Prova");
-//        fase.setOrdinale(2);
-//
-//        process.get(fase);
-//        return new ResponseEntity(HttpStatus.OK);
-//    }
+
+    @RequestMapping(value = "TestGetFascicoliUtente", method = RequestMethod.GET)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity<Iter> TestGetFascicoliUtente() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
+        
+        Researcher r = new Researcher("f.gusella", null, 0);
+        java.util.HashMap additionalData = (java.util.HashMap)new java.util.HashMap();
+        additionalData.put("TIPO_FASCICOLO", "2");
+        additionalData.put("SOLO_ITER", "true");
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+        
+        String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
+        
+        OkHttpClient client = new OkHttpClient();
+        RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        Request request = new Request.Builder()
+                .url(baseUrl)
+                .post(body)
+                .build();
+        Response response = client.newCall(request).execute();
+        String resString = response.body().string();
+
+        return new ResponseEntity(resString, HttpStatus.OK);
+    }
+
     
     @RequestMapping(value = "TestFascicolazione", method = RequestMethod.GET)
     @Transactional(rollbackFor = {Exception.class, Error.class})
