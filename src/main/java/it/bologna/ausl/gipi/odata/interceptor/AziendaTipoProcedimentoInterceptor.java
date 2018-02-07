@@ -3,7 +3,7 @@ package it.bologna.ausl.gipi.odata.interceptor;
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
-import it.bologna.ausl.gipi.security.jwt.UserInfo;
+import it.bologna.ausl.security.authorization.utils.UserInfo;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptorBase {
-    
+
     @Override
     public Predicate onQueryInterceptor(OlingoQueryObject olingoQueryObject) {
         System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU!");
@@ -37,15 +37,14 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         UserInfo userInfo = (UserInfo) authentication.getDetails();
         if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve().equals("CI"))) {
             return object;
-        }
-        else {
+        } else {
             throw new OlingoRequestRollbackException();
         }
     }
 
     @Override
     public void onDeleteInterceptor(Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
-        
+
     }
 
     @Override
@@ -56,5 +55,5 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
     @Override
     public void onGrantExpandsAuthorization(List<BinaryGrantExpansionValue> binaryGrantExpansionValues) {
     }
-    
+
 }

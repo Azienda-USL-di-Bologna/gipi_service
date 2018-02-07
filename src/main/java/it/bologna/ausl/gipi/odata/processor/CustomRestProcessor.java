@@ -2,22 +2,11 @@ package it.bologna.ausl.gipi.odata.processor;
 
 //import it.nextsw.entities.Utente;
 import it.bologna.ausl.gipi.odata.bean.CustomExtendOperationBase;
-import it.bologna.ausl.gipi.odata.complextypes.OrderValue;
-
-import java.util.ArrayList;
-import java.util.List;
-
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
-import it.bologna.ausl.gipi.service.UtenteRepository;
 import org.apache.log4j.Logger;
-import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
-import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
-import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +19,8 @@ public class CustomRestProcessor extends CustomExtendOperationBase {
 
     @PersistenceContext
     private EntityManager em;
-    @Autowired
-    private UtenteRepository utenteRepository;
-
+//    @Autowired
+//    private UtenteRepository utenteRepository;
 
     //    @EdmFunctionImport(
 //            name = "TransazioneConAnnotation",
@@ -79,7 +67,6 @@ public class CustomRestProcessor extends CustomExtendOperationBase {
 //        }
 //        return orderValues;
 //    }
-
 //    @EdmFunctionImport(
 //            name = "UtentiNome",
 //            returnType = @EdmFunctionImport.ReturnType(type = EdmFunctionImport.ReturnType.Type.ENTITY, isCollection = true),

@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 //@ComponentScan(basePackages = "it.nextsw")
 //@EnableAutoConfiguration
-@EnableJpaRepositories(basePackages = {"it.bologna.ausl.gipi.service"})
+@EnableJpaRepositories(basePackages = {"it.bologna.ausl.entities.repository", "it.bologna.ausl.gipi.service"})
 @EntityScan(basePackages = {"it.bologna.ausl.entities", "it.bologna.ausl.views"})
 @ImportResource({"classpath:spring/spring.xml", "classpath:spring/mail-config.xml"})
 public class SpringWebConfig {
