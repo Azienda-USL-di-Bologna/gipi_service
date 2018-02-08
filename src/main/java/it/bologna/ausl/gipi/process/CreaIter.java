@@ -6,13 +6,9 @@
 package it.bologna.ausl.gipi.process;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.types.Expression;
 import com.querydsl.jpa.EclipseLinkTemplates;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
-import it.bologna.ausl.entities.baborg.Azienda;
-import it.bologna.ausl.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
@@ -27,6 +23,7 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.gipi.controllers.IterParams;
+import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
@@ -36,7 +33,6 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Formatter;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -111,19 +107,6 @@ public class CreaIter {
         return i;
     }
     
-    public String getBaseUrl(int idAzienda) throws IOException {
-        JPQLQuery<Azienda> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
- 
-        String parametri = query.select(this.qAzienda.parametri)
-                .from(this.qAzienda)
-                .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
-  
-        AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
-        String url = params.getBaseUrl();
-       
-        return url;
-    }
-
     public Iter creaIter(IterParams iterParams) throws IOException {
 
         // Mi carico i dati di cui ho bisogno per creare l'iter.
@@ -164,7 +147,7 @@ public class CreaIter {
         fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsInsertFascicolo;
+        String baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBdsInsertFascicolo;
         
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
@@ -182,7 +165,7 @@ public class CreaIter {
         
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsUpdateGdDoc;
+        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBdsUpdateGdDoc;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();

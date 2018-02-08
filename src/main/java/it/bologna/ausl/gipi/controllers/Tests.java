@@ -61,10 +61,11 @@ public class Tests {
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> TestGetFascicoliUtente() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
         
-        Researcher r = new Researcher("f.gusella", null, 0);
+        Researcher r = new Researcher(null, null, 0);
         java.util.HashMap additionalData = (java.util.HashMap)new java.util.HashMap();
         additionalData.put("TIPO_FASCICOLO", "2");
         additionalData.put("SOLO_ITER", "true");
+        additionalData.put("CODICE_FISCALE", "GSLFNC89A05G224Y");
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
         
         String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
