@@ -290,11 +290,10 @@ public class IterController {
         String resString = response.body().string();
         Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
         
-        JsonObject o = new JsonObject();
-        ArrayList<Integer> listaIter = new ArrayList<>();
+        ArrayList<Iter> listaIter = new ArrayList<>();
         
         for(int i = 0; i < f.getSize(); i++) {
-            listaIter.add(f.getFascicolo(i).getIdIter());
+            listaIter.add(GetEntityById.getIter(f.getFascicolo(i).getIdIter(), em));
         }
 
         return new ResponseEntity(listaIter.toString(), HttpStatus.OK);
