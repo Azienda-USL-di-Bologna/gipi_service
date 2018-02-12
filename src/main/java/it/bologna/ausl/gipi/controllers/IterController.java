@@ -296,6 +296,6 @@ public class IterController {
             listaIter.add(GetEntityById.getIter(f.getFascicolo(i).getIdIter(), em));
         }
 
-        return new ResponseEntity(listaIter.toString(), HttpStatus.OK);
+        return new ResponseEntity(listaIter, HttpStatus.OK);
     }
 }
