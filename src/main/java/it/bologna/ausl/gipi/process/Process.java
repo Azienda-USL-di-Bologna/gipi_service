@@ -24,11 +24,7 @@ import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,11 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class Process {
 
-    QFase qFase = QFase.fase;
     QFaseIter qFaseIter = QFaseIter.faseIter;
     QIter qIter = QIter.iter;
     QEvento qEvento = QEvento.evento;
     QUtente qUtente = QUtente.utente;
+    QFase qFase = QFase.fase;
 
     @Autowired
     EntityManager em;

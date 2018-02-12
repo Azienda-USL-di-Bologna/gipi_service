@@ -6,9 +6,7 @@
 package it.bologna.ausl.gipi.process;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.types.Expression;
 import com.querydsl.jpa.EclipseLinkTemplates;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.Azienda;
@@ -36,7 +34,6 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Formatter;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -55,20 +52,20 @@ import org.springframework.context.annotation.PropertySource;
  * @author f.gusella
  */
 @Component
-@PropertySource("classpath:application.properties") 
+@PropertySource("classpath:application.properties")
 public class CreaIter {
 
     QFase qFase = QFase.fase;
     QEvento qEvento = QEvento.evento;
     QIter qIter = QIter.iter;
     QAzienda qAzienda = QAzienda.azienda;
-    
+
     private static final String EVENTO_CREAZIONE_ITER = "avvio_iter";
     private static final String STATO_INIZIALE_ITER = "in_corso";
-    
+
     @Value("${insertFascicolo}")
     private String baseUrlBdsInsertFascicolo;
-    
+
     @Value("${updateGdDoc}")
     private String baseUrlBdsUpdateGdDoc;
 
@@ -76,7 +73,7 @@ public class CreaIter {
 
     @Autowired
     EntityManager em;
-    
+
     @Autowired
     ObjectMapper objectMapper;
 
@@ -110,17 +107,17 @@ public class CreaIter {
 //                  .from(this.qIter);
         return i;
     }
-    
+
     public String getBaseUrl(int idAzienda) throws IOException {
         JPQLQuery<Azienda> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
- 
+
         String parametri = query.select(this.qAzienda.parametri)
                 .from(this.qAzienda)
                 .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
-  
+
         AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
         String url = params.getBaseUrl();
-       
+
         return url;
     }
 
@@ -134,7 +131,7 @@ public class CreaIter {
         Evento e = this.getEventoCreazioneIter();
         // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha, aggiungo degli zeri da sinistra
         iterParams.setNumeroDocumento(String.format("%07d", Integer.parseInt(iterParams.getNumeroDocumento())));
-        
+
         // *********************************************
         // Buildo l'iter
         Iter i = new Iter();
@@ -153,8 +150,7 @@ public class CreaIter {
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
         em.persist(i);
         em.flush();
-        
-        
+
         // *********************************************
         // Creo il fascicolo dell'iter.
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
@@ -165,7 +161,7 @@ public class CreaIter {
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
         String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsInsertFascicolo;
-        
+
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
@@ -175,11 +171,11 @@ public class CreaIter {
         Response response = client.newCall(request).execute();
         String resString = response.body().string();
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
-        
+
         // Aggiungo la numerazione gerarchica del fascicolo all'iter
         i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
         em.persist(i);
-        
+
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
         baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsUpdateGdDoc;
@@ -190,9 +186,9 @@ public class CreaIter {
         g.setFascicolazioni(a);
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
         RequestBody bodyg = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
-                    .build();
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                .build();
         Request requestg = new Request.Builder()
                 .url(baseUrl)
                 .post(bodyg)
@@ -201,7 +197,7 @@ public class CreaIter {
         if (!responseg.isSuccessful()) {
             throw new IOException("La fascicolazione non è andata a buon fine.");
         }
-        
+
         // *********************************************
         // Costruisco gli altri vari oggetti connessi all'iter
         // Buildo il Procedimento Cache

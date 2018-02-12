@@ -10,7 +10,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
-import it.bologna.ausl.entities.gipi.QIter;
+
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +35,7 @@ import it.bologna.ausl.entities.gipi.FaseIter;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
+import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
@@ -66,7 +67,7 @@ public class IterController {
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
-    
+
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data)
@@ -150,7 +151,7 @@ public class IterController {
         return new ResponseEntity(currentFase, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET,  produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
+    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
     public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, GipiDatabaseException {
 
         // TODO: QUI BISOGNERA USARE L'OGGETTO PROCESS STATUS, ora non lo uso perchè devo restituire solo i nomi delle fasi perchè se no da errore
@@ -179,7 +180,7 @@ public class IterController {
 
         return new ResponseEntity(processStatus.toString(), HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "getUltimaSospensione", method = RequestMethod.GET)
     public ResponseEntity getUltimaSospensione(@RequestParam("idIter") Integer idIter) {
         JPQLQuery<EventoIter> q = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -187,12 +188,12 @@ public class IterController {
         EventoIter ei = q
                 .from(qEventoIter)
                 .where(qEventoIter.idIter.id.eq(idIter)
-                    .and(qEventoIter.idEvento.eq(JPAExpressions.selectFrom(qEvento).where(qEvento.codice.eq("apertura_sospensione")))))
+                        .and(qEventoIter.idEvento.eq(JPAExpressions.selectFrom(qEvento).where(qEvento.codice.eq("apertura_sospensione")))))
                 .orderBy(qEventoIter.dataOraEvento.desc()).fetchFirst();
-                
+
         return new ResponseEntity(ei.getDataOraEvento(), HttpStatus.OK);
     }
-    
+
     public FaseIter getFaseIter(Iter i) {
         QFaseIter qFaseIter = QFaseIter.faseIter;
         JPQLQuery<FaseIter> q = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -208,18 +209,18 @@ public class IterController {
         System.out.println("Ritorno la FaseIter " + fi.toString());
         return fi;
     }
-        
+
     @RequestMapping(value = "gestisciSospensione", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity gestisciSospensione(@RequestBody SospensioneParams sospensioneParams){
+    public ResponseEntity gestisciSospensione(@RequestBody SospensioneParams sospensioneParams) {
         Utente u = GetEntityById.getUtente(sospensioneParams.idUtente, em);
         Iter i = GetEntityById.getIter(sospensioneParams.idIter, em);
         Evento e = GetEntityById.getEventoByCodice("sospeso".equals(i.getStato()) ? "chiusura_sospensione" : "apertura_sospensione", em);
         FaseIter fi = getFaseIter(i);
-        
+
         i.setStato("sospeso".equals(i.getStato()) ? "in_corso" : "sospeso");
         em.persist(i);
-        
+
         DocumentoIter d = new DocumentoIter();
         d.setAnno(sospensioneParams.getAnnoDocumento());
         d.setIdIter(i);
@@ -233,19 +234,20 @@ public class IterController {
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setAutore(u);
-        
+
         // Ora se è sospeso l'evento equivalle alla DATA DALLA QUALE è sospeso, se alla DATA FINO ALLA QUALE l'iter è sospeso
         ei.setDataOraEvento("sospeso".equals(i.getStato()) ? sospensioneParams.getSospesoDal() : sospensioneParams.getSospesoAl());
         ei.setIdFaseIter(fi);
-        
-        em.persist(ei);       
+
+        em.persist(ei);
         JsonObject eventoSospensione = new JsonObject();
         //Se ho sospeso ritorno la data di inizio sospensione, altrimenti quella di fine sospensione.
-        if("sospeso".equals(i.getStato()))
+        if ("sospeso".equals(i.getStato())) {
             eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
-        else
+        } else {
             eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
-        
+        }
+
         return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
     }
 }

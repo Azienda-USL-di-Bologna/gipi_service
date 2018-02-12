@@ -356,11 +356,6 @@
             <artifactId>javax.mail</artifactId>
             <version>1.5.5</version>
         </dependency>
-        <dependency>
-            <groupId>it.nextsw</groupId>
-            <artifactId>entities</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
@@ -394,27 +389,31 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>2.5.3</version>
         </dependency>
-        <!--PER LA CACHE-->
+<!--        PER LA CACHE
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <version>1.5.9.RELEASE</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/redis.clients/jedis -->
+         https://mvnrepository.com/artifact/redis.clients/jedis 
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>2.9.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+         https://mvnrepository.com/artifact/org.projectlombok/lombok 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.16.20</version>
             <scope>provided</scope>
+        </dependency>-->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>entities</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -439,7 +438,7 @@
                     <useDefaultDelimiters>false</useDefaultDelimiters>
                 </configuration>
             </plugin>
-            <plugin>
+<!--            <plugin>
                 <groupId>com.mysema.maven</groupId>
                 <artifactId>apt-maven-plugin</artifactId>
                 <version>1.1.3</version>
@@ -456,7 +455,7 @@
                     </execution>
                 </executions>
 
-            </plugin>
+            </plugin>-->
             <plugin>
                 <!-- Per avere versione di hg come property-->
                 <groupId>org.codehaus.mojo</groupId>

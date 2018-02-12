@@ -4,7 +4,7 @@ import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.entities.baborg.Ruolo;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
-import it.bologna.ausl.security.authorization.utils.UserInfo;
+import it.bologna.ausl.security.authorization.utils.UserInfoOld;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -35,7 +35,7 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
-        UserInfo userInfo = (UserInfo) authentication.getDetails();
+        UserInfoOld userInfo = (UserInfoOld) authentication.getDetails();
         
         
         if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
