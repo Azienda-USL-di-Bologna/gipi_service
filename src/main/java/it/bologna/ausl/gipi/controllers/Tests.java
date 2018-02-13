@@ -217,4 +217,36 @@ public class Tests {
         return new ResponseEntity(azienda, HttpStatus.OK);
     }
 
+    /* Metodo per il test della WebApi su Pico/Dete/Deli */
+    @RequestMapping(value = "testWebApi", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity testWebApi(@org.springframework.web.bind.annotation.RequestBody ItemsDaPassare data)
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
+        
+        System.out.println("DATA = " + data );
+        
+        String baseUrl = "http://localhost:8080/Procton/AvviaIter";
+        
+        System.out.println("DATI = " + data.getJSONString() );
+        
+        RequestBody body = RequestBody.create(JSON, data.getJSONString().getBytes("UTF-8"));
+        
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumentoAiter")
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient();
+        
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata non è andata a buon fine.");
+        }
+        
+        System.out.println("DATI = " + data );
+        
+        return new ResponseEntity(data, HttpStatus.OK);
+    }
+    
 }
