@@ -270,34 +270,34 @@ public class IterController {
         return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
     }
     
-    @RequestMapping(value = "getIterUtente", method = RequestMethod.GET)
-    public ResponseEntity getIterUtente(@RequestParam("cf") String cf, @RequestParam("idAzienda") Integer idAzienda) throws IOException {
-        
-        Researcher r = new Researcher(null, null, 0);
-        HashMap additionalData = (HashMap) new java.util.HashMap();
-        additionalData.put(GetFascicoliUtente.TIPO_FASCICOLO.toString(), "2");
-        additionalData.put(GetFascicoliUtente.SOLO_ITER.toString(), "true");
-        additionalData.put(GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
-        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
-        
-        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
-        // String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
-        OkHttpClient client = new OkHttpClient();
-        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
-        Request request = new Request.Builder()
-                .url(baseUrl)
-                .post(body)
-                .build();
-        Response response = client.newCall(request).execute();
-        String resString = response.body().string();
-        Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
-        
-        ArrayList<Iter> listaIter = new ArrayList<>();
-        
-        for(int i = 0; i < f.getSize(); i++) {
-            listaIter.add(GetEntityById.getIter(f.getFascicolo(i).getIdIter(), em));
-        }
-
-        return new ResponseEntity(listaIter, HttpStatus.OK);
-    }
+//    @RequestMapping(value = "getIterUtente", method = RequestMethod.GET)
+//    public ResponseEntity getIterUtente(@RequestParam("cf") String cf, @RequestParam("idAzienda") Integer idAzienda) throws IOException {
+//        
+//        Researcher r = new Researcher(null, null, 0);
+//        HashMap additionalData = (HashMap) new java.util.HashMap();
+//        additionalData.put(GetFascicoliUtente.TIPO_FASCICOLO.toString(), "2");
+//        additionalData.put(GetFascicoliUtente.SOLO_ITER.toString(), "true");
+//        additionalData.put(GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
+//        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+//        
+//        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
+//        // String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
+//        OkHttpClient client = new OkHttpClient();
+//        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+//        Request request = new Request.Builder()
+//                .url(baseUrl)
+//                .post(body)
+//                .build();
+//        Response response = client.newCall(request).execute();
+//        String resString = response.body().string();
+//        Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
+//        
+//        ArrayList<Iter> listaIter = new ArrayList<>();
+//        
+//        for(int i = 0; i < f.getSize(); i++) {
+//            listaIter.add(GetEntityById.getIter(f.getFascicolo(i).getIdIter(), em));
+//        }
+//
+//        return new ResponseEntity(listaIter, HttpStatus.OK);
+//    }
 }
