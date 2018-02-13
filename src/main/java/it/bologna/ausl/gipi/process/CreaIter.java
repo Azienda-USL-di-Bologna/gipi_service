@@ -67,6 +67,9 @@ public class CreaIter {
     
     @Value("${updateGdDoc}")
     private String baseUrlBdsUpdateGdDoc;
+    
+    @Value("${babelAvviaIter}")
+    private String baseUrlBabelAvviaIter;
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -222,6 +225,29 @@ public class CreaIter {
         ei.setIdDocumentoIter(di);
         ei.setAutore(uLoggato);
         em.persist(ei);
+        
+        // Comunico a Babel l'iter appena creato
+        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBabelAvviaIter;
+        
+        iterParams.setIdIter(i.getId());
+        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
+        iterParams.setAnnoIter(i.getAnno());
+        iterParams.setNomeProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        
+        body = RequestBody.create(JSON, iterParams.getJSONString().getBytes("UTF-8"));
+        
+        requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        client = new OkHttpClient();
+        responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
 
         return i;
     }

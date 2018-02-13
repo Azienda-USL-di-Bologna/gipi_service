@@ -6,7 +6,12 @@
 package it.bologna.ausl.gipi.controllers;
 
 //import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  *
@@ -26,6 +31,10 @@ public class IterParams {
     private String codiceRegistroDocumento;
     private String numeroDocumento;
     private int annoDocumento;
+    private int idIter;
+    private String cfResponsabileProcedimento;
+    private int annoIter;
+    private String nomeProcedimento;
 
     public int getIdUtenteResponsabile() {
         return idUtenteResponsabile;
@@ -105,5 +114,46 @@ public class IterParams {
 
     public void setAnnoDocumento(int annoDocumento) {
         this.annoDocumento = annoDocumento;
+    }
+
+    public int getIdIter() {
+        return idIter;
+    }
+
+    public void setIdIter(int idIter) {
+        this.idIter = idIter;
+    }
+
+    public String getCfResponsabileProcedimento() {
+        return cfResponsabileProcedimento;
+    }
+
+    public void setCfResponsabileProcedimento(String cfResponsabileProcedimento) {
+        this.cfResponsabileProcedimento = cfResponsabileProcedimento;
+    }
+
+    public int getAnnoIter() {
+        return annoIter;
+    }
+
+    public void setAnnoIter(int annoIter) {
+        this.annoIter = annoIter;
+    }
+
+    public String getNomeProcedimento() {
+        return nomeProcedimento;
+    }
+
+    public void setNomeProcedimento(String nomeProcedimento) {
+        this.nomeProcedimento = nomeProcedimento;
+    }
+      
+    @JsonIgnore
+    public String getJSONString() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JodaModule());
+        mapper.setTimeZone(TimeZone.getDefault());
+        String writeValueAsString = mapper.writeValueAsString(this);
+        return writeValueAsString;
     }
 }
