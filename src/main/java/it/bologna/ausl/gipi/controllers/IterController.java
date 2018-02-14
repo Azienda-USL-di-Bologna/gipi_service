@@ -267,11 +267,21 @@ public class IterController {
         // Comunico a Babel l'associazione documento/iter appena avvenuta
         String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
         
-        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-        gestioneStatiParams.setAnnoIter(i.getAnno());
-        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+//        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+//        gestioneStatiParams.setAnnoIter(i.getAnno());
+//        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
         
-        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, gestioneStatiParams.getJSONString().getBytes("UTF-8"));
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId());
+        o.addProperty("numeroIter", i.getNumero());
+        o.addProperty("annoIter", i.getAnno());
+        o.addProperty("cfResponsabileProcedimento", i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
+        o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
+        o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
+
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
         Request requestg = new Request.Builder()
                 .url(baseUrl)

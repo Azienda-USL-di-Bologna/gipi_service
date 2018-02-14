@@ -6,6 +6,7 @@
 package it.bologna.ausl.gipi.process;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -227,14 +228,25 @@ public class CreaIter {
         em.persist(ei);
         
         // Comunico a Babel l'iter appena creato
-        baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+            // baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+        baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
         
-        iterParams.setIdIter(i.getId());
-        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
-        iterParams.setAnnoIter(i.getAnno());
-        iterParams.setNomeProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+//        iterParams.setIdIter(i.getId());
+//        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
+//        iterParams.setAnnoIter(i.getAnno());
+//        iterParams.setNomeProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
         
-        body = RequestBody.create(JSON, iterParams.getJSONString().getBytes("UTF-8"));
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId());
+        o.addProperty("numeroIter", i.getNumero());
+        o.addProperty("annoIter", i.getAnno());
+        o.addProperty("cfResponsabileProcedimento", uResponsabile.getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
+        o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
+        o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
+        
+        body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
         requestg = new Request.Builder()
                 .url(baseUrl)

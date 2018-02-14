@@ -31,10 +31,10 @@ public class IterParams {
     private String codiceRegistroDocumento;
     private String numeroDocumento;
     private int annoDocumento;
-    private int idIter;
-    private String cfResponsabileProcedimento;
-    private int annoIter;
-    private String nomeProcedimento;
+//    private int idIter;
+//    private String cfResponsabileProcedimento;
+//    private int annoIter;
+//    private String nomeProcedimento;
 
     public int getIdUtenteResponsabile() {
         return idUtenteResponsabile;
@@ -116,37 +116,37 @@ public class IterParams {
         this.annoDocumento = annoDocumento;
     }
 
-    public int getIdIter() {
-        return idIter;
-    }
-
-    public void setIdIter(int idIter) {
-        this.idIter = idIter;
-    }
-
-    public String getCfResponsabileProcedimento() {
-        return cfResponsabileProcedimento;
-    }
-
-    public void setCfResponsabileProcedimento(String cfResponsabileProcedimento) {
-        this.cfResponsabileProcedimento = cfResponsabileProcedimento;
-    }
-
-    public int getAnnoIter() {
-        return annoIter;
-    }
-
-    public void setAnnoIter(int annoIter) {
-        this.annoIter = annoIter;
-    }
-
-    public String getNomeProcedimento() {
-        return nomeProcedimento;
-    }
-
-    public void setNomeProcedimento(String nomeProcedimento) {
-        this.nomeProcedimento = nomeProcedimento;
-    }
+//    public int getIdIter() {
+//        return idIter;
+//    }
+//
+//    public void setIdIter(int idIter) {
+//        this.idIter = idIter;
+//    }
+//
+//    public String getCfResponsabileProcedimento() {
+//        return cfResponsabileProcedimento;
+//    }
+//
+//    public void setCfResponsabileProcedimento(String cfResponsabileProcedimento) {
+//        this.cfResponsabileProcedimento = cfResponsabileProcedimento;
+//    }
+//
+//    public int getAnnoIter() {
+//        return annoIter;
+//    }
+//
+//    public void setAnnoIter(int annoIter) {
+//        this.annoIter = annoIter;
+//    }
+//
+//    public String getNomeProcedimento() {
+//        return nomeProcedimento;
+//    }
+//
+//    public void setNomeProcedimento(String nomeProcedimento) {
+//        this.nomeProcedimento = nomeProcedimento;
+//    }
       
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
