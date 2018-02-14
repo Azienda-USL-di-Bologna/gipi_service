@@ -81,6 +81,9 @@ public class IterController {
     @Value("${getFascicoliUtente}")
     private String baseUrlBdsGetFascicoliUtente;
     
+    @Value("${babelGestisciIter}")
+    private String baseUrlBabelGestisciIter;
+    
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
 
     QIter qIter = QIter.iter;
@@ -229,75 +232,61 @@ public class IterController {
         return fi;
     }
 
-    @RequestMapping(value = "gestisciSospensione", method = RequestMethod.POST)
+    @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity gestisciSospensione(@RequestBody SospensioneParams sospensioneParams) {
-        Utente u = GetEntityById.getUtente(sospensioneParams.idUtente, em);
-        Iter i = GetEntityById.getIter(sospensioneParams.idIter, em);
-        Evento e = GetEntityById.getEventoByCodice("sospeso".equals(i.getStato()) ? "chiusura_sospensione" : "apertura_sospensione", em);
+    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
+        Utente u = GetEntityById.getUtente(gestioneStatiParams.idUtente, em);
+        Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
+        Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato(), em);
         FaseIter fi = getFaseIter(i);
-
-        i.setStato("sospeso".equals(i.getStato()) ? "in_corso" : "sospeso");
+        
+        // Aggiorno l'iter
+        i.setStato(gestioneStatiParams.getStato());
         em.persist(i);
-
+        
+        // Creo il documento iter
         DocumentoIter d = new DocumentoIter();
-        d.setAnno(sospensioneParams.getAnnoDocumento());
+        d.setAnno(gestioneStatiParams.getAnnoDocumento());
         d.setIdIter(i);
-        d.setNumeroRegistro(sospensioneParams.getNumeroDocumento());
-        d.setRegistro(sospensioneParams.getCodiceRegistroDocumento());
+        d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
+        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
         em.persist(d);
         em.flush();
+        
+        // Creo l'evento iter
         EventoIter ei = new EventoIter();
         ei.setIdDocumentoIter(d);
-        ei.setNote(sospensioneParams.getNote());
+        ei.setNote(gestioneStatiParams.getNote());
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setAutore(u);
-
-        // Ora se è sospeso l'evento equivalle alla DATA DALLA QUALE è sospeso, se alla DATA FINO ALLA QUALE l'iter è sospeso
-        ei.setDataOraEvento("sospeso".equals(i.getStato()) ? sospensioneParams.getSospesoDal() : sospensioneParams.getSospesoAl());
+        ei.setDataOraEvento(gestioneStatiParams.getDataEvento());
         ei.setIdFaseIter(fi);
-
         em.persist(ei);
-        JsonObject eventoSospensione = new JsonObject();
-        //Se ho sospeso ritorno la data di inizio sospensione, altrimenti quella di fine sospensione.
-        if ("sospeso".equals(i.getStato())) {
-            eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
-        } else {
-            eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
-        }
+        
+        // Comunico a Babel l'associazione documento/iter appena avvenuta
+        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+        
+        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        gestioneStatiParams.setAnnoIter(i.getAnno());
+        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, gestioneStatiParams.getJSONString().getBytes("UTF-8"));
+        
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
 
-        return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
+        
+        return new ResponseEntity("Papapishu", HttpStatus.OK);
     }
     
-//    @RequestMapping(value = "getIterUtente", method = RequestMethod.GET)
-//    public ResponseEntity getIterUtente(@RequestParam("cf") String cf, @RequestParam("idAzienda") Integer idAzienda) throws IOException {
-//        
-//        Researcher r = new Researcher(null, null, 0);
-//        HashMap additionalData = (HashMap) new java.util.HashMap();
-//        additionalData.put(GetFascicoliUtente.TIPO_FASCICOLO.toString(), "2");
-//        additionalData.put(GetFascicoliUtente.SOLO_ITER.toString(), "true");
-//        additionalData.put(GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
-//        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
-//        
-//        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
-//        // String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
-//        OkHttpClient client = new OkHttpClient();
-//        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
-//        Request request = new Request.Builder()
-//                .url(baseUrl)
-//                .post(body)
-//                .build();
-//        Response response = client.newCall(request).execute();
-//        String resString = response.body().string();
-//        Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
-//        
-//        ArrayList<Iter> listaIter = new ArrayList<>();
-//        
-//        for(int i = 0; i < f.getSize(); i++) {
-//            listaIter.add(GetEntityById.getIter(f.getFascicolo(i).getIdIter(), em));
-//        }
-//
-//        return new ResponseEntity(listaIter, HttpStatus.OK);
-//    }
 }

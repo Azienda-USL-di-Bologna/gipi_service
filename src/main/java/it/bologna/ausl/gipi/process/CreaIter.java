@@ -68,8 +68,8 @@ public class CreaIter {
     @Value("${updateGdDoc}")
     private String baseUrlBdsUpdateGdDoc;
     
-    @Value("${babelAvviaIter}")
-    private String baseUrlBabelAvviaIter;
+    @Value("${babelGestisciIter}")
+    private String baseUrlBabelGestisciIter;
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -227,7 +227,7 @@ public class CreaIter {
         em.persist(ei);
         
         // Comunico a Babel l'iter appena creato
-        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBabelAvviaIter;
+        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBabelGestisciIter;
         
         iterParams.setIdIter(i.getId());
         iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
