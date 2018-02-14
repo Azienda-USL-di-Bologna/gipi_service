@@ -116,7 +116,7 @@ public class CreaIter {
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
         Utente uLoggato = GetEntityById.getUtente(iterParams.getIdUtenteLoggato(), em);
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
-        Fase f = this.getFaseIniziale(iterParams.getIdAzienda());
+        Fase f = this.getFaseIniziale(p.getIdAziendaTipoProcedimento().getIdAzienda().getId());
         Evento e = this.getEventoCreazioneIter();
         // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha, aggiungo degli zeri da sinistra
         iterParams.setNumeroDocumento(String.format("%07d", Integer.parseInt(iterParams.getNumeroDocumento())));
@@ -150,7 +150,7 @@ public class CreaIter {
         fascicolo.setIdTipoFascicolo(2);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBdsInsertFascicolo;
+        String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
         
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
@@ -168,7 +168,7 @@ public class CreaIter {
         
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBdsUpdateGdDoc;
+        baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsUpdateGdDoc;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
@@ -227,7 +227,7 @@ public class CreaIter {
         em.persist(ei);
         
         // Comunico a Babel l'iter appena creato
-        baseUrl = GetBaseUrl.getBaseUrl(iterParams.getIdAzienda(), em, objectMapper) + baseUrlBabelGestisciIter;
+        baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
         
         iterParams.setIdIter(i.getId());
         iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());

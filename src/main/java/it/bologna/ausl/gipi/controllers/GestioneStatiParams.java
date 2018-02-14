@@ -31,7 +31,7 @@ public class GestioneStatiParams {
 //    public Date sospesoAl;
 //    @Temporal(TemporalType.DATE)
     public String note;
-    public int idAzienda;
+//    public int idAzienda;
     public int annoIter;
     public String cfResponsabileProcedimento;
     public String nomeProcedimento;
@@ -101,14 +101,14 @@ public class GestioneStatiParams {
         this.note = note;
     }
 
-    public int getIdAzienda() {
-        return idAzienda;
-    }
-
-    public void setIdAzienda(int idAzienda) {
-        this.idAzienda = idAzienda;
-    }
-
+//    public int getIdAzienda() {
+//        return idAzienda;
+//    }
+//
+//    public void setIdAzienda(int idAzienda) {
+//        this.idAzienda = idAzienda;
+//    }
+//
     public int getAnnoIter() {
         return annoIter;
     }
