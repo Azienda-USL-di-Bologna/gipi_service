@@ -265,8 +265,8 @@ public class IterController {
         em.persist(ei);
         
         // Comunico a Babel l'associazione documento/iter appena avvenuta
-        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
-        
+//        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+         String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
 //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
 //        gestioneStatiParams.setAnnoIter(i.getAnno());
 //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
@@ -296,7 +296,10 @@ public class IterController {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
         
-        return new ResponseEntity("Papapishu", HttpStatus.OK);
+        JsonObject obj = new JsonObject();
+        o.addProperty("idIter", i.getId().toString());
+        
+        return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
     
 }
