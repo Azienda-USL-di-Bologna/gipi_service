@@ -33,16 +33,18 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
         System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU! 2");
 
+        // TODO: mettere a posto usando il nuovo userinfo
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Utente utente = (Utente) authentication.getPrincipal();
-        UserInfoOld userInfo = (UserInfoOld) authentication.getDetails();
-        
-        
-        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
-            return object;
-        } else {
-            throw new OlingoRequestRollbackException();
-        }
+        return object;
+//        UserInfoOld userInfo = (UserInfoOld) authentication.getDetails();
+//        
+//        
+//        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
+//            return object;
+//        } else {
+//            throw new OlingoRequestRollbackException();
+//        }
     }
 
     @Override
