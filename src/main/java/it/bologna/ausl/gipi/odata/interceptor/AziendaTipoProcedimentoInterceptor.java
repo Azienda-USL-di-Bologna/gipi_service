@@ -34,12 +34,12 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU! 2");
 
         // TODO: mettere a posto usando il nuovo userinfo
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Utente utente = (Utente) authentication.getPrincipal();
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        Utente utente = (Utente) authentication.getPrincipal();
         return object;
 //        UserInfoOld userInfo = (UserInfoOld) authentication.getDetails();
-//        
-//        
+//
+//
 //        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
 //            return object;
 //        } else {
