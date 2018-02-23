@@ -138,6 +138,7 @@ public class CreaIter {
         i.setNomeFascicolo(iterParams.getOggettoIter());
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
+        i.setPromotore(iterParams.getPromotore());
         em.persist(i);
         em.flush();
         

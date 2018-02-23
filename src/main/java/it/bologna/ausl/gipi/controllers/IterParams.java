@@ -31,6 +31,7 @@ public class IterParams {
     private String codiceRegistroDocumento;
     private String numeroDocumento;
     private int annoDocumento;
+    private String promotore;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
@@ -114,6 +115,14 @@ public class IterParams {
 
     public void setAnnoDocumento(int annoDocumento) {
         this.annoDocumento = annoDocumento;
+    }
+
+    public String getPromotore() {
+        return promotore;
+    }
+
+    public void setPromotore(String promotore) {
+        this.promotore = promotore;
     }
 
 //    public int getIdIter() {
