@@ -2,11 +2,9 @@ package it.bologna.ausl.gipi.odata.interceptor;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.entities.baborg.Ruolo;
-import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.RuoloCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
-import it.bologna.ausl.security.authorization.utils.UserInfoOld;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -39,7 +37,7 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
         
         List<RuoloCachable> ruoliCachable = userInfo.getRuoliUtente();
 
-        ruoliCachable.stream().forEach(a -> {System.out.println(a.getNomeBreve() + ": " + a.getNomeBreve().getClass().getName());});
+//        ruoliCachable.stream().forEach(a -> {System.out.println(a.getNomeBreve() + ": " + a.getNomeBreve().getClass().getName());});
         
         if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && ruoliCachable.stream().anyMatch(
                 ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI
