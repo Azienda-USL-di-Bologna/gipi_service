@@ -35,24 +35,27 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
     private EntityManager em;
     
     /**
-     * Dato un idStruttura ritorno tutti gli utenti appartenenti alla medesima od alle strutture figlie di essa
+     * Dato un idStruttura ritorno tutti gli utentiStruttura appartenenti alla medesima od alle strutture figlie di essa
      * @param idStruttura
+     * @param searchString
      * @return
      * @throws IOException 
      */
     @EdmFunctionImport(
             name = "GetUtentiGerarchiaStruttura",
-            entitySet = "Utentes",
+            entitySet = "UtenteStrutturas",
             returnType = @EdmFunctionImport.ReturnType(
                     type = EdmFunctionImport.ReturnType.Type.ENTITY, 
                     formatResult = EdmFunctionImport.FormatResult.PAGINATED_COLLECTION, 
-                    EdmEntityTypeName = "Utente"),
+                    EdmEntityTypeName = "UtenteStruttura"),
             httpMethod = EdmFunctionImport.HttpMethod.GET
     )
     public JPAQueryInfo getUtentiGerarchiaStruttura(
-            @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = false)) final Integer idStruttura
+            @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = false)) final Integer idStruttura,
+            @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = false)) final String searchString
     ) throws IOException {
         logger.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
+        logger.info("Stringa di ricerca: " + searchString);
         
         // Recupero la lista delle strutture figlie/nipoti etc della mia struttura
         String query = "select * from organigramma.get_strutture_figlie(?);";
@@ -60,19 +63,18 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
         query1.setParameter(1, idStruttura);
         List<Integer> lista = query1.getResultList();
         lista.add(idStruttura);
-        
-        for (Integer a : lista)  {
-            
-            System.out.println("ecco: " + a);
-        }
             
         // Ora creo la query che recupera gli utenti in base alla lista di strutture appena creata
         JPAQuery queryDSL = new JPAQuery(em);
-        queryDSL.select(QUtente.utente)
+        queryDSL.select(QUtenteStruttura.utenteStruttura)
                 .from(QUtenteStruttura.utenteStruttura)
-                .join(QUtente.utente).on(QUtenteStruttura.utenteStruttura.idUtente.eq(QUtente.utente)
-                        .and(QUtenteStruttura.utenteStruttura.idStruttura.id.in(lista)));
+                .join(QUtente.utente).on(QUtenteStruttura.utenteStruttura.idUtente.eq(QUtente.utente))
+                .where(QUtenteStruttura.utenteStruttura.idStruttura.id.in(lista));
+
+        if (searchString != null && !searchString.equals("")) {
+            queryDSL.where(QUtente.utente.idPersona.descrizione.likeIgnoreCase("%"+searchString+"%"));
+        }
         
-        return createQueryInfo(queryDSL, QUtente.utente.id.count(), em);
+        return createQueryInfo(queryDSL, QUtenteStruttura.utenteStruttura.id.count(), em);
     }
 }
