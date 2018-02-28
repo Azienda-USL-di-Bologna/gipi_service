@@ -29,6 +29,8 @@ import com.google.gson.JsonObject;
 import com.querydsl.jpa.JPAExpressions;
 import io.jsonwebtoken.Claims;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -44,18 +46,24 @@ import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  *
@@ -83,6 +91,9 @@ public class IterController {
     
     @Value("${babelGestisciIter}")
     private String baseUrlBabelGestisciIter;
+    
+    @Value("${hasPermissionOnFascicolo}")
+    private String baseUrlhasPermissionOnFascicolo;
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
 
@@ -266,7 +277,7 @@ public class IterController {
         
         // Comunico a Babel l'associazione documento/iter appena avvenuta
 //        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
-         String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+        String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
 //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
 //        gestioneStatiParams.setAnnoIter(i.getAnno());
 //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
@@ -302,4 +313,53 @@ public class IterController {
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
     
+    @RequestMapping(value = "hasPermissionOnFascicolo", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity hasPermissionOnFascicolo(@RequestBody Map<String,Object> data) throws IOException {
+//        int i = Integer.parseInt(data.get("utenteLoggato").toString());
+//        String numerazioneGerarchica = data.get("numerazioneGerarchica").toString();
+        
+        // String baseUrl = "http://gdml:8080" + baseUrlhasPermissionOnFascicolo;  //gdml
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable)  userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlhasPermissionOnFascicolo;  //localhost       
+        
+        Researcher r = new Researcher(null, null, 0);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put("user", codiceFiscale);
+        additionalData.put("ng", data.get("numerazioneGerarchica").toString());
+
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+        // body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));      
+
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .post(body)
+                .build();
+        
+       // OkHttpClient client = new OkHttpClient();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build();
+        
+        
+        Response responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
+        }
+        
+        System.out.println("OK!!!  " + responseg);
+        System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
+        
+        return new ResponseEntity(responseg.header("hasPermssion"), HttpStatus.OK);
+    }
 }
