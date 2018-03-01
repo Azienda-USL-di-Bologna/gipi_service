@@ -50,6 +50,7 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -315,7 +316,7 @@ public class IterController {
     
     @RequestMapping(value = "hasPermissionOnFascicolo", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity hasPermissionOnFascicolo(@RequestBody Map<String,Object> data) throws IOException {
+    public ResponseEntity hasPermissionOnFascicolo(@RequestBody String fascicolo) throws IOException {
 //        int i = Integer.parseInt(data.get("utenteLoggato").toString());
 //        String numerazioneGerarchica = data.get("numerazioneGerarchica").toString();
         
@@ -328,10 +329,13 @@ public class IterController {
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
         String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlhasPermissionOnFascicolo;  //localhost       
         
+        // String localUrl =  " http://localhost:8081/bds_tools/ioda/api/fascicolo/HasUserPermissionOnFascicolo";
+        
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put("user", codiceFiscale);
-        additionalData.put("ng", data.get("numerazioneGerarchica").toString());
+        // additionalData.put("ng", data.get("numerazioneGerarchica").toString());
+        additionalData.put("ng", fascicolo);
 
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
@@ -357,9 +361,15 @@ public class IterController {
             throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
         }
         
-        System.out.println("OK!!!  " + responseg);
-        System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
+        System.out.println("OK!!!  " + responseg.toString());
+        System.out.println("responseg.message() --> " + responseg.message());
+        System.out.println("responseg.body() --> " + responseg.body());
+        System.out.println("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
+        // System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
         
-        return new ResponseEntity(responseg.header("hasPermssion"), HttpStatus.OK);
+        JsonObject jo = new JsonObject();
+        jo.addProperty("hasPermission", responseg.header("hasPermssion").toString());
+        
+        return new ResponseEntity(jo.toString(), HttpStatus.OK);
     }
 }
