@@ -36,7 +36,7 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
     private EntityManager em;
     
     @Autowired
-    private CacheableData ca;
+    private CacheableFunctions ca;
     
     /**
      * Dato un idStruttura ritorno tutti gli utentiStruttura appartenenti alla medesima od alle strutture figlie di essa

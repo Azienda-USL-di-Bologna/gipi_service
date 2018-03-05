@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * @author f.gusella
  */
 @Component
-public class CacheableData { 
+public class CacheableFunctions { 
     
     @PersistenceContext
     private EntityManager em;
