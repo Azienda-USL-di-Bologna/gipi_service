@@ -47,7 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author user
  */
 @RestController
-@RequestMapping("/gipi/resources/custom/tests")
+@RequestMapping(value = "${custom.mapping.url.root}" + "/tests")
 public class Tests {
 
     @Autowired

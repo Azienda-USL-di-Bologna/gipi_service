@@ -20,6 +20,7 @@ import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 /**
  *
@@ -33,6 +34,9 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
     
     @PersistenceContext
     private EntityManager em;
+    
+    @Autowired
+    private CacheableFunctions ca;
     
     /**
      * Dato un idStruttura ritorno tutti gli utentiStruttura appartenenti alla medesima od alle strutture figlie di essa
@@ -57,13 +61,15 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
         logger.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
         logger.info("Stringa di ricerca: " + searchString);
         
-        // Recupero la lista delle strutture figlie/nipoti etc della mia struttura
-        String query = "select * from organigramma.get_strutture_figlie(?);";
-        Query query1 = em.createNativeQuery(query);
-        query1.setParameter(1, idStruttura);
-        List<Integer> lista = query1.getResultList();
-        lista.add(idStruttura);
-            
+//        // Recupero la lista delle strutture figlie/nipoti etc della mia struttura
+//        String query = "select * from organigramma.get_strutture_figlie(?);";
+//        Query query1 = em.createNativeQuery(query);
+//        query1.setParameter(1, idStruttura);
+//        List<Integer> lista = query1.getResultList();
+//        lista.add(idStruttura);
+           
+        List<Integer> lista = ca.getGerarchiaStruttura(idStruttura);
+
         // Ora creo la query che recupera gli utenti in base alla lista di strutture appena creata
         JPAQuery queryDSL = new JPAQuery(em);
         queryDSL.select(QUtenteStruttura.utenteStruttura)
