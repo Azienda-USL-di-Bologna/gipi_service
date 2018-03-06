@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -97,9 +98,92 @@ public class ProcedimentiController {
 //        em.getTransaction().commit();
     }
 
-//    @RequestMapping(value = "view", method = RequestMethod.GET)
-//
-//    public void view(HttpServletRequest request) {
-//        System.out.println("abc");
-//    }
+    @RequestMapping(value = "espandiProcedimenti", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity espandiProcedimenti(
+            @RequestBody Integer idProcedimentoPassato
+    ) throws GipiRequestParamsException, GipiDatabaseException {
+
+        System.out.println(idProcedimentoPassato);
+
+        // carico il procedimento
+        JPQLQuery<Procedimento> queryProcedimento = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        Procedimento procedimentoPassato = queryProcedimento.from(QProcedimento.procedimento)
+                .where(QProcedimento.procedimento.id.eq(idProcedimentoPassato)).fetchOne();
+        if (procedimentoPassato == null) {
+            throw new GipiDatabaseException("procedimento non trovato");
+        }
+
+        String queryString = "select * from organigramma.get_strutture_figlie(?);";
+        Query queryStruttureFiglie = em.createNativeQuery(queryString);
+        queryStruttureFiglie.setParameter(1, procedimentoPassato.getIdStruttura().getId());
+        List<Integer> struttureFiglie = queryStruttureFiglie.getResultList();
+        // aggiungo anche il procedimento corrente, salvo tutto assieme
+        // Anzi no, il procedimento radice l'ho gia salvato quando arrivo qua (problemi a passarmi l'entità dal client)
+        //struttureFiglie.add(procedimento.getIdStruttura().getId());
+
+        // mi ricarico i procedimenti gia associati a quella struttura
+        JPAQuery<Procedimento> queryProcedimentiEsistenti = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        List<Procedimento> procedimentiEsistenti = queryProcedimentiEsistenti.from(QProcedimento.procedimento)
+                .where(QProcedimento.procedimento.idAziendaTipoProcedimento.id.eq(procedimentoPassato.getIdAziendaTipoProcedimento().getId())
+                        .and(QProcedimento.procedimento.idStruttura.id.in(struttureFiglie))).fetch();
+
+        List<Integer> giaMergiati = new ArrayList<>();
+
+        // update sui procedimenti gia esistenti
+        for (Procedimento procedimentoEsistente : procedimentiEsistenti) {
+            System.out.println(procedimentoEsistente);
+            procedimentoEsistente.setIdTitolarePotereSostitutivo(procedimentoPassato.getIdTitolarePotereSostitutivo());
+            procedimentoEsistente.setDataInizio(procedimentoPassato.getDataInizio());
+            procedimentoEsistente.setDataFine(procedimentoPassato.getDataFine());
+            procedimentoEsistente.setUfficio(procedimentoPassato.getUfficio());
+            procedimentoEsistente.setModalitaInfo(procedimentoPassato.getModalitaInfo());
+            procedimentoEsistente.setIdAziendaTipoProcedimento(procedimentoPassato.getIdAziendaTipoProcedimento());
+            procedimentoEsistente.setIterList(procedimentoPassato.getIterList());
+            procedimentoEsistente.setIdResponsabileAdozioneAttoFinale(procedimentoPassato.getIdResponsabileAdozioneAttoFinale());
+            procedimentoEsistente.setIdStrutturaTitolarePotereSostitutivo(procedimentoPassato.getIdStrutturaTitolarePotereSostitutivo());
+            procedimentoEsistente.setIdStrutturaResponsabileAdozioneAttoFinale(procedimentoPassato.getIdStrutturaResponsabileAdozioneAttoFinale());
+            procedimentoEsistente.setStrumenti(procedimentoPassato.getStrumenti());
+            procedimentoEsistente.setDescrizioneAtti(procedimentoPassato.getDescrizioneAtti());
+
+            em.merge(procedimentoEsistente);
+            giaMergiati.add(procedimentoEsistente.getIdStruttura().getId());
+        }
+
+        // inserimento di procedimenti nuovi
+        for (int idStruttura : struttureFiglie) {
+            // escludo quelli su cui ho fatto l'update
+            if (giaMergiati.contains(idStruttura)) {
+                continue;
+            }
+            Struttura struttura = new Struttura();
+            struttura.setId(idStruttura);
+
+            Procedimento procedimentoToInsert
+                    = new Procedimento(null,
+                            procedimentoPassato.getIdTitolarePotereSostitutivo(),
+                            struttura,
+                            procedimentoPassato.getDataInizio(),
+                            procedimentoPassato.getDataFine(),
+                            procedimentoPassato.getUfficio(),
+                            procedimentoPassato.getModalitaInfo(),
+                            procedimentoPassato.getIdAziendaTipoProcedimento(),
+                            procedimentoPassato.getIterList(),
+                            procedimentoPassato.getIdResponsabileAdozioneAttoFinale(),
+                            procedimentoPassato.getIdStrutturaTitolarePotereSostitutivo(),
+                            procedimentoPassato.getIdStrutturaResponsabileAdozioneAttoFinale(),
+                            procedimentoPassato.getStrumenti(),
+                            procedimentoPassato.getDescrizioneAtti()
+                    );
+
+            em.persist(procedimentoToInsert);
+
+        }
+
+        //RITORNIAMO UN OGGETTO CHE IN REALTA' E' VUOTO PERCHE LATO CLIENT LA SUBSCRIBE SI ASPETTA UN OGGETTO (ANCHE VUOTO) IN CASO
+        //DI ESITO POSITIVO DELL'OPERAZIONE
+        return new ResponseEntity(new ArrayList<Object>(), HttpStatus.OK);
+
+    }
+
 }
