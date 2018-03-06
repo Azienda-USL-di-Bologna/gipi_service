@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * @author andrea
  */
 @RestController
-@RequestMapping("/gipi/utility")
-public class utilityController {
+@RequestMapping(value = "${utility.mapping.url.root}")
+public class UtilityController {
 
     @Value("${revision}")
     private String revision;

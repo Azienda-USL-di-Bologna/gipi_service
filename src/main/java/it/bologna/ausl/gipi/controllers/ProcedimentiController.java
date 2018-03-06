@@ -32,7 +32,7 @@ import org.sql2o.Connection;
 import org.sql2o.Sql2o;
 
 @RestController
-@RequestMapping("/gipi/resources/custom/")
+@RequestMapping(value = "${custom.mapping.url.root}")
 @PropertySource("classpath:query.properties")
 public class ProcedimentiController {
 
