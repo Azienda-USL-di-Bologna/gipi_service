@@ -342,7 +342,7 @@ public class IterController {
         // body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));      
 
         Request requestg = new Request.Builder()
-                .url(localUrl)
+                .url(baseUrl)
                 .post(body)
                 .build();
         
