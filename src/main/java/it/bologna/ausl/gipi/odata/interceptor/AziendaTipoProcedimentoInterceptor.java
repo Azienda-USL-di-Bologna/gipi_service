@@ -43,6 +43,10 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
                 ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI
         )) {
             return object;
+        } else if(olingoInterceptorOperation == OlingoInterceptorOperation.UPDATE && ruoliCachable.stream().anyMatch(
+                ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CA
+        )) {
+            return object;
         } else {
             throw new OlingoRequestRollbackException();
         }
