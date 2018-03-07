@@ -34,7 +34,7 @@ import org.sql2o.Sql2o;
 @RequestMapping(value = "${custom.mapping.url.root}")
 @PropertySource("classpath:query.properties")
 public class ProcedimentiController extends ControllerHandledExceptions {
-    
+
     private final Integer NO_DELETE_ERROR_CODE = 1;
 
     @Autowired
@@ -45,7 +45,7 @@ public class ProcedimentiController extends ControllerHandledExceptions {
 
     @Value("${functionimports.query-strutture-con-check}")
     private String queryStruttureText;
-    
+
     @RequestMapping(value = "UpdateProcedimenti", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class, ConflictResponseException.class})
     public ResponseEntity updateProcedimenti(
@@ -58,60 +58,58 @@ public class ProcedimentiController extends ControllerHandledExceptions {
         if (nodeInvolved != null && !nodeInvolved.isEmpty()) {
             //em.getTransaction().begin();
 
-            for (Map.Entry<Integer, UpdateProcedimentiParams.Operations> entry : nodeInvolved.entrySet()) {
-                Integer idStruttura = entry.getKey();
-                UpdateProcedimentiParams.Operations operation = entry.getValue();
+            try {
+                for (Map.Entry<Integer, UpdateProcedimentiParams.Operations> entry : nodeInvolved.entrySet()) {
+                    Integer idStruttura = entry.getKey();
+                    UpdateProcedimentiParams.Operations operation = entry.getValue();
 
-                if (null == operation) {
-                    throw new GipiRequestParamsException("Tipo di operazione non prevista");
-                } else {
-                    switch (operation) {
-                        case INSERT:
-                            Procedimento p = new Procedimento();
-                            p.setDataInizio(new Date());
-                            p.setIdAziendaTipoProcedimento(new AziendaTipoProcedimento(idAziendaTipoProcedimento));
-                            p.setIdStruttura(new Struttura(idStruttura));
-                            em.persist(p);
-                            break;
-                        case DELETE:
-                            JPQLQuery<Procedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
-                            List<Procedimento> result = query.from(QProcedimento.procedimento)
-                                    .where(QProcedimento.procedimento.idAziendaTipoProcedimento.id.eq(idAziendaTipoProcedimento)
-                                            .and(QProcedimento.procedimento.idStruttura.id.eq(idStruttura))).fetch();
-                            if (result != null && !result.isEmpty()) {
-                                em.remove(result.get(0));
-                            } else {
-                                throw new GipiDatabaseException("procedimento da rimuovere non trovato, questo non dovrebbe capitare!");
-                            }
-                            break;
-                        default:
-                            throw new GipiRequestParamsException("Tipo di operazione non prevista");
+                    if (null == operation) {
+                        throw new GipiRequestParamsException("Tipo di operazione non prevista");
+                    } else {
+                        switch (operation) {
+                            case INSERT:
+                                Procedimento p = new Procedimento();
+                                p.setDataInizio(new Date());
+                                p.setIdAziendaTipoProcedimento(new AziendaTipoProcedimento(idAziendaTipoProcedimento));
+                                p.setIdStruttura(new Struttura(idStruttura));
+                                em.persist(p);
+                                break;
+                            case DELETE:
+                                JPQLQuery<Procedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+                                List<Procedimento> result = query.from(QProcedimento.procedimento)
+                                        .where(QProcedimento.procedimento.idAziendaTipoProcedimento.id.eq(idAziendaTipoProcedimento)
+                                                .and(QProcedimento.procedimento.idStruttura.id.eq(idStruttura))).fetch();
+                                if (result != null && !result.isEmpty()) {
+                                    em.remove(result.get(0));
+                                } else {
+                                    throw new GipiDatabaseException("procedimento da rimuovere non trovato, questo non dovrebbe capitare!");
+                                }
+                                break;
+                            default:
+                                throw new GipiRequestParamsException("Tipo di operazione non prevista");
+                        }
+                    }
+                }
+                em.flush();
+            } catch (PersistenceException ex) {
+                if (ex.getCause() != null
+                        && ex.getCause().getCause() != null
+                        && SQLException.class.isAssignableFrom(ex.getCause().getCause().getClass())) {
+                    String sqlState = ((SQLException) ex.getCause().getCause()).getSQLState();
+                    if (sqlState.startsWith("23")) {
+                        //                    throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
+                        throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
                     }
                 }
             }
+        }
 
-        }
-        try {
-            em.flush();
-        }
-        catch (PersistenceException ex) {
-            if (ex.getCause() != null && 
-                    ex.getCause().getCause() != null && 
-                   SQLException.class.isAssignableFrom(ex.getCause().getCause().getClass())) {
-                String sqlState = ((SQLException)ex.getCause().getCause()).getSQLState();
-                if(sqlState.startsWith("23")) {
-//                    throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
-                    throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
-                }
-            }
-        }
         //RITORNIAMO UN OGGETTO CHE IN REALTA' E' VUOTO PERCHE ALTRIMENTI LATO CLIENT PERCHE' LA SUBSCRIBE SI ASPETTA UN OGGETTO (ANCHE VUOTO) IN CASO
         //DI ESITO POSITIVO DELL'OPERAZIONE
         return new ResponseEntity(new ArrayList<>(), HttpStatus.OK);
         // oppure  em.remove(employee);
 //        em.getTransaction().commit();
     }
-
 //    @RequestMapping(value = "view", method = RequestMethod.GET)
 //
 //    public void view(HttpServletRequest request) {
