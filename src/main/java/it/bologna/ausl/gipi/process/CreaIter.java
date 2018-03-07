@@ -12,6 +12,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -46,6 +47,8 @@ import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  *
@@ -112,10 +115,15 @@ public class CreaIter {
     }
     
     public Iter creaIter(IterParams iterParams) throws IOException {
+        
+        // Mi prendo l'idUtente loggato
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
 
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
-        Utente uLoggato = GetEntityById.getUtente(iterParams.getIdUtenteLoggato(), em);
+        Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
         Fase f = this.getFaseIniziale(p.getIdAziendaTipoProcedimento().getIdAzienda().getId());
         Evento e = this.getEventoCreazioneIter();

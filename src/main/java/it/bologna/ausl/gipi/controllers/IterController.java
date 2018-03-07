@@ -71,7 +71,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * @author f.gusella
  */
 @RestController
-@RequestMapping("/gipi/resources/custom/iter")
+@RequestMapping(value = "${custom.mapping.url.root}" + "/iter")
 @PropertySource("classpath:query.properties")
 public class IterController {
 
