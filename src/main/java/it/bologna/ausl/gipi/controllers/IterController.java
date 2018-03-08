@@ -198,16 +198,18 @@ public class IterController {
 
         Fase currentFase = process.getCurrentFase(iter);
         Fase nextFase = process.getNextFase(iter);
-        if (nextFase == null) {
-            throw new GipiDatabaseException("La fase successiva e' null");
-        }
+//        if (nextFase == null) {
+//            throw new GipiDatabaseException("La fase successiva e' null");
+//        }
 
         JsonObject jsonCurrFase = new JsonObject();
         JsonObject jsonNextFase = new JsonObject();
         jsonCurrFase.addProperty("nomeFase", currentFase.getNome());
         jsonCurrFase.addProperty("faseDiChiusura", currentFase.getFaseDiChiusura());
-        jsonNextFase.addProperty("nomeFase", nextFase.getNome());
-        jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
+        if(nextFase != null){
+            jsonNextFase.addProperty("nomeFase", nextFase.getNome());
+            jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
+        }
         JsonObject processStatus = new JsonObject();
         processStatus.addProperty("currentFase", jsonCurrFase.toString());
         processStatus.addProperty("nextFase", jsonNextFase.toString());
