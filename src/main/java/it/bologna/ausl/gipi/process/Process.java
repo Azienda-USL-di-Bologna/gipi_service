@@ -148,6 +148,9 @@ public class Process {
         String esito = (String) processParams.readParam("esito");
         String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
 
+        if(nextFase.getFaseDiChiusura())
+            iter.setStato("chiuso");
+            
         if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
             System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
             throw new GipiRequestParamsException("i campi esito e motivazioneEsito sono previsti solo se la nextFase è di chiusura");

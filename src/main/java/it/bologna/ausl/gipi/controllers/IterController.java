@@ -93,8 +93,8 @@ public class IterController {
     @Value("${babelGestisciIter}")
     private String baseUrlBabelGestisciIter;
     
-    @Value("${hasPermissionOnFascicolo}")
-    private String baseUrlhasPermissionOnFascicolo;
+    @Value("${hasUserAnyPermissionOnFascicolo}")
+    private String baseUrlHasUserAnyPermissionOnFascicolo;
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
 
@@ -329,9 +329,9 @@ public class IterController {
         
         AziendaCachable aziendaInfo = (AziendaCachable)  userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlhasPermissionOnFascicolo;  //localhost       
+        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlHasUserAnyPermissionOnFascicolo;    
         
-        // String localUrl =  " http://localhost:8081/bds_tools/ioda/api/fascicolo/HasUserPermissionOnFascicolo";
+        String localUrl =  " http://localhost:8081/" + baseUrlHasUserAnyPermissionOnFascicolo;
         
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();

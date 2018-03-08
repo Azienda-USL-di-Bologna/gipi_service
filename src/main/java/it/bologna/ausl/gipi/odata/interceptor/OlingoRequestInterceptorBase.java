@@ -70,6 +70,7 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
 
         if (predicate != null) {
             String predicateString= OlingoRequestInterceptorBase.DSLQueryStringToJPQL(predicate.toString(),olingoQueryObject.getOlingoEntityName().toLowerCase(),olingoQueryObject.getOlingoEntityAlias());
+            predicateString = predicateString.replace("[", "(").replace("]", ")");
             return predicateString;
             //cambia nome entità
 //            String predicateString = change(JPQL_ENTITY_NAME_PATTERN, predicate.toString(), olingoQueryObject.getOlingoEntityAlias());
@@ -100,10 +101,12 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
     public static String DSLQueryStringToJPQL(String str, String entityName, String jpqlEntityName){
         String andReplacement = generateReplacementGuid(str);
         String orReplacement = generateReplacementGuid(str);
+        String squareOpenedReplacement = generateReplacementGuid(str);
+        String squareClosedReplacement = generateReplacementGuid(str);
         String entityReplacement = generateReplacementGuid(str);
 
         // Salvo tutte le posizioni in cui nella stringa compare un'apice (escluse quelle in cui prima dell'apice
-        // c'Ã¨ il carattere '\', perchÃ¨ vuol dire che si tratta di un escape)
+        // c'è il carattere '\', perché vuol dire che si tratta di un escape)
         ArrayList<Integer> indexes = new ArrayList<>();
         int actualPosition = 0;
         while (str.indexOf("'", actualPosition) != -1){
@@ -122,10 +125,15 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         String resultString = "";
         for (Integer position : indexes) {
             if (i % 2 == 0){
-                // Se l'apice che sto considerando Ã¨ in una posizione pari della lista, vuol dire che Ã¨ un'apice di chiusura.
+                // Se l'apice che sto considerando è in una posizione pari della lista, vuol dire che è un'apice di chiusura.
                 // Posso quindi recuperare tutto il testo tra apici (utilizzando la posizione precedente) ed effettuare le sostituzioni
                 String stringInApexes = str.substring(prevPosition, position);
-                stringInApexes = stringInApexes.replace("&&", andReplacement).replace("||", orReplacement).replace(entityName, entityReplacement);
+                stringInApexes = stringInApexes
+                        .replace("&&", andReplacement)
+                        .replace("||", orReplacement)
+                        .replace("[", squareOpenedReplacement)
+                        .replace("]", squareClosedReplacement)
+                        .replace(entityName, entityReplacement);
                 resultString += stringInApexes;
             } else {
                 resultString += str.substring(prevPosition,position);
@@ -138,9 +146,13 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         resultString += str.substring(prevPosition, str.length());
         resultString = resultString.replace("&&", "and");
         resultString = resultString.replace("||", "or");
+        resultString = resultString.replace("[", "(");
+        resultString = resultString.replace("]", ")");
         resultString = resultString.replace(entityName, jpqlEntityName);
         resultString = resultString.replace(andReplacement, "&&");
         resultString = resultString.replace(orReplacement, "||");
+        resultString = resultString.replace(squareOpenedReplacement, "[");
+        resultString = resultString.replace(squareClosedReplacement, "]");
         resultString = resultString.replace(entityReplacement, entityName);
 
         return resultString;
