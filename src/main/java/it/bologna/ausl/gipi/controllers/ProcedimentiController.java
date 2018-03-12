@@ -91,14 +91,19 @@ public class ProcedimentiController extends ControllerHandledExceptions {
                         }
                     }
                 }
+                
+                // flush per fare in modo che, in caso di errore venga lanciata l'eccezione e possa essere gestita per capire il tipo di errore
+                // voglio beccare l'errore generato dal fatto che sta cercando di eliminare un procedimento con degli iter attaccati
                 em.flush();
             } catch (PersistenceException ex) {
+                // controllo il tipo di errore
                 if (ex.getCause() != null
                         && ex.getCause().getCause() != null
                         && SQLException.class.isAssignableFrom(ex.getCause().getCause().getClass())) {
                     String sqlState = ((SQLException) ex.getCause().getCause()).getSQLState();
+                    // se l'errore inizia per "23", vuol dire che c'è una violazione di foreign key, quindi quasi sicuramente è il caso che ci interessa
                     if (sqlState.startsWith("23")) {
-                        //                    throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
+                        // lancio l'eccezione che tornerà lo status-code Conflict(409), con codice errore NO_DELETE_ERROR_CODE (1)
                         throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
                     }
                 }
