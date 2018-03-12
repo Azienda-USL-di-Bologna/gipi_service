@@ -91,7 +91,7 @@ public class ProcedimentiController extends ControllerHandledExceptions {
                         }
                     }
                 }
-                
+
                 // flush per fare in modo che, in caso di errore venga lanciata l'eccezione e possa essere gestita per capire il tipo di errore
                 // voglio beccare l'errore generato dal fatto che sta cercando di eliminare un procedimento con degli iter attaccati
                 em.flush();
@@ -116,6 +116,7 @@ public class ProcedimentiController extends ControllerHandledExceptions {
         // oppure  em.remove(employee);
 //        em.getTransaction().commit();
     }
+
     @RequestMapping(value = "espandiProcedimenti", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity espandiProcedimenti(
@@ -146,8 +147,7 @@ public class ProcedimentiController extends ControllerHandledExceptions {
                 .where(QProcedimento.procedimento.idAziendaTipoProcedimento.id.eq(procedimentoPassato.getIdAziendaTipoProcedimento().getId())
                         .and(QProcedimento.procedimento.idStruttura.id.in(struttureFiglie))).fetch();
 
-        List<Integer> giaMergiati = new ArrayList<>();
-
+        //List<Integer> giaMergiati = new ArrayList<>();
         // update sui procedimenti gia esistenti
         for (Procedimento procedimentoEsistente : procedimentiEsistenti) {
             System.out.println(procedimentoEsistente);
@@ -165,39 +165,41 @@ public class ProcedimentiController extends ControllerHandledExceptions {
             procedimentoEsistente.setDescrizioneAtti(procedimentoPassato.getDescrizioneAtti());
 
             em.merge(procedimentoEsistente);
-            giaMergiati.add(procedimentoEsistente.getIdStruttura().getId());
+            //giaMergiati.add(procedimentoEsistente.getIdStruttura().getId());
         }
 
-        // inserimento di procedimenti nuovi
-        for (int idStruttura : struttureFiglie) {
-            // escludo quelli su cui ho fatto l'update
-            if (giaMergiati.contains(idStruttura)) {
-                continue;
-            }
-            Struttura struttura = new Struttura();
-            struttura.setId(idStruttura);
-
-            Procedimento procedimentoToInsert
-                    = new Procedimento(null,
-                            procedimentoPassato.getIdTitolarePotereSostitutivo(),
-                            struttura,
-                            procedimentoPassato.getDataInizio(),
-                            procedimentoPassato.getDataFine(),
-                            procedimentoPassato.getUfficio(),
-                            procedimentoPassato.getModalitaInfo(),
-                            procedimentoPassato.getIdAziendaTipoProcedimento(),
-                            procedimentoPassato.getIterList(),
-                            procedimentoPassato.getIdResponsabileAdozioneAttoFinale(),
-                            procedimentoPassato.getIdStrutturaTitolarePotereSostitutivo(),
-                            procedimentoPassato.getIdStrutturaResponsabileAdozioneAttoFinale(),
-                            procedimentoPassato.getStrumenti(),
-                            procedimentoPassato.getDescrizioneAtti()
-                    );
-
-            em.persist(procedimentoToInsert);
-
-        }
-
+//          // ADESSO SI ESPANDONO LE MODIFICHE SOLO ALLE STRUTTURE GIA ASSOCIATE.
+//          // SE SI RENDESSE NECESSARIO INSERIRLO ANCHE PER LE STRUTTURE FIGLE NON ASSOCIATE
+//          // SI PUò COMMENTARE LA PARTE SEGUENTE
+//        // inserimento di procedimenti nuovi
+//        for (int idStruttura : struttureFiglie) {
+//            // escludo quelli su cui ho fatto l'update
+//            if (giaMergiati.contains(idStruttura)) {
+//                continue;
+//            }
+//            Struttura struttura = new Struttura();
+//            struttura.setId(idStruttura);
+//
+//            Procedimento procedimentoToInsert
+//                    = new Procedimento(null,
+//                            procedimentoPassato.getIdTitolarePotereSostitutivo(),
+//                            struttura,
+//                            procedimentoPassato.getDataInizio(),
+//                            procedimentoPassato.getDataFine(),
+//                            procedimentoPassato.getUfficio(),
+//                            procedimentoPassato.getModalitaInfo(),
+//                            procedimentoPassato.getIdAziendaTipoProcedimento(),
+//                            procedimentoPassato.getIterList(),
+//                            procedimentoPassato.getIdResponsabileAdozioneAttoFinale(),
+//                            procedimentoPassato.getIdStrutturaTitolarePotereSostitutivo(),
+//                            procedimentoPassato.getIdStrutturaResponsabileAdozioneAttoFinale(),
+//                            procedimentoPassato.getStrumenti(),
+//                            procedimentoPassato.getDescrizioneAtti()
+//                    );
+//
+//            em.persist(procedimentoToInsert);
+//
+//        }
         //RITORNIAMO UN OGGETTO CHE IN REALTA' E' VUOTO PERCHE LATO CLIENT LA SUBSCRIBE SI ASPETTA UN OGGETTO (ANCHE VUOTO) IN CASO
         //DI ESITO POSITIVO DELL'OPERAZIONE
         return new ResponseEntity(new ArrayList<Object>(), HttpStatus.OK);
