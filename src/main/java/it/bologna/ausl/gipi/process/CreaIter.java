@@ -24,6 +24,7 @@ import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
@@ -35,6 +36,8 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -65,6 +68,8 @@ public class CreaIter {
     
     private static final String EVENTO_CREAZIONE_ITER = "avvio_iter";
     private static final String STATO_INIZIALE_ITER = "in_corso";
+    
+    public static enum InsertFascicolo {TRADUCI_VICARI}
     
     @Value("${insertFascicolo}")
     private String baseUrlBdsInsertFascicolo;
@@ -158,9 +163,19 @@ public class CreaIter {
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
         fascicolo.setIdTipoFascicolo(2);
-        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
-        // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
+        // Aggiungo l'elenco dei codicifiscali dei vicari
+        List<String> vicari = new ArrayList<>();
+        if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
+            vicari.add(uLoggato.getIdPersona().getCodiceFiscale());
+        }
+        vicari.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        vicari.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        fascicolo.setVicari(vicari);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
+        String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
+        // String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
         
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
