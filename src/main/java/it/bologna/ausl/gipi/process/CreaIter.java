@@ -174,8 +174,8 @@ public class CreaIter {
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
-        String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        // String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
+        // String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
+        String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
         
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
