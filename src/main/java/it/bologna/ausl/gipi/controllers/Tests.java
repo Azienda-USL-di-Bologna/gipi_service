@@ -147,7 +147,7 @@ public class Tests {
         fase.setId(2);
         iter.setIdFaseCorrente(fase);
 
-        process.stepOn(iter, null, null);
+        process.stepOn(iter, null);
         return new ResponseEntity(HttpStatus.OK);
     }
 

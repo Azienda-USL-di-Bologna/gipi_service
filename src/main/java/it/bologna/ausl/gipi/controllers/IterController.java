@@ -156,10 +156,7 @@ public class IterController {
         processSteponParams.insertParam("esito", data.getEsito());
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
 
-        Claims attribute = (Claims) request.getAttribute("claims");
-        String usernameLoggedUser = (String) attribute.get("sub");
-
-        process.stepOn(iter, processSteponParams, usernameLoggedUser);
+        process.stepOn(iter, processSteponParams);
 
         // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
 //        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);

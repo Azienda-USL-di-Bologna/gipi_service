@@ -113,7 +113,7 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, ProcessSteponParams processParams, String usernameLoggedUser) throws ParseException, GipiRequestParamsException {
+    public void stepOn(Iter iter, ProcessSteponParams processParams) throws ParseException, GipiRequestParamsException {
 
         System.out.println("CHE NON RIESCO A SENTIRTI");
         System.out.println("iter" + iter);
