@@ -10,6 +10,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -27,6 +28,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -176,11 +179,16 @@ public class Process {
                 .from(qEvento)
                 .where(qEvento.codice.eq("passaggio_fase"))
                 .fetchOne();
+        
+        // Mi prendo l'idUtente loggato
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
 
         JPQLQuery<Utente> queryUtente = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Utente utente = queryUtente
                 .from(qUtente)
-                .where(qUtente.username.eq(usernameLoggedUser))
+                .where(qUtente.id.eq(idUtenteLoggato))
                 .fetchOne();
 
         EventoIter eventoIter = new EventoIter();
