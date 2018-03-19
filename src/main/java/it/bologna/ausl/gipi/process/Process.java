@@ -201,5 +201,4 @@ public class Process {
         eventoIter.setDataOraEvento(dataPassaggio);
         em.persist(eventoIter);
     }
-
 }
