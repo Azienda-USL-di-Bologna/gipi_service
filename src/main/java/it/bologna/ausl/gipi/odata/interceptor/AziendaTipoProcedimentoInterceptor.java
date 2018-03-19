@@ -2,9 +2,9 @@ package it.bologna.ausl.gipi.odata.interceptor;
 
 import com.querydsl.core.types.Predicate;
 import it.bologna.ausl.entities.baborg.Ruolo;
-import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.RuoloCachable;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
-import it.bologna.ausl.security.authorization.utils.UserInfo;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -31,14 +31,21 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
 
     @Override
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
-        System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU! 2");
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Utente utente = (Utente) authentication.getPrincipal();
-        UserInfo userInfo = (UserInfo) authentication.getDetails();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         
+        List<RuoloCachable> ruoliCachable = userInfo.getRuoliUtente();
+
+//        ruoliCachable.stream().forEach(a -> {System.out.println(a.getNomeBreve() + ": " + a.getNomeBreve().getClass().getName());});
         
-        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && userInfo.getRuoli().stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI)) {
+        if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && ruoliCachable.stream().anyMatch(
+                ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI
+        )) {
+            return object;
+        } else if(olingoInterceptorOperation == OlingoInterceptorOperation.UPDATE && ruoliCachable.stream().anyMatch(
+                ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CA
+        )) {
             return object;
         } else {
             throw new OlingoRequestRollbackException();

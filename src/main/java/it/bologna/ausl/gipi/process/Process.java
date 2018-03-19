@@ -10,6 +10,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -24,13 +25,11 @@ import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import javax.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,11 +40,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class Process {
 
-    QFase qFase = QFase.fase;
     QFaseIter qFaseIter = QFaseIter.faseIter;
     QIter qIter = QIter.iter;
     QEvento qEvento = QEvento.evento;
     QUtente qUtente = QUtente.utente;
+    QFase qFase = QFase.fase;
 
     @Autowired
     EntityManager em;
@@ -152,6 +151,9 @@ public class Process {
         String esito = (String) processParams.readParam("esito");
         String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
 
+        if(nextFase.getFaseDiChiusura())
+            iter.setStato("chiuso");
+            
         if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
             System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
             throw new GipiRequestParamsException("i campi esito e motivazioneEsito sono previsti solo se la nextFase è di chiusura");
@@ -177,11 +179,16 @@ public class Process {
                 .from(qEvento)
                 .where(qEvento.codice.eq("passaggio_fase"))
                 .fetchOne();
+        
+        // Mi prendo l'idUtente loggato
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
 
         JPQLQuery<Utente> queryUtente = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Utente utente = queryUtente
                 .from(qUtente)
-                .where(qUtente.username.eq(usernameLoggedUser))
+                .where(qUtente.id.eq(idUtenteLoggato))
                 .fetchOne();
 
         EventoIter eventoIter = new EventoIter();

@@ -6,15 +6,13 @@
 package it.bologna.ausl.gipi.process;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.querydsl.core.types.Expression;
+import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
-import it.bologna.ausl.entities.baborg.Azienda;
-import it.bologna.ausl.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -26,7 +24,9 @@ import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
+import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
@@ -36,7 +36,8 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Formatter;
+import java.util.HashMap;
+import java.util.List;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -49,6 +50,8 @@ import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  *
@@ -66,11 +69,16 @@ public class CreaIter {
     private static final String EVENTO_CREAZIONE_ITER = "avvio_iter";
     private static final String STATO_INIZIALE_ITER = "in_corso";
     
+    public static enum InsertFascicolo {TRADUCI_VICARI}
+    
     @Value("${insertFascicolo}")
     private String baseUrlBdsInsertFascicolo;
     
     @Value("${updateGdDoc}")
     private String baseUrlBdsUpdateGdDoc;
+    
+    @Value("${babelGestisciIter}")
+    private String baseUrlBabelGestisciIter;
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -111,26 +119,18 @@ public class CreaIter {
         return i;
     }
     
-    public String getBaseUrl(int idAzienda) throws IOException {
-        JPQLQuery<Azienda> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
- 
-        String parametri = query.select(this.qAzienda.parametri)
-                .from(this.qAzienda)
-                .where(this.qAzienda.id.eq(idAzienda)).fetchFirst();
-  
-        AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
-        String url = params.getBaseUrl();
-       
-        return url;
-    }
-
     public Iter creaIter(IterParams iterParams) throws IOException {
+        
+        // Mi prendo l'idUtente loggato
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
 
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
-        Utente uLoggato = GetEntityById.getUtente(iterParams.getIdUtenteLoggato(), em);
+        Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
-        Fase f = this.getFaseIniziale(iterParams.getIdAzienda());
+        Fase f = this.getFaseIniziale(p.getIdAziendaTipoProcedimento().getIdAzienda().getId());
         Evento e = this.getEventoCreazioneIter();
         // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha, aggiungo degli zeri da sinistra
         iterParams.setNumeroDocumento(String.format("%07d", Integer.parseInt(iterParams.getNumeroDocumento())));
@@ -151,6 +151,7 @@ public class CreaIter {
         i.setNomeFascicolo(iterParams.getOggettoIter());
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
+        i.setPromotore(iterParams.getPromotore());
         em.persist(i);
         em.flush();
         
@@ -162,9 +163,19 @@ public class CreaIter {
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
         fascicolo.setIdTipoFascicolo(2);
-        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
-        // String url = "https://gdml.internal.ausl.bologna.it/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsInsertFascicolo;
+        // Aggiungo l'elenco dei codicifiscali dei vicari
+        List<String> vicari = new ArrayList<>();
+        if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
+            vicari.add(uLoggato.getIdPersona().getCodiceFiscale());
+        }
+        vicari.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        vicari.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        fascicolo.setVicari(vicari);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
+        // String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
+        String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
         
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
@@ -182,7 +193,7 @@ public class CreaIter {
         
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBdsUpdateGdDoc;
+        baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsUpdateGdDoc;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
@@ -239,6 +250,40 @@ public class CreaIter {
         ei.setIdDocumentoIter(di);
         ei.setAutore(uLoggato);
         em.persist(ei);
+        
+        // Comunico a Babel l'iter appena creato
+            // baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+        baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+        
+//        iterParams.setIdIter(i.getId());
+//        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
+//        iterParams.setAnnoIter(i.getAnno());
+//        iterParams.setNomeProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId());
+        o.addProperty("numeroIter", i.getNumero());
+        o.addProperty("annoIter", i.getAnno());
+        o.addProperty("cfResponsabileProcedimento", uResponsabile.getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
+        o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
+        o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
+        
+        body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        
+        requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        client = new OkHttpClient();
+        responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
 
         return i;
     }

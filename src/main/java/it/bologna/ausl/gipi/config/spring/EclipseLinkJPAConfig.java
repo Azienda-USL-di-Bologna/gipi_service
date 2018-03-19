@@ -15,6 +15,7 @@ import org.springframework.transaction.jta.JtaTransactionManager;
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
+import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.sql2o.Sql2o;
 
@@ -50,6 +51,7 @@ public class EclipseLinkJPAConfig extends JpaBaseConfiguration {
         properties.put("eclipselink.ddl-generation", ddlGeneration);
         properties.put("eclipselink.logging.level", logginLevel);
         properties.put("eclipselink.logging.level.sql", logginLevelSQL);
+        properties.put(PersistenceUnitProperties.TARGET_DATABASE_PROPERTIES, "shouldBindLiterals=false");
         //properties.put("eclipselink.target-database",dataBaseDialect);
         return properties;
     }

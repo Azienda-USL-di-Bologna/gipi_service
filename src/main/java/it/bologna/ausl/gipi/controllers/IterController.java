@@ -5,12 +5,13 @@
  */
 package it.bologna.ausl.gipi.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
-import it.bologna.ausl.entities.gipi.QIter;
+
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,8 @@ import com.google.gson.JsonObject;
 import com.querydsl.jpa.JPAExpressions;
 import io.jsonwebtoken.Claims;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
@@ -35,22 +38,40 @@ import it.bologna.ausl.entities.gipi.FaseIter;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
+import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
+import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
+import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.ParseException;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  *
  * @author f.gusella
  */
 @RestController
-@RequestMapping("/gipi/resources/custom/iter")
+@RequestMapping(value = "${custom.mapping.url.root}" + "/iter")
 @PropertySource("classpath:query.properties")
 public class IterController {
 
@@ -62,11 +83,25 @@ public class IterController {
 
     @Autowired
     EntityManager em;
+    
+    @Autowired
+    ObjectMapper objectMapper;
+    
+    @Value("${getFascicoliUtente}")
+    private String baseUrlBdsGetFascicoliUtente;
+    
+    @Value("${babelGestisciIter}")
+    private String baseUrlBabelGestisciIter;
+    
+    @Value("${hasUserAnyPermissionOnFascicolo}")
+    private String baseUrlHasUserAnyPermissionOnFascicolo;
+    
+    public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
 
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
-    
+
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data)
@@ -150,7 +185,7 @@ public class IterController {
         return new ResponseEntity(currentFase, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET,  produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
+    @RequestMapping(value = "getProcessStatus", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE, "application/hal+json"})
     public ResponseEntity getProcessStatus(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, GipiDatabaseException {
 
         // TODO: QUI BISOGNERA USARE L'OGGETTO PROCESS STATUS, ora non lo uso perchè devo restituire solo i nomi delle fasi perchè se no da errore
@@ -163,23 +198,25 @@ public class IterController {
 
         Fase currentFase = process.getCurrentFase(iter);
         Fase nextFase = process.getNextFase(iter);
-        if (nextFase == null) {
-            throw new GipiDatabaseException("La fase successiva e' null");
-        }
+//        if (nextFase == null) {
+//            throw new GipiDatabaseException("La fase successiva e' null");
+//        }
 
         JsonObject jsonCurrFase = new JsonObject();
         JsonObject jsonNextFase = new JsonObject();
         jsonCurrFase.addProperty("nomeFase", currentFase.getNome());
         jsonCurrFase.addProperty("faseDiChiusura", currentFase.getFaseDiChiusura());
-        jsonNextFase.addProperty("nomeFase", nextFase.getNome());
-        jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
+        if(nextFase != null){
+            jsonNextFase.addProperty("nomeFase", nextFase.getNome());
+            jsonNextFase.addProperty("faseDiChiusura", nextFase.getFaseDiChiusura());
+        }
         JsonObject processStatus = new JsonObject();
         processStatus.addProperty("currentFase", jsonCurrFase.toString());
         processStatus.addProperty("nextFase", jsonNextFase.toString());
 
         return new ResponseEntity(processStatus.toString(), HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "getUltimaSospensione", method = RequestMethod.GET)
     public ResponseEntity getUltimaSospensione(@RequestParam("idIter") Integer idIter) {
         JPQLQuery<EventoIter> q = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -187,12 +224,12 @@ public class IterController {
         EventoIter ei = q
                 .from(qEventoIter)
                 .where(qEventoIter.idIter.id.eq(idIter)
-                    .and(qEventoIter.idEvento.eq(JPAExpressions.selectFrom(qEvento).where(qEvento.codice.eq("apertura_sospensione")))))
+                        .and(qEventoIter.idEvento.eq(JPAExpressions.selectFrom(qEvento).where(qEvento.codice.eq("apertura_sospensione")))))
                 .orderBy(qEventoIter.dataOraEvento.desc()).fetchFirst();
-                
+
         return new ResponseEntity(ei.getDataOraEvento(), HttpStatus.OK);
     }
-    
+
     public FaseIter getFaseIter(Iter i) {
         QFaseIter qFaseIter = QFaseIter.faseIter;
         JPQLQuery<FaseIter> q = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -208,44 +245,133 @@ public class IterController {
         System.out.println("Ritorno la FaseIter " + fi.toString());
         return fi;
     }
-        
-    @RequestMapping(value = "gestisciSospensione", method = RequestMethod.POST)
+
+    @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity gestisciSospensione(@RequestBody SospensioneParams sospensioneParams){
-        Utente u = GetEntityById.getUtente(sospensioneParams.idUtente, em);
-        Iter i = GetEntityById.getIter(sospensioneParams.idIter, em);
-        Evento e = GetEntityById.getEventoByCodice("sospeso".equals(i.getStato()) ? "chiusura_sospensione" : "apertura_sospensione", em);
+    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
+        Utente u = GetEntityById.getUtente(gestioneStatiParams.idUtente, em);
+        Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
+        Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato(), em);
         FaseIter fi = getFaseIter(i);
         
-        i.setStato("sospeso".equals(i.getStato()) ? "in_corso" : "sospeso");
+        // Aggiorno l'iter
+        i.setStato(gestioneStatiParams.getStato());
         em.persist(i);
         
+        // Creo il documento iter
         DocumentoIter d = new DocumentoIter();
-        d.setAnno(sospensioneParams.getAnnoDocumento());
+        d.setAnno(gestioneStatiParams.getAnnoDocumento());
         d.setIdIter(i);
-        d.setNumeroRegistro(sospensioneParams.getNumeroDocumento());
-        d.setRegistro(sospensioneParams.getCodiceRegistroDocumento());
+        d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
+        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
         em.persist(d);
         em.flush();
+        
+        // Creo l'evento iter
         EventoIter ei = new EventoIter();
         ei.setIdDocumentoIter(d);
-        ei.setNote(sospensioneParams.getNote());
+        ei.setNote(gestioneStatiParams.getNote());
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setAutore(u);
-        
-        // Ora se è sospeso l'evento equivalle alla DATA DALLA QUALE è sospeso, se alla DATA FINO ALLA QUALE l'iter è sospeso
-        ei.setDataOraEvento("sospeso".equals(i.getStato()) ? sospensioneParams.getSospesoDal() : sospensioneParams.getSospesoAl());
+        ei.setDataOraEvento(gestioneStatiParams.getDataEvento());
         ei.setIdFaseIter(fi);
+        em.persist(ei);
         
-        em.persist(ei);       
-        JsonObject eventoSospensione = new JsonObject();
-        //Se ho sospeso ritorno la data di inizio sospensione, altrimenti quella di fine sospensione.
-        if("sospeso".equals(i.getStato()))
-            eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
-        else
-            eventoSospensione.addProperty("dataDiRitorno", ei.getDataOraEvento().toString());
+        // Comunico a Babel l'associazione documento/iter appena avvenuta
+//        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
+        String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+//        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+//        gestioneStatiParams.setAnnoIter(i.getAnno());
+//        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
         
-        return new ResponseEntity(eventoSospensione.toString(), HttpStatus.OK);
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId());
+        o.addProperty("numeroIter", i.getNumero());
+        o.addProperty("annoIter", i.getAnno());
+        o.addProperty("cfResponsabileProcedimento", i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
+        o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
+        o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
+
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
+        
+        JsonObject obj = new JsonObject();
+        o.addProperty("idIter", i.getId().toString());
+        
+        return new ResponseEntity(obj.toString(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "hasPermissionOnFascicolo", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity hasPermissionOnFascicolo(@RequestBody String fascicolo) throws IOException {
+//        int i = Integer.parseInt(data.get("utenteLoggato").toString());
+//        String numerazioneGerarchica = data.get("numerazioneGerarchica").toString();
+        
+        // String baseUrl = "http://gdml:8080" + baseUrlhasPermissionOnFascicolo;  //gdml
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable)  userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlHasUserAnyPermissionOnFascicolo;    
+        
+        String localUrl =  " http://localhost:8081/" + baseUrlHasUserAnyPermissionOnFascicolo;
+        
+        Researcher r = new Researcher(null, null, 0);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put("user", codiceFiscale);
+        // additionalData.put("ng", data.get("numerazioneGerarchica").toString());
+        additionalData.put("ng", fascicolo);
+
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+        // body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));      
+
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .post(body)
+                .build();
+        
+       // OkHttpClient client = new OkHttpClient();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build();
+        
+        
+        Response responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
+        }
+        
+        System.out.println("OK!!!  " + responseg.toString());
+        System.out.println("responseg.message() --> " + responseg.message());
+        System.out.println("responseg.body() --> " + responseg.body());
+        System.out.println("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
+        // System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
+        
+        JsonObject jo = new JsonObject();
+        jo.addProperty("hasPermission", responseg.header("hasPermssion").toString());
+        
+        return new ResponseEntity(jo.toString(), HttpStatus.OK);
     }
 }

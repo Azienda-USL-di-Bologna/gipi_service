@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.EnableLoadTimeWeaving;
 
-//
 @EnableLoadTimeWeaving
 @EnableCaching
 @SpringBootApplication(scanBasePackages = {"it.nextsw", "it.bologna.ausl"})

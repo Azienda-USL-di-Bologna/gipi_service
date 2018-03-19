@@ -47,7 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author user
  */
 @RestController
-@RequestMapping("/gipi/resources/custom/tests")
+@RequestMapping(value = "${custom.mapping.url.root}" + "/tests")
 public class Tests {
 
     @Autowired
@@ -61,10 +61,11 @@ public class Tests {
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> TestGetFascicoliUtente() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
         
-        Researcher r = new Researcher("f.gusella", null, 0);
+        Researcher r = new Researcher(null, null, 0);
         java.util.HashMap additionalData = (java.util.HashMap)new java.util.HashMap();
         additionalData.put("TIPO_FASCICOLO", "2");
         additionalData.put("SOLO_ITER", "true");
+        additionalData.put("CODICE_FISCALE", "GSLFNC89A05G224Y");
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
         
         String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
@@ -216,4 +217,36 @@ public class Tests {
         return new ResponseEntity(azienda, HttpStatus.OK);
     }
 
+    /* Metodo per il test della WebApi su Pico/Dete/Deli */
+    @RequestMapping(value = "testWebApi", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity testWebApi(@org.springframework.web.bind.annotation.RequestBody ItemsDaPassare data)
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
+        
+        System.out.println("DATA = " + data );
+        
+        String baseUrl = "http://localhost:8080/Procton/AvviaIter";
+        
+        System.out.println("DATI = " + data.getJSONString() );
+        
+        RequestBody body = RequestBody.create(JSON, data.getJSONString().getBytes("UTF-8"));
+        
+        Request requestg = new Request.Builder()
+                .url(baseUrl)
+                .addHeader("X-HTTP-Method-Override", "associaDocumentoAiter")
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient();
+        
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata non è andata a buon fine.");
+        }
+        
+        System.out.println("DATI = " + data );
+        
+        return new ResponseEntity(data, HttpStatus.OK);
+    }
+    
 }
