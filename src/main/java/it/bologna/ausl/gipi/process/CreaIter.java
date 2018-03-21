@@ -37,7 +37,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.persistence.EntityManager;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -164,12 +166,21 @@ public class CreaIter {
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
         fascicolo.setIdTipoFascicolo(2);
         // Aggiungo l'elenco dei codicifiscali dei vicari
-        List<String> vicari = new ArrayList<>();
+        Set<String> set = new HashSet<String>();
         if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
-            vicari.add(uLoggato.getIdPersona().getCodiceFiscale());
+            set.add(uLoggato.getIdPersona().getCodiceFiscale());
         }
-        vicari.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
-        vicari.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        set.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        set.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        List<String> vicari = new ArrayList<String>();
+        // Passare da set a list è un trucco per non avere doppioni nella lista.
+        vicari.addAll(set);
+//        List<String> vicari = new ArrayList<>();
+//        if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
+//            vicari.add(uLoggato.getIdPersona().getCodiceFiscale());
+//        }
+//        vicari.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+//        vicari.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
         fascicolo.setVicari(vicari);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
