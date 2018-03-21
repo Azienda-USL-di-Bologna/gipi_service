@@ -45,6 +45,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
@@ -72,14 +73,17 @@ public class CreaIter {
     public static enum InsertFascicolo {TRADUCI_VICARI}
     
     @Value("${insertFascicolo}")
-    private String baseUrlBdsInsertFascicolo;
+    private String insertFascicoloPath;
     
     @Value("${updateGdDoc}")
-    private String baseUrlBdsUpdateGdDoc;
+    private String updateGdDocPath;
     
     @Value("${babelGestisciIter}")
-    private String baseUrlBabelGestisciIter;
+    private String babelGestisciIterPath;
 
+    @Value("${babelsuite.uri.localhost}")
+    private String localhostBaseUrl;
+    
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     @Autowired
@@ -87,6 +91,8 @@ public class CreaIter {
     
     @Autowired
     ObjectMapper objectMapper;
+    
+    private static final Logger logger = Logger.getLogger(CreaIter.class);
 
     public Fase getFaseIniziale(int idAzienda) {
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -119,7 +125,7 @@ public class CreaIter {
         return i;
     }
     
-    public Iter creaIter(IterParams iterParams) throws IOException {
+    public Iter creaIter(IterParams iterParams, boolean isLocalHost) throws IOException {
         
         // Mi prendo l'idUtente loggato
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -175,16 +181,23 @@ public class CreaIter {
         additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
         // String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
-        String baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsInsertFascicolo;
-        
+        String baseUrl;
+        if (isLocalHost)
+            baseUrl = localhostBaseUrl;
+        else
+            baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        String urlChiamata = baseUrl + insertFascicoloPath;
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
-                .url(baseUrl)
+                .url(urlChiamata)
                 .post(body)
                 .build();
         Response response = client.newCall(request).execute();
-        String resString = response.body().string();
+        String resString = null;
+        if (response != null && response.body() != null) {
+            resString = response.body().string();
+        }
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
         
         // Aggiungo la numerazione gerarchica del fascicolo all'iter
@@ -193,7 +206,7 @@ public class CreaIter {
         
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBdsUpdateGdDoc;
+        urlChiamata = baseUrl + updateGdDocPath;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
@@ -205,7 +218,7 @@ public class CreaIter {
                     .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
                     .build();
         Request requestg = new Request.Builder()
-                .url(baseUrl)
+                .url(urlChiamata)
                 .post(bodyg)
                 .build();
         Response responseg = client.newCall(requestg).execute();
@@ -252,8 +265,7 @@ public class CreaIter {
         em.persist(ei);
         
         // Comunico a Babel l'iter appena creato
-            // baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
-        baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+        urlChiamata = baseUrl + babelGestisciIterPath;
         
 //        iterParams.setIdIter(i.getId());
 //        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
@@ -269,18 +281,28 @@ public class CreaIter {
         o.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
         o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
         o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
-        
+               
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
         requestg = new Request.Builder()
-                .url(baseUrl)
+                .url(urlChiamata)
                 .addHeader("X-HTTP-Method-Override", "associaDocumento")
                 .post(body)
                 .build();
         
         client = new OkHttpClient();
         responseg = client.newCall(requestg).execute();
-
+        
+        if (responseg!= null && responseg.body() != null) {
+            logger.info("GDM RESPONSE STRING = " + responseg.body().string());
+            logger.info("GDM RESPONSE MESSAGE = " + responseg.message());
+            logger.info("GDM RESPONSE ISREDIRECT = " + responseg.isRedirect());
+            logger.info("GDM RESPONSE TOSTRING= " + responseg.body().toString());
+        }
+        else {
+            logger.info("la response è null");
+        }
+        
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }

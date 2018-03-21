@@ -88,13 +88,13 @@ public class IterController {
     ObjectMapper objectMapper;
     
     @Value("${getFascicoliUtente}")
-    private String baseUrlBdsGetFascicoliUtente;
+    private String bdsGetFascicoliUtentePath;
     
     @Value("${babelGestisciIter}")
-    private String baseUrlBabelGestisciIter;
+    private String babelGestisciIterPath;
     
     @Value("${hasUserAnyPermissionOnFascicolo}")
-    private String baseUrlHasUserAnyPermissionOnFascicolo;
+    private String hasUserAnyPermissionOnFascicoloPath;
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
 
@@ -104,10 +104,10 @@ public class IterController {
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data)
+    public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data,  HttpServletRequest request)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
-
-        Iter i = creaIter.creaIter(data);
+        
+        Iter i = creaIter.creaIter(data, request.getServerName().equalsIgnoreCase("localhost"));
 
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId().toString());
@@ -276,8 +276,8 @@ public class IterController {
         em.persist(ei);
         
         // Comunico a Babel l'associazione documento/iter appena avvenuta
-//        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + baseUrlBabelGestisciIter;
-        String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+        String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+        //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
 //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
 //        gestioneStatiParams.setAnnoIter(i.getAnno());
 //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
@@ -295,7 +295,7 @@ public class IterController {
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
         Request requestg = new Request.Builder()
-                .url(baseUrl)
+                .url(urlChiamata)
                 .addHeader("X-HTTP-Method-Override", "associaDocumento")
                 .post(body)
                 .build();
@@ -326,9 +326,9 @@ public class IterController {
         
         AziendaCachable aziendaInfo = (AziendaCachable)  userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  baseUrlHasUserAnyPermissionOnFascicolo;    
+        String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  hasUserAnyPermissionOnFascicoloPath;    
         
-        String localUrl =  " http://localhost:8081/" + baseUrlHasUserAnyPermissionOnFascicolo;
+        String localUrl =  " http://localhost:8081/" + hasUserAnyPermissionOnFascicoloPath;
         
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
@@ -341,7 +341,7 @@ public class IterController {
         // body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));      
 
         Request requestg = new Request.Builder()
-                .url(baseUrl)
+                .url(urlChiamata)
                 .post(body)
                 .build();
         
