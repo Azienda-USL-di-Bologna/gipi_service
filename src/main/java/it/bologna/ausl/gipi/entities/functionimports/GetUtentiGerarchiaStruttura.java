@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import org.apache.log4j.Logger;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
@@ -60,13 +59,6 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
     ) throws IOException {
         logger.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
         logger.info("Stringa di ricerca: " + searchString);
-        
-//        // Recupero la lista delle strutture figlie/nipoti etc della mia struttura
-//        String query = "select * from organigramma.get_strutture_figlie(?);";
-//        Query query1 = em.createNativeQuery(query);
-//        query1.setParameter(1, idStruttura);
-//        List<Integer> lista = query1.getResultList();
-//        lista.add(idStruttura);
            
         List<Integer> lista = ca.getGerarchiaStruttura(idStruttura);
 

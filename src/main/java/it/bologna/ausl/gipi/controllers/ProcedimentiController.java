@@ -105,7 +105,11 @@ public class ProcedimentiController extends ControllerHandledExceptions {
                     if (sqlState.startsWith("23")) {
                         // lancio l'eccezione che tornerà lo status-code Conflict(409), con codice errore NO_DELETE_ERROR_CODE (1)
                         throw new ConflictResponseException(NO_DELETE_ERROR_CODE, "impossibile eliminare perché ha già degli iter", ex.getMessage());
+                    } else {
+                        throw ex;
                     }
+                } else {
+                    throw ex;
                 }
             }
         }
