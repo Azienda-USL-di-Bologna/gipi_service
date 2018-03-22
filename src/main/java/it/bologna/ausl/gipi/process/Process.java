@@ -21,6 +21,9 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.QStato;
+import it.bologna.ausl.entities.gipi.Stato;
+import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -45,7 +48,11 @@ public class Process {
     QEvento qEvento = QEvento.evento;
     QUtente qUtente = QUtente.utente;
     QFase qFase = QFase.fase;
+    QStato qStato = QStato.stato;
 
+    @Autowired
+    private EntitiesCachableUtilities entitiesCachableUtilities;
+    
     @Autowired
     EntityManager em;
 
@@ -148,22 +155,15 @@ public class Process {
 
         // AGGIORNA CAMPI SU ITER
         iter.setIdFaseCorrente(nextFase);
-        String esito = (String) processParams.readParam("esito");
-        String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
 
-        if(nextFase.getFaseDiChiusura())
-            iter.setStato("chiuso");
-            
-        if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
-            System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
-            throw new GipiRequestParamsException("i campi esito e motivazioneEsito sono previsti solo se la nextFase è di chiusura");
-            // THROW
+        if(nextFase.getFaseDiChiusura()){
+            iter.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.CHIUSO));
+            iter.setEsito((String) processParams.readParam("esito"));
+            iter.setEsitoMotivazione((String) processParams.readParam("motivazioneEsito"));
         }
-        iter.setEsito(esito);
-        iter.setEsitoMotivazione(motivazioneEsito);
-
+        
         em.persist(iter); // questo salva anche la dataFineFase sulla fase appena finita
-
+        
         // inserisci DOCUMENTO-ITER
         DocumentoIter documentoIter = new DocumentoIter();
         documentoIter.setRegistro((String) processParams.readParam("codiceRegistroDocumento"));
@@ -177,7 +177,7 @@ public class Process {
         JPQLQuery<Evento> queryEvento = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Evento evento = queryEvento
                 .from(qEvento)
-                .where(qEvento.codice.eq("passaggio_fase"))
+                .where(qEvento.codice.eq(nextFase.getFaseDiChiusura() ? "chiusura_iter" : "passaggio_fase"))
                 .fetchOne();
         
         // Mi prendo l'idUtente loggato
@@ -199,6 +199,6 @@ public class Process {
         eventoIter.setAutore(utente);
         eventoIter.setNote((String) processParams.readParam("notePassaggio"));
         eventoIter.setDataOraEvento(dataPassaggio);
-        em.persist(eventoIter);
+        em.persist(eventoIter);        
     }
 }

@@ -39,6 +39,8 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.Stato;
+import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
@@ -97,6 +99,9 @@ public class IterController {
     private String hasUserAnyPermissionOnFascicoloPath;
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
+    
+    @Autowired
+    private EntitiesCachableUtilities entitiesCachableUtilities;
 
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
@@ -248,11 +253,22 @@ public class IterController {
     public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
         Utente u = GetEntityById.getUtente(gestioneStatiParams.idUtente, em);
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
-        Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato(), em);
+        //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato().getCodice().toString(), em);
+        Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
+        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
+        
+        // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
+        // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
+        if(s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString()))
+            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
+        else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString()))
+            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+        else
+            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         
         // Aggiorno l'iter
-        i.setStato(gestioneStatiParams.getStato());
+        i.setIdStato(s);
         em.persist(i);
         
         // Creo il documento iter
@@ -268,7 +284,7 @@ public class IterController {
         EventoIter ei = new EventoIter();
         ei.setIdDocumentoIter(d);
         ei.setNote(gestioneStatiParams.getNote());
-        ei.setIdEvento(e);
+        ei.setIdEvento(eventoDiCambioStato);
         ei.setIdIter(i);
         ei.setAutore(u);
         ei.setDataOraEvento(gestioneStatiParams.getDataEvento());

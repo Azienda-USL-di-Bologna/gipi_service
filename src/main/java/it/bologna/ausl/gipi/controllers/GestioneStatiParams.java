@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import it.bologna.ausl.entities.gipi.Stato;
 import java.util.Date;
 import java.util.TimeZone;
 import javax.persistence.Temporal;
@@ -19,7 +20,7 @@ import javax.persistence.TemporalType;
  * @author utente
  */
 public class GestioneStatiParams {
-    public String stato;
+    public int idStato;
     public int idIter;
     public int idUtente;
     public String codiceRegistroDocumento;
@@ -133,12 +134,8 @@ public class GestioneStatiParams {
         this.nomeProcedimento = nomeProcedimento;
     }
 
-    public String getStato() {
-        return stato;
-    }
-
-    public void setStato(String stato) {
-        this.stato = stato;
+    public int getStato() {
+        return idStato;
     }
 
     public Date getDataEvento() {

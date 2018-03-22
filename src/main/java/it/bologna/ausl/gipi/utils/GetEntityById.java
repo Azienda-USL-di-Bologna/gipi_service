@@ -22,6 +22,8 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QProcedimento;
+import it.bologna.ausl.entities.gipi.QStato;
+import it.bologna.ausl.entities.gipi.Stato;
 import javax.persistence.EntityManager;
 
 /**
@@ -101,5 +103,25 @@ public class GetEntityById {
                 .where(qEvento.codice.eq(codice))
                 .fetchOne();
         return e;
+    }
+    
+    public static Stato getStatoByCodice(String codice, EntityManager em) {
+        QStato qStato = QStato.stato;
+        JPQLQuery<Stato> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Stato s = query
+                .from(qStato)
+                .where(qStato.codice.eq(codice))
+                .fetchOne();
+        return s;
+    }
+    
+    public static Stato getStatoById(int id, EntityManager em) {
+        QStato qStato = QStato.stato;
+        JPQLQuery<Stato> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Stato s = query
+                .from(qStato)
+                .where(qStato.id.eq(id))
+                .fetchOne();
+        return s;
     }
 }

@@ -24,6 +24,8 @@ import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.Stato;
+import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
@@ -70,7 +72,9 @@ public class CreaIter {
     QAzienda qAzienda = QAzienda.azienda;
     
     private static final String EVENTO_CREAZIONE_ITER = "avvio_iter";
-    private static final String STATO_INIZIALE_ITER = "in_corso";
+    
+    @Autowired
+    private EntitiesCachableUtilities entitiesCachableUtilities;
     
     public static enum InsertFascicolo {TRADUCI_VICARI}
     
@@ -152,7 +156,7 @@ public class CreaIter {
         i.setNumero(getNumeroIterMax() + 1);
         i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
         i.setOggetto(iterParams.getOggettoIter());
-        i.setStato(STATO_INIZIALE_ITER);
+        i.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.IN_CORSO));
         i.setDataCreazione(iterParams.getDataCreazioneIter());
         i.setDataAvvio(iterParams.getDataAvvioIter());
         // i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
