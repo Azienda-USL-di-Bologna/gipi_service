@@ -106,21 +106,23 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
                 numeroDocumento != null && !numeroDocumento.equals("") &&
                 annoDocumento != null) {
             queryDSL
-                .select(QIter.iter.id)
+                .select(QIter.iter)
                 .from(QIter.iter)
                 .leftJoin(QIter.iter.documentiIterList, QDocumentoIter.documentoIter)
                     .on(QDocumentoIter.documentoIter.numeroRegistro.eq(numeroDocumento)
                         .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
                         .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
-                .where(QIter.iter.id.in(listaIter).and(QDocumentoIter.documentoIter.id.isNull()))
+                .where(QIter.iter.id.in(listaIter)
+                        .and(QDocumentoIter.documentoIter.id.isNull()))
                 .distinct();
-            listaIter = queryDSL.fetch();
+            // listaIter = queryDSL.fetch();
+        } else {
+            queryDSL.select(QIter.iter)
+                .from(QIter.iter)
+                .where(QIter.iter.id.in(listaIter));
         }
+//      queryDSL = new JPAQuery(em);
         
-        queryDSL = new JPAQuery(em);
-        queryDSL.select(QIter.iter)
-           .from(QIter.iter)
-           .where(QIter.iter.id.in(listaIter));
         
         if (nonChiusi) {
             queryDSL.where(QIter.iter.idStato.codice.ne(StatoChiuso.CHIUSO.toString()));
@@ -128,5 +130,4 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
     }
-    
 }
