@@ -7,6 +7,7 @@ package it.bologna.ausl.gipi.entities.functionimports;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.gipi.controllers.IterController;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
@@ -19,6 +20,7 @@ import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import okhttp3.OkHttpClient;
@@ -45,6 +47,8 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
     
+     public static enum StatoChiuso {CHIUSO}
+    
     @Value("${getFascicoliUtente}")
     private String baseUrlBdsGetFascicoliUtente;
     
@@ -62,9 +66,14 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     )
     public JPAQueryInfo getIterUtente(
             @EdmFunctionImportParameter(name = "cf", facets = @EdmFacets(nullable = false)) final String cf,
-            @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false)) final Integer idAzienda
+            @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false)) final Integer idAzienda,
+            @EdmFunctionImportParameter(name = "nonChiusi", facets = @EdmFacets(nullable = false)) final Boolean nonChiusi,
+            @EdmFunctionImportParameter(name = "codiceRegistro", facets = @EdmFacets(nullable = true)) final String codiceRegistro,
+            @EdmFunctionImportParameter(name = "numeroDocumento", facets = @EdmFacets(nullable = true)) final String numeroDocumento,
+            @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento
     ) throws IOException {
         logger.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
+        logger.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
         
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
@@ -85,14 +94,37 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         String resString = response.body().string();
         Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
 
-        ArrayList<Integer> listaIter = new ArrayList<>();
+        List<Integer> listaIter = new ArrayList<>();
         
         for(int i = 0; i < f.getSize(); i++) {
             listaIter.add(f.getFascicolo(i).getIdIter());
         }
         
         JPAQuery queryDSL = new JPAQuery(em);
-        queryDSL.select(QIter.iter).from(QIter.iter).where(QIter.iter.id.in(listaIter));
+        
+        if (codiceRegistro != null && !codiceRegistro.equals("") &&
+                numeroDocumento != null && !numeroDocumento.equals("") &&
+                annoDocumento != null) {
+            queryDSL
+                .select(QIter.iter.id)
+                .from(QIter.iter)
+                .leftJoin(QIter.iter.documentiIterList, QDocumentoIter.documentoIter)
+                    .on(QDocumentoIter.documentoIter.numeroRegistro.eq(numeroDocumento)
+                        .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
+                        .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
+                .where(QIter.iter.id.in(listaIter).and(QDocumentoIter.documentoIter.id.isNull()))
+                .distinct();
+            listaIter = queryDSL.fetch();
+        }
+        
+        queryDSL = new JPAQuery(em);
+        queryDSL.select(QIter.iter)
+           .from(QIter.iter)
+           .where(QIter.iter.id.in(listaIter));
+        
+        if (nonChiusi) {
+            queryDSL.where(QIter.iter.idStato.codice.ne(StatoChiuso.CHIUSO.toString()));
+        }
         
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
     }
