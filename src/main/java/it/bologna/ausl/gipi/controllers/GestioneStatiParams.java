@@ -36,6 +36,32 @@ public class GestioneStatiParams {
     public int annoIter;
     public String cfResponsabileProcedimento;
     public String nomeProcedimento;
+    public String esito;
+    public String esitoMotivazione;
+
+    public int getIdStato() {
+        return idStato;
+    }
+
+    public void setIdStato(int idStato) {
+        this.idStato = idStato;
+    }
+
+    public String getEsito() {
+        return esito;
+    }
+
+    public void setEsito(String esito) {
+        this.esito = esito;
+    }
+
+    public String getEsitoMotivazione() {
+        return esitoMotivazione;
+    }
+
+    public void setEsitoMotivazione(String esitoMotivazione) {
+        this.esitoMotivazione = esitoMotivazione;
+    }
 
     public int getIdIter() {
         return idIter;

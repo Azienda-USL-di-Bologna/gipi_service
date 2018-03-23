@@ -262,8 +262,11 @@ public class IterController {
         // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
         if(s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString()))
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
-        else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString()))
+        else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+            i.setEsito(gestioneStatiParams.getEsito());
+            i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
+        }
         else
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         
