@@ -139,7 +139,7 @@ public class Tests {
     }
 
     @RequestMapping(value = "stepOn", method = RequestMethod.GET)
-    public ResponseEntity stepOn() throws ParseException, GipiRequestParamsException {
+    public ResponseEntity stepOn() throws ParseException, GipiRequestParamsException, IOException {
 
         Iter iter = new Iter();
         iter.setId(6);
@@ -147,7 +147,7 @@ public class Tests {
         fase.setId(2);
         iter.setIdFaseCorrente(fase);
 
-        process.stepOn(iter, null);
+        process.stepOn(iter, null, true);
         return new ResponseEntity(HttpStatus.OK);
     }
 

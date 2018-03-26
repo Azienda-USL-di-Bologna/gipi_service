@@ -47,8 +47,11 @@ import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
+import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
@@ -63,6 +66,7 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -95,6 +99,9 @@ public class IterController {
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
     
+    @Value("${updateGdDoc}")
+    private String updateGdDocPath;
+    
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
     
@@ -122,7 +129,7 @@ public class IterController {
 
     @RequestMapping(value = "stepOn", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity stepOn(@RequestBody SteponParams data, HttpServletRequest request) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, ParseException, GipiRequestParamsException {
+    public ResponseEntity stepOn(@RequestBody SteponParams data, HttpServletRequest request) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, ParseException, GipiRequestParamsException, IOException, IOException {
 //        Class<?> clazz = data.getClass();
 //        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
 //        Object fieldValue = field.get(data);
@@ -161,7 +168,7 @@ public class IterController {
         processSteponParams.insertParam("esito", data.getEsito());
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
 
-        process.stepOn(iter, processSteponParams);
+        process.stepOn(iter, processSteponParams, request.getServerName().equalsIgnoreCase("localhost"));
 
         // Devo salvare l'iter, il procedimento_cache, la fase iter, l'evento iter, creare il fascicolo dell'iter
 //        return new ResponseEntity(new ArrayList<Object>() , HttpStatus.OK);
@@ -294,8 +301,35 @@ public class IterController {
         ei.setIdFaseIter(fi);
         em.persist(ei);
         
+        
+        // Fascicolo il documento 
+        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        
+        // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
+        String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
+        GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) gestioneStatiParams.getCodiceRegistroDocumento(), null, (String) gestioneStatiParams.getNumeroDocumento(), null, null, null, null, null, null, null, (Integer) gestioneStatiParams.getAnnoDocumento());
+        Fascicolazione fascicolazione = new Fascicolazione(i.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
+        ArrayList a = new ArrayList();
+        a.add(fascicolazione);
+        g.setFascicolazioni(a);
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
+        okhttp3.RequestBody body = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                    .build();
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La fascicolazione non è andata a buon fine.");
+        }
+        
+        
         // Comunico a Babel l'associazione documento/iter appena avvenuta
-        String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+        urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
         //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
 //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
 //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -311,16 +345,16 @@ public class IterController {
         o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
 
-        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
-        Request requestg = new Request.Builder()
+        requestg = new Request.Builder()
                 .url(urlChiamata)
                 .addHeader("X-HTTP-Method-Override", "associaDocumento")
                 .post(body)
                 .build();
         
-        OkHttpClient client = new OkHttpClient();
-        Response responseg = client.newCall(requestg).execute();
+        client = new OkHttpClient();
+        responseg = client.newCall(requestg).execute();
 
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");

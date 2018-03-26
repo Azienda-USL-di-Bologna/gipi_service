@@ -5,6 +5,8 @@
  */
 package it.bologna.ausl.gipi.process;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -25,12 +27,28 @@ import it.bologna.ausl.entities.gipi.QStato;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
+import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
+import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
+import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import javax.persistence.EntityManager;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.apache.log4j.Logger;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -53,8 +71,22 @@ public class Process {
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
     
+    @Value("${babelsuite.uri.localhost}")
+    private String localhostBaseUrl;
+    
+    @Value("${updateGdDoc}")
+    private String updateGdDocPath;
+    
+    @Value("${babelGestisciIter}")
+    private String babelGestisciIterPath;
+    
     @Autowired
     EntityManager em;
+    
+    @Autowired
+    ObjectMapper objectMapper;
+    
+    private static final Logger logger = Logger.getLogger(CreaIter.class);
 
     public Fase getNextFase(Iter iter) {
 
@@ -120,13 +152,11 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, ProcessSteponParams processParams) throws ParseException, GipiRequestParamsException {
-
-        System.out.println("CHE NON RIESCO A SENTIRTI");
-        System.out.println("iter" + iter);
-        System.out.println("Params");
+    public void stepOn(Iter iter, ProcessSteponParams processParams, boolean isLocalHost) throws ParseException, GipiRequestParamsException, IOException {
+        logger.info("iter" + iter);
+        logger.info("Params");
         processParams.getParams().forEach((key, value) -> {
-            System.out.println("Key : " + key + " Value : " + value);
+            logger.info("Key : " + key + " Value : " + value);
         });
 
         // INSERIMENTO NUOVA FASE-ITER
@@ -171,6 +201,8 @@ public class Process {
         documentoIter.setNumeroRegistro((String) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
         em.persist(documentoIter);
+        
+
 //
         // INSERIMENTO EVENTO
         // mi recupero l'evento.
@@ -199,6 +231,64 @@ public class Process {
         eventoIter.setAutore(utente);
         eventoIter.setNote((String) processParams.readParam("notePassaggio"));
         eventoIter.setDataOraEvento(dataPassaggio);
-        em.persist(eventoIter);        
+        em.persist(eventoIter);
+        
+        // Fascicolo il documento 
+        String baseUrl;
+        if (isLocalHost)
+            baseUrl = localhostBaseUrl;
+        else
+            baseUrl = GetBaseUrl.getBaseUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        
+        // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
+        String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
+        GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) processParams.readParam("codiceRegistroDocumento"), null, (String) processParams.readParam("numeroDocumento"), null, null, null, null, null, null, null, (Integer) processParams.readParam("annoDocumento"));
+        Fascicolazione fascicolazione = new Fascicolazione(iter.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
+        ArrayList a = new ArrayList();
+        a.add(fascicolazione);
+        g.setFascicolazioni(a);
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
+        RequestBody body = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                    .build();
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La fascicolazione non è andata a buon fine.");
+        }
+        
+        // Comunico a Babel l'iter appena creato
+        urlChiamata = baseUrl + babelGestisciIterPath;
+         
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", iter.getId());
+        o.addProperty("numeroIter", iter.getNumero());
+        o.addProperty("annoIter", iter.getAnno());
+        o.addProperty("cfResponsabileProcedimento", iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", (String) processParams.readParam("codiceRegistroDocumento"));
+        o.addProperty("numeroDocumento", (String) processParams.readParam("numeroDocumento"));
+        o.addProperty("annoDocumento", (Integer) processParams.readParam("annoDocumento"));
+               
+        body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        
+        requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        client = new OkHttpClient();
+        responseg = client.newCall(requestg).execute();
+          
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
+        
     }
 }
