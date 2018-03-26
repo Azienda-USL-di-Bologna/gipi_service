@@ -21,6 +21,7 @@ import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 /**
  *
  * @author Gus
@@ -28,38 +29,40 @@ import org.springframework.stereotype.Component;
 @EdmFunctionImportClass
 @Component
 public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
-    
+
     private static final Logger logger = Logger.getLogger(GetIterUtente.class);
-    
+
     @PersistenceContext
     private EntityManager em;
-    
+
     @Autowired
     private CacheableFunctions ca;
-    
+
     /**
-     * Dato un idStruttura ritorno tutti gli utentiStruttura appartenenti alla medesima od alle strutture figlie di essa
+     * Dato un idStruttura ritorno tutti gli utentiStruttura appartenenti alla
+     * medesima od alle strutture figlie di essa
+     *
      * @param idStruttura
      * @param searchString
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     @EdmFunctionImport(
             name = "GetUtentiGerarchiaStruttura",
             entitySet = "UtenteStrutturas",
             returnType = @EdmFunctionImport.ReturnType(
-                    type = EdmFunctionImport.ReturnType.Type.ENTITY, 
-                    formatResult = EdmFunctionImport.FormatResult.PAGINATED_COLLECTION, 
+                    type = EdmFunctionImport.ReturnType.Type.ENTITY,
+                    formatResult = EdmFunctionImport.FormatResult.PAGINATED_COLLECTION,
                     EdmEntityTypeName = "UtenteStruttura"),
             httpMethod = EdmFunctionImport.HttpMethod.GET
     )
     public JPAQueryInfo getUtentiGerarchiaStruttura(
             @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = false)) final Integer idStruttura,
-            @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = false)) final String searchString
+            @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = true)) final String searchString
     ) throws IOException {
         logger.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
         logger.info("Stringa di ricerca: " + searchString);
-           
+
         List<Integer> lista = ca.getGerarchiaStruttura(idStruttura);
 
         // Ora creo la query che recupera gli utenti in base alla lista di strutture appena creata
@@ -70,9 +73,9 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
                 .where(QUtenteStruttura.utenteStruttura.idStruttura.id.in(lista));
 
         if (searchString != null && !searchString.equals("")) {
-            queryDSL.where(QUtente.utente.idPersona.descrizione.likeIgnoreCase("%"+searchString+"%"));
+            queryDSL.where(QUtente.utente.idPersona.descrizione.likeIgnoreCase("%" + searchString + "%"));
         }
-        
+
         return createQueryInfo(queryDSL, QUtenteStruttura.utenteStruttura.id.count(), em);
     }
 }
