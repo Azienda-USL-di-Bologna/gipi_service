@@ -264,23 +264,27 @@ public class IterController {
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
         Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-        
-        // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
-        // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
-        if(s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString()))
-            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
-        else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
-            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
-            i.setEsito(gestioneStatiParams.getEsito());
-            i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
+          
+        if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
+            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
+        else {
+            // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
+            // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
+            if(s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString()))
+                eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
+            else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
+                eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+                i.setEsito(gestioneStatiParams.getEsito());
+                i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
+            }
+            else
+                eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
+
+            // Aggiorno l'iter
+            i.setIdStato(s);
         }
-        else
-            eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         
-        // Aggiorno l'iter
-        i.setIdStato(s);
         em.persist(i);
-        
         // Creo il documento iter
         DocumentoIter d = new DocumentoIter();
         d.setAnno(gestioneStatiParams.getAnnoDocumento());
