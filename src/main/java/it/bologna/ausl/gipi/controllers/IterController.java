@@ -143,6 +143,7 @@ public class IterController {
         System.out.println(data.getEsito());
         System.out.println(data.getMotivazioneEsito());
         System.out.println(data.getNotePassaggio());
+        System.out.println(data.getOggettoDocumento());
 
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
 
@@ -167,6 +168,7 @@ public class IterController {
         processSteponParams.insertParam("notePassaggio", data.getNotePassaggio());
         processSteponParams.insertParam("esito", data.getEsito());
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
+        processSteponParams.insertParam("oggettoDocumento", data.getOggettoDocumento());
 
         process.stepOn(iter, processSteponParams, request.getServerName().equalsIgnoreCase("localhost"));
 
@@ -291,6 +293,7 @@ public class IterController {
         d.setIdIter(i);
         d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
         d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
+        d.setOggetto(gestioneStatiParams.getOggettoDocumento());
         em.persist(d);
         em.flush();
         

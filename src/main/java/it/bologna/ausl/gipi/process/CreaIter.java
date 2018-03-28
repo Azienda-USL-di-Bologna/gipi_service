@@ -267,6 +267,7 @@ public class CreaIter {
         di.setNumeroRegistro(String.valueOf(iterParams.getNumeroDocumento()));
         di.setAnno(iterParams.getAnnoDocumento());
         di.setRegistro(iterParams.getCodiceRegistroDocumento());
+        di.setOggetto(iterParams.getOggettoDocumento());
         em.persist(di);
 
         // Buildo l'evento Iter

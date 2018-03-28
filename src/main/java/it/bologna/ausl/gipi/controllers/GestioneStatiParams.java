@@ -26,6 +26,7 @@ public class GestioneStatiParams {
     public String codiceRegistroDocumento;
     public String numeroDocumento;
     public int annoDocumento;
+    public String oggettoDocumento;
     public Date dataEvento;
 //    public Date sospesoDal;
 //    @Temporal(TemporalType.DATE)
@@ -102,6 +103,14 @@ public class GestioneStatiParams {
 
     public void setAnnoDocumento(int annoDocumento) {
         this.annoDocumento = annoDocumento;
+    }
+
+    public String getOggettoDocumento() {
+        return oggettoDocumento;
+    }
+
+    public void setOggettoDocumento(String oggettoDocumento) {
+        this.oggettoDocumento = oggettoDocumento;
     }
 
 //    public Date getSospesoDal() {

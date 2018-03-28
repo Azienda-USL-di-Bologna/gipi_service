@@ -13,6 +13,7 @@ public class SteponParams {
     private String notePassaggio;
     private String esito;
     private String motivazioneEsito;
+    private String oggettoDocumento;
 
     public int getIdIter() {
         return idIter;
@@ -78,4 +79,11 @@ public class SteponParams {
         this.motivazioneEsito = motivazioneEsito;
     }
 
+    public String getOggettoDocumento() {
+        return oggettoDocumento;
+    }
+
+    public void setOggettoDocumento(String oggettoDocumento) {
+        this.oggettoDocumento = oggettoDocumento;
+    }
 }

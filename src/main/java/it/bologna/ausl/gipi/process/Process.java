@@ -200,6 +200,7 @@ public class Process {
         documentoIter.setAnno((Integer) processParams.readParam("annoDocumento"));
         documentoIter.setNumeroRegistro((String) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
+        documentoIter.setOggetto((String) processParams.readParam("oggettoDocumento"));
         em.persist(documentoIter);
         
 
