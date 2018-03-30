@@ -123,6 +123,7 @@ public class IterController {
 
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId().toString());
+        o.addProperty("numero", i.getNumero());
 
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
