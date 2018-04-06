@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QIter;
-import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.gipi.controllers.IterController;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
@@ -48,8 +47,6 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     private static final Logger logger = Logger.getLogger(GetIterUtente.class);
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
-    
-    // public static enum StatoChiuso {CHIUSO}
     
     @Value("${getFascicoliUtente}")
     private String baseUrlBdsGetFascicoliUtente;
@@ -124,13 +121,8 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         }
         
         if (StringUtils.hasText(stato)) {
-            if (stato.equals(Stato.CodiciStato.IN_CORSO.toString())) {
-                queryDSL.where(QIter.iter.idStato.codice.eq(Stato.CodiciStato.IN_CORSO.toString()));
-            } else if (stato.equals(Stato.CodiciStato.SOSPESO.toString())) {
-                queryDSL.where(QIter.iter.idStato.codice.eq(Stato.CodiciStato.SOSPESO.toString()));
-            } else if (stato.equals(Stato.CodiciStato.CHIUSO.toString())) {
-                queryDSL.where(QIter.iter.idStato.codice.eq(Stato.CodiciStato.CHIUSO.toString()));
-            }
+            String[] listaStati = stato.split(":");
+            queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
         }
         
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
