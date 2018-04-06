@@ -266,8 +266,9 @@ public class IterController {
         //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato().getCodice().toString(), em);
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
-        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-          
+        
+        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getCodiceStato(), em);
+//        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
         else {
