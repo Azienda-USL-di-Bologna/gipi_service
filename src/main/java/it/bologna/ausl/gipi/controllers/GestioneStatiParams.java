@@ -20,7 +20,8 @@ import javax.persistence.TemporalType;
  * @author utente
  */
 public class GestioneStatiParams {
-    public int idStato;
+//    public int idStato;
+    public String codiceStato;
     public int idIter;
     public int idUtente;
     public String codiceRegistroDocumento;
@@ -40,12 +41,19 @@ public class GestioneStatiParams {
     public String esito;
     public String esitoMotivazione;
 
-    public int getIdStato() {
-        return idStato;
+    public String getCodiceStato() {
+        return codiceStato;
     }
 
-    public void setIdStato(int idStato) {
-        this.idStato = idStato;
+//    public int getIdStato() {
+//        return idStato;
+//    }
+//
+//    public void setIdStato(int idStato) {
+//        this.idStato = idStato;
+//    }
+    public void setCodiceStato(String codiceStato) {
+        this.codiceStato = codiceStato;
     }
 
     public String getEsito() {
@@ -169,9 +177,9 @@ public class GestioneStatiParams {
         this.nomeProcedimento = nomeProcedimento;
     }
 
-    public int getStato() {
-        return idStato;
-    }
+//    public int getStato() {
+//        return idStato;
+//    }
 
     public Date getDataEvento() {
         return dataEvento;

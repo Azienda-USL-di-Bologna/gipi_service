@@ -123,6 +123,7 @@ public class IterController {
 
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId().toString());
+        o.addProperty("numero", i.getNumero());
 
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
@@ -265,8 +266,9 @@ public class IterController {
         //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato().getCodice().toString(), em);
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
-        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-          
+        
+        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getCodiceStato(), em);
+//        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
         else {
@@ -276,6 +278,7 @@ public class IterController {
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
             else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+                i.setDataChiusura(gestioneStatiParams.getDataEvento());
                 i.setEsito(gestioneStatiParams.getEsito());
                 i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
             }
