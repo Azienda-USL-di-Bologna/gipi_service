@@ -278,6 +278,7 @@ public class IterController {
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
             else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+                i.setDataChiusura(gestioneStatiParams.getDataEvento());
                 i.setEsito(gestioneStatiParams.getEsito());
                 i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
             }
