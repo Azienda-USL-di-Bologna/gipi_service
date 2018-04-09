@@ -5,6 +5,7 @@
  */
 package it.bologna.ausl.gipi.controllers;
 
+import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
@@ -45,6 +46,7 @@ import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.utils.GestioneStatoIter;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
@@ -261,12 +263,15 @@ public class IterController {
     @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
-        Utente u = GetEntityById.getUtente(gestioneStatiParams.idUtente, em);
+        if (gestioneStatiParams.getNumeroDocumento().equals(""))
+            return gestisciStatoIterDaBozza(gestioneStatiParams);
+        
+        Utente u = GetEntityById.getUtenteFromPersonaByCodiceFiscaleAndIdAzineda(gestioneStatiParams.getCfAutore(), gestioneStatiParams.getIdAzienda(),em);
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
-        //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStato().getCodice().toString(), em);
+        //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStatoRichiesto().getCodice().toString(), em);
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
-        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
+        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
           
         if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
@@ -352,6 +357,7 @@ public class IterController {
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
         o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
+        o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
 
         body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
@@ -373,6 +379,74 @@ public class IterController {
         
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
+    
+    public ResponseEntity gestisciStatoIterDaBozza(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException{
+        // Tutto quello che mi serve lo si ricava da GestioneStatiParams o nell'iter (che si ricava da GestioneStatiParams)
+//        GestioneStatoIter gsi = new GestioneStatoIter();
+//        gsi.gestisciStatoIterDaBozza(gestioneStatiParams);
+        
+        
+        // Recupero l'iter
+        Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
+        
+        // Setto i dati_differiti (sono quelli da usare alla numerazione del documento)
+        JsonObject dati_differiti = new JsonObject();
+        dati_differiti.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
+        dati_differiti.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
+        dati_differiti.addProperty("azione", gestioneStatiParams.getAzione());
+        dati_differiti.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
+        dati_differiti.addProperty("note", gestioneStatiParams.getNote());
+        dati_differiti.addProperty("esito", gestioneStatiParams.getEsito());
+        dati_differiti.addProperty("esitoMotivazione", gestioneStatiParams.getEsitoMotivazione());
+        
+        // Preparo l'oggetto da passare alla web api di associazione documento
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", i.getId());
+        o.addProperty("numeroIter", i.getNumero());
+        o.addProperty("annoIter", i.getAnno());
+        o.addProperty("cfResponsabileProcedimento", i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
+        o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
+        o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
+        o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
+        o.addProperty("datiDifferiti", dati_differiti.toString());
+
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        System.out.println(o.toString());
+        
+        // Chiamata alla web api GestisciIter.associaDocumento
+        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
+        
+        // DA CANCELLARE!!!!
+        urlChiamata = "http://127.0.0.1:8080/Babel/GestisciIter";
+        
+        System.out.println(urlChiamata);
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+        
+        System.out.println(requestg.toString());
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            System.out.println(responseg.toString());
+            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg.toString());
+        }
+        // ritorno un oggetto di ok
+        JsonObject responseAndObj = new JsonObject();
+        responseAndObj.addProperty("response", "TUTTO E' ANDATO BENISSIMO");
+        responseAndObj.addProperty("object", responseg.toString());
+        System.out.println(responseAndObj.toString());
+        
+        JsonObject obj = new JsonObject();
+        o.addProperty("idIter", i.getId().toString());
+        return new ResponseEntity(obj.toString(), HttpStatus.OK);
+    }
+    
     
     @RequestMapping(value = "hasPermissionOnFascicolo", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})

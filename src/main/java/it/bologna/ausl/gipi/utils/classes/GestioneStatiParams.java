@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package it.bologna.ausl.gipi.controllers;
+package it.bologna.ausl.gipi.utils.classes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,9 +20,10 @@ import javax.persistence.TemporalType;
  * @author utente
  */
 public class GestioneStatiParams {
-    public int idStato;
+    public String statoRichiesto;
     public int idIter;
-    public int idUtente;
+    public String cfAutore;
+    public int idAzienda;
     public String codiceRegistroDocumento;
     public String numeroDocumento;
     public int annoDocumento;
@@ -33,19 +34,18 @@ public class GestioneStatiParams {
 //    public Date sospesoAl;
 //    @Temporal(TemporalType.DATE)
     public String note;
-//    public int idAzienda;
-    public int annoIter;
-    public String cfResponsabileProcedimento;
     public String nomeProcedimento;
     public String esito;
     public String esitoMotivazione;
+    public String azione;
+    public String idOggettoOrigine;
 
-    public int getIdStato() {
-        return idStato;
+    public String getStatoRichiesto() {
+        return statoRichiesto;
     }
 
-    public void setIdStato(int idStato) {
-        this.idStato = idStato;
+    public void setStatoRichiesto(String statoRichiesto) {
+        this.statoRichiesto = statoRichiesto;
     }
 
     public String getEsito() {
@@ -71,15 +71,6 @@ public class GestioneStatiParams {
     public void setIdIter(int idIter) {
         this.idIter = idIter;
     }
-
-    public int getIdUtente() {
-        return idUtente;
-    }
-
-    public void setIdUtente(int idUtente) {
-        this.idUtente = idUtente;
-    }
-
 
     public String getCodiceRegistroDocumento() {
         return codiceRegistroDocumento;
@@ -137,40 +128,12 @@ public class GestioneStatiParams {
         this.note = note;
     }
 
-//    public int getIdAzienda() {
-//        return idAzienda;
-//    }
-//
-//    public void setIdAzienda(int idAzienda) {
-//        this.idAzienda = idAzienda;
-//    }
-//
-    public int getAnnoIter() {
-        return annoIter;
-    }
-
-    public void setAnnoIter(int annoIter) {
-        this.annoIter = annoIter;
-    }
-
-    public String getCfResponsabileProcedimento() {
-        return cfResponsabileProcedimento;
-    }
-
-    public void setCfResponsabileProcedimento(String cfResponsabileProcedimento) {
-        this.cfResponsabileProcedimento = cfResponsabileProcedimento;
-    }
-
     public String getNomeProcedimento() {
         return nomeProcedimento;
     }
 
     public void setNomeProcedimento(String nomeProcedimento) {
         this.nomeProcedimento = nomeProcedimento;
-    }
-
-    public int getStato() {
-        return idStato;
     }
 
     public Date getDataEvento() {
@@ -180,7 +143,38 @@ public class GestioneStatiParams {
     public void setDataEvento(Date dataEvento) {
         this.dataEvento = dataEvento;
     }
+        
+    public String getAzione() {
+        return azione;
+    }
     
+    public void setAzione(String azione) {
+        this.azione = azione;
+    }
+    
+    public String getIdOggettoOrigine() {
+        return idOggettoOrigine;
+    }
+
+    public void setIdOggettoOrigine(String idOggettoOrigine) {
+        this.idOggettoOrigine = idOggettoOrigine;
+    }
+    
+        public String getCfAutore() {
+        return cfAutore;
+    }
+
+    public void setCfAutore(String cfAutore) {
+        this.cfAutore = cfAutore;
+    }
+
+    public int getIdAzienda() {
+        return idAzienda;
+    }
+
+    public void setIdAzienda(int idAzienda) {
+        this.idAzienda = idAzienda;
+    }
     
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {

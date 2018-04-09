@@ -8,6 +8,8 @@ package it.bologna.ausl.gipi.utils;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.QAzienda;
+import it.bologna.ausl.entities.baborg.QPersona;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
@@ -39,6 +41,17 @@ public class GetEntityById {
         Utente u = query
                 .from(qUtente)
                 .where(qUtente.id.eq(idUtente))
+                .fetchOne();
+        return u;
+    }
+    
+    public static Utente getUtenteFromPersonaByCodiceFiscaleAndIdAzineda(String codiceFiscale, int idAzienda, EntityManager em) {
+        QUtente qUtente = QUtente.utente;
+        JPQLQuery<Utente> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Utente u = query
+                .from(qUtente)
+                .where(qUtente.idPersona.codiceFiscale.eq(codiceFiscale)
+                    .and(qUtente.idAzienda.id.eq(idAzienda)))
                 .fetchOne();
         return u;
     }
