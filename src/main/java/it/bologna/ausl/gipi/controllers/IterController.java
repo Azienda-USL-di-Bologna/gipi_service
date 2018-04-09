@@ -271,8 +271,9 @@ public class IterController {
         //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStatoRichiesto().getCodice().toString(), em);
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
-        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
-          
+        
+        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getCodiceStato(), em);
+//        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
         else {
@@ -282,6 +283,7 @@ public class IterController {
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("apertura_sospensione");
             else if(s.getCodice().equals(Stato.CodiciStato.CHIUSO.toString())){
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_iter");
+                i.setDataChiusura(gestioneStatiParams.getDataEvento());
                 i.setEsito(gestioneStatiParams.getEsito());
                 i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
             }

@@ -21,6 +21,7 @@ import javax.persistence.TemporalType;
  */
 public class GestioneStatiParams {
     public String statoRichiesto;
+    public String codiceStato;
     public int idIter;
     public String cfAutore;
     public int idAzienda;
@@ -46,6 +47,13 @@ public class GestioneStatiParams {
 
     public void setStatoRichiesto(String statoRichiesto) {
         this.statoRichiesto = statoRichiesto;
+//    }
+//
+//    public void setIdStato(int idStato) {
+//        this.idStato = idStato;
+//    }
+    public void setCodiceStato(String codiceStato) {
+        this.codiceStato = codiceStato;
     }
 
     public String getEsito() {
@@ -154,7 +162,7 @@ public class GestioneStatiParams {
     
     public String getIdOggettoOrigine() {
         return idOggettoOrigine;
-    }
+//    }
 
     public void setIdOggettoOrigine(String idOggettoOrigine) {
         this.idOggettoOrigine = idOggettoOrigine;
