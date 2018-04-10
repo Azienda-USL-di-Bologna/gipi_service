@@ -68,6 +68,7 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.apache.http.client.HttpResponseException;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -272,7 +273,7 @@ public class IterController {
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
         
-        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getCodiceStato(), em);
+        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if(s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
@@ -337,8 +338,10 @@ public class IterController {
                 .post(body)
                 .build();
         OkHttpClient client = new OkHttpClient();
+        System.out.println("La richiesta --> " + requestg.toString());
         Response responseg = client.newCall(requestg).execute();
         if (!responseg.isSuccessful()) {
+            System.out.println("La risposta --> " + responseg.toString());        
             throw new IOException("La fascicolazione non è andata a buon fine.");
         }
         
@@ -360,7 +363,11 @@ public class IterController {
         o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
         o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
-
+        // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
+        JsonObject dati_differiti = new JsonObject();
+        o.addProperty("datiDifferiti", dati_differiti.toString());
+       
+        
         body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
         requestg = new Request.Builder()
@@ -377,7 +384,7 @@ public class IterController {
         }
         
         JsonObject obj = new JsonObject();
-        o.addProperty("idIter", i.getId().toString());
+        obj.addProperty("idIter", i.getId().toString());
         
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
@@ -420,9 +427,6 @@ public class IterController {
         // Chiamata alla web api GestisciIter.associaDocumento
         String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
         
-        // DA CANCELLARE!!!!
-        urlChiamata = "http://127.0.0.1:8080/Babel/GestisciIter";
-        
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
                 .url(urlChiamata)
@@ -433,19 +437,21 @@ public class IterController {
         System.out.println(requestg.toString());
         OkHttpClient client = new OkHttpClient();
         Response responseg = client.newCall(requestg).execute();
-
-        if (!responseg.isSuccessful()) {
-            System.out.println(responseg.toString());
-            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg.toString());
-        }
-        // ritorno un oggetto di ok
-        JsonObject responseAndObj = new JsonObject();
-        responseAndObj.addProperty("response", "TUTTO E' ANDATO BENISSIMO");
-        responseAndObj.addProperty("object", responseg.toString());
-        System.out.println(responseAndObj.toString());
-        
+        String responseBodyString = responseg.body().string();
+        System.out.println("RISPOSTA: ");
+        System.out.println(responseg.toString() +  " body: " + responseBodyString);
         JsonObject obj = new JsonObject();
-        o.addProperty("idIter", i.getId().toString());
+        if (!responseg.isSuccessful()) {    
+            throw new HttpResponseException(responseg.code(), "La chiamata a Babel non è andata a buon fine. " + responseg);
+        }
+        else if (responseBodyString.equals("0")) {
+            obj.addProperty("idIter", "-1");
+        }
+        else{
+            // ritorno un oggetto di ok
+            obj.addProperty("idIter", i.getId().toString());
+            obj.addProperty("object", responseg.toString());
+        }
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
     
@@ -465,7 +471,7 @@ public class IterController {
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
         String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) +  hasUserAnyPermissionOnFascicoloPath;    
         
-        String localUrl =  " http://localhost:8081/" + hasUserAnyPermissionOnFascicoloPath;
+        // String localUrl =  " http://localhost:8081/" + hasUserAnyPermissionOnFascicoloPath;
         
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
