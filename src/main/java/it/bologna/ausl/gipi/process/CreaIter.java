@@ -297,6 +297,8 @@ public class CreaIter {
         o.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
         o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
         o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
+        o.addProperty("idOggettoOrigine", "");
+        o.addProperty("datiDifferiti", "");
                
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         
