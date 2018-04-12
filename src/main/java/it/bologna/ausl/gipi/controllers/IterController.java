@@ -348,42 +348,45 @@ public class IterController {
             throw new IOException("La fascicolazione non è andata a buon fine.");
         }
 
-        // Comunico a Babel l'associazione documento/iter appena avvenuta
-        urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
-        //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
-//        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-//        gestioneStatiParams.setAnnoIter(i.getAnno());
-//        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
+        // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
+        if(!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")){
+            // Comunico a Babel l'associazione documento/iter appena avvenuta
+            urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+            //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
+    //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+    //        gestioneStatiParams.setAnnoIter(i.getAnno());
+    //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
 
-        JsonObject o = new JsonObject();
-        o.addProperty("idIter", i.getId());
-        o.addProperty("numeroIter", i.getNumero());
-        o.addProperty("annoIter", i.getAnno());
-        o.addProperty("cfResponsabileProcedimento", i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-        o.addProperty("nomeProcedimento", i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
-        o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
-        o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
-        o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
-        o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
-        // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
-        JsonObject dati_differiti = new JsonObject();
-        o.addProperty("datiDifferiti", dati_differiti.toString());
+            JsonObject o = new JsonObject();
+            o.addProperty("idIter", i.getId());
+            o.addProperty("numeroIter", i.getNumero());
+            o.addProperty("annoIter", i.getAnno());
+            o.addProperty("cfResponsabileProcedimento", i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+            o.addProperty("nomeProcedimento", i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+            o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
+            o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
+            o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
+            o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
+            // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
+            JsonObject dati_differiti = new JsonObject();
+            o.addProperty("datiDifferiti", dati_differiti.toString());
 
-        body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+            body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
-        requestg = new Request.Builder()
-                .url(urlChiamata)
-                .addHeader("X-HTTP-Method-Override", "associaDocumento")
-                .post(body)
-                .build();
+            requestg = new Request.Builder()
+                    .url(urlChiamata)
+                    .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                    .post(body)
+                    .build();
 
-        client = new OkHttpClient();
-        responseg = client.newCall(requestg).execute();
+            client = new OkHttpClient();
+            responseg = client.newCall(requestg).execute();
 
-        if (!responseg.isSuccessful()) {
-            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+            if (!responseg.isSuccessful()) {
+                throw new IOException("La chiamata a Babel non è andata a buon fine.");
+            }
         }
-
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
 
@@ -510,7 +513,7 @@ public class IterController {
     }
 
     @RequestMapping(value = "getCurrentStato", method = RequestMethod.GET)
-    public ResponseEntity<Fase> getCurrentStatp(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
+    public ResponseEntity<Fase> getCurrentStato(@RequestParam("idIter") Integer idIter) throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException {
 
         Iter iter = GetEntityById.getIter(idIter, em);
 
