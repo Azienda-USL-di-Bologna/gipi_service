@@ -34,6 +34,7 @@ import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -46,8 +47,6 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     private static final Logger logger = Logger.getLogger(GetIterUtente.class);
     
     public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
-    
-     public static enum StatoChiuso {CHIUSO}
     
     @Value("${getFascicoliUtente}")
     private String baseUrlBdsGetFascicoliUtente;
@@ -67,7 +66,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     public JPAQueryInfo getIterUtente(
             @EdmFunctionImportParameter(name = "cf", facets = @EdmFacets(nullable = false)) final String cf,
             @EdmFunctionImportParameter(name = "idAzienda", facets = @EdmFacets(nullable = false)) final Integer idAzienda,
-            @EdmFunctionImportParameter(name = "nonChiusi", facets = @EdmFacets(nullable = false)) final Boolean nonChiusi,
+            @EdmFunctionImportParameter(name = "stato", facets = @EdmFacets(nullable = true)) final String stato,
             @EdmFunctionImportParameter(name = "codiceRegistro", facets = @EdmFacets(nullable = true)) final String codiceRegistro,
             @EdmFunctionImportParameter(name = "numeroDocumento", facets = @EdmFacets(nullable = true)) final String numeroDocumento,
             @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento
@@ -115,17 +114,15 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
                 .where(QIter.iter.id.in(listaIter)
                         .and(QDocumentoIter.documentoIter.id.isNull()))
                 .distinct();
-            // listaIter = queryDSL.fetch();
         } else {
             queryDSL.select(QIter.iter)
                 .from(QIter.iter)
                 .where(QIter.iter.id.in(listaIter));
         }
-//      queryDSL = new JPAQuery(em);
         
-        
-        if (nonChiusi) {
-            queryDSL.where(QIter.iter.idStato.codice.ne(StatoChiuso.CHIUSO.toString()));
+        if (StringUtils.hasText(stato)) {
+            String[] listaStati = stato.split(":");
+            queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
         }
         
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
