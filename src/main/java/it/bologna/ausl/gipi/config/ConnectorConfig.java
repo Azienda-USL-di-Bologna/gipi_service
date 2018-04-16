@@ -1,5 +1,6 @@
 package it.bologna.ausl.gipi.config;
 
+import it.bologna.ausl.gipi.odata.processor.JPAServiceFactory;
 import java.util.Arrays;
 import org.apache.catalina.connector.Connector;
 import org.apache.cxf.endpoint.Server;
@@ -32,6 +33,14 @@ public class ConnectorConfig {
         ajpConnector.setScheme("http");
         tomcat.addAdditionalTomcatConnectors(ajpConnector);
         return tomcat;
+    }
+
+    /**
+     * crea il bean se setta il contesto JPA
+     */
+    @Bean
+    public JPAServiceFactory jPAServiceFactory() {
+        return new JPAServiceFactory();
     }
 
     /**
