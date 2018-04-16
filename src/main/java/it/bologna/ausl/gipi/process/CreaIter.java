@@ -11,6 +11,7 @@ import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QAzienda;
+import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
@@ -137,7 +138,7 @@ public class CreaIter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
-
+        
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
@@ -250,6 +251,11 @@ public class CreaIter {
         pc.setDescrizioneTipoProcedimento(p.getIdAziendaTipoProcedimento().getDescrizioneTipoProcedimento());
         pc.setIdStruttura(p.getIdStruttura());
         pc.setIdTitolarePotereSostitutivo(p.getIdTitolarePotereSostitutivo());
+        pc.setIdStrutturaTitolarePotereSostitutivo(p.getIdStrutturaTitolarePotereSostitutivo());
+        pc.setIdResponsabileAdozioneAttoFinale(p.getIdResponsabileAdozioneAttoFinale());
+        pc.setIdStrutturaResponsabileAdozioneAttoFinale(p.getIdStrutturaResponsabileAdozioneAttoFinale());
+        pc.setIdResponsabileProcedimento(i.getIdResponsabileProcedimento());
+        pc.setIdStrutturaResponsabileProcedimento(new Struttura(userInfo.getIdStruttureAfferenzaDiretta().get(0)));
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
