@@ -125,6 +125,8 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
             queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
         }
         
+        // queryDSL.orderBy(QIter.iter.idStato.codice.desc());
+        
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
     }
 }
