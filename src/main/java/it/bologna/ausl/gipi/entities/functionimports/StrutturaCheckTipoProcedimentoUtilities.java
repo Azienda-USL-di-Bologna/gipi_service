@@ -1,47 +1,15 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.entities.functionimports;
 
-import com.querydsl.jpa.impl.JPAQuery;
-import it.bologna.ausl.entities.baborg.QStruttura;
-import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
-import it.bologna.ausl.gipi.odata.complextypes.Test;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
-import it.nextsw.olingo.querybuilder.JPAQueryInfo;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-import javax.persistence.ColumnResult;
-import javax.persistence.ConstructorResult;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import javax.persistence.SqlResultSetMapping;
-import javax.persistence.TypedQuery;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.sql2o.Connection;
 import org.sql2o.Sql2o;

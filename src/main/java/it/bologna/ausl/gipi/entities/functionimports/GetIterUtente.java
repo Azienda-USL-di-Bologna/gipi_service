@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.entities.functionimports;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,20 +38,22 @@ import org.springframework.util.StringUtils;
 @EdmFunctionImportClass
 @Component
 public class GetIterUtente extends EdmFunctionImportClassBase {
-    
+
     private static final Logger logger = Logger.getLogger(GetIterUtente.class);
-    
-    public static enum GetFascicoliUtente {TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE}
-    
+
+    public static enum GetFascicoliUtente {
+        TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE
+    }
+
     @Value("${getFascicoliUtente}")
     private String baseUrlBdsGetFascicoliUtente;
-    
+
     @Autowired
     ObjectMapper objectMapper;
-    
+
     @PersistenceContext
     private EntityManager em;
-    
+
     @EdmFunctionImport(
             name = "GetIterUtente",
             entitySet = "Iters",
@@ -73,14 +70,14 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
     ) throws IOException {
         logger.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
         logger.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
-        
+
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(IterController.GetFascicoliUtente.TIPO_FASCICOLO.toString(), "2");
         additionalData.put(IterController.GetFascicoliUtente.SOLO_ITER.toString(), "true");
         additionalData.put(IterController.GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
-        
+
         String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
         // String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
         OkHttpClient client = new OkHttpClient();
@@ -94,39 +91,38 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         Fascicoli f = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicoli.class);
 
         List<Integer> listaIter = new ArrayList<>();
-        
-        for(int i = 0; i < f.getSize(); i++) {
+
+        for (int i = 0; i < f.getSize(); i++) {
             listaIter.add(f.getFascicolo(i).getIdIter());
         }
-        
+
         JPAQuery queryDSL = new JPAQuery(em);
-        
-        if (codiceRegistro != null && !codiceRegistro.equals("") &&
-                numeroDocumento != null && !numeroDocumento.equals("") &&
-                annoDocumento != null) {
+
+        if (codiceRegistro != null && !codiceRegistro.equals("")
+                && numeroDocumento != null && !numeroDocumento.equals("")
+                && annoDocumento != null) {
             queryDSL
-                .select(QIter.iter)
-                .from(QIter.iter)
-                .leftJoin(QIter.iter.documentiIterList, QDocumentoIter.documentoIter)
+                    .select(QIter.iter)
+                    .from(QIter.iter)
+                    .leftJoin(QIter.iter.documentiIterList, QDocumentoIter.documentoIter)
                     .on(QDocumentoIter.documentoIter.numeroRegistro.eq(numeroDocumento)
-                        .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
-                        .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
-                .where(QIter.iter.id.in(listaIter)
-                        .and(QDocumentoIter.documentoIter.id.isNull()))
-                .distinct();
+                            .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
+                                    .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
+                    .where(QIter.iter.id.in(listaIter)
+                            .and(QDocumentoIter.documentoIter.id.isNull()))
+                    .distinct();
         } else {
             queryDSL.select(QIter.iter)
-                .from(QIter.iter)
-                .where(QIter.iter.id.in(listaIter));
+                    .from(QIter.iter)
+                    .where(QIter.iter.id.in(listaIter));
         }
-        
+
         if (StringUtils.hasText(stato)) {
             String[] listaStati = stato.split(":");
             queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
         }
-        
+
         // queryDSL.orderBy(QIter.iter.idStato.codice.desc());
-        
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
     }
 }
