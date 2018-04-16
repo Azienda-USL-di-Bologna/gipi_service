@@ -29,13 +29,14 @@
 
     <profiles>
         <profile>
-            <id>postgres local</id>
+            <id>local</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
                 <settings.db.driverClass>org.postgresql.Driver</settings.db.driverClass>
-                <settings.db.connectionURL>jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/internauta?stringtype=unspecified
+                <settings.db.connectionURL>
+                    jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/internauta?stringtype=unspecified
                 </settings.db.connectionURL>
                 <settings.db.username>gipi</settings.db.username>
                 <settings.db.password>siamofreschi</settings.db.password>

@@ -24,9 +24,7 @@ public class CxfServletRegister2 {
 
     /**
      * Viene registrata la servlet che risponderà all'indirizzo base del
-     * servizio Olingo, viene lanciata una servlet Spring con dei parametri di
-     * inizializzazione specificati nel file spring.xml (TODO: andare a fondo
-     * sul link tra questa classe e il tag jaxrs:server)
+     * servizio Olingo
      *
      * @return
      */
