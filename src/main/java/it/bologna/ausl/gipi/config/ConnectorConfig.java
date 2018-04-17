@@ -25,8 +25,24 @@ public class ConnectorConfig {
     @Bean
     public EmbeddedServletContainerFactory servletContainer(@Value("${server.protocol.ajp.port:8202}") int ajpPort) {
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory();
+
+        /**
+         * Da doc di tomcat: The standard protocol value for an AJP connector is
+         * AJP/1.3 which uses an auto-switching mechanism to select either a
+         * Java NIO based connector or an APR/native based connector. If the
+         * PATH (Windows) or LD_LIBRARY_PATH (on most unix systems) environment
+         * variables contain the Tomcat native library, the native/APR connector
+         * will be used. If the native library cannot be found, the Java NIO
+         * based connector will be used. To use an explicit protocol rather than
+         * rely on the auto-switching mechanism described above, the following
+         * values may be used: org.apache.coyote.ajp.AjpProtocol - blocking Java
+         * connector org.apache.coyote.ajp.AjpNioProtocol - non blocking Java
+         * NIO connector org.apache.coyote.ajp.AjpNio2Protocol - non blocking
+         * Java NIO2 connector org.apache.coyote.ajp.AjpAprProtocol - the
+         * APR/native connector
+         */
         Connector ajpConnector = new Connector("org.apache.coyote.ajp.AjpNioProtocol");
-        ajpConnector.setProtocol("AJP/1.3");
+        //ajpConnector.setProtocol("AJP/1.3");
         ajpConnector.setPort(ajpPort);
         ajpConnector.setSecure(false);
         ajpConnector.setAllowTrace(false);
