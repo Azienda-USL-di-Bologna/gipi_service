@@ -88,10 +88,6 @@ public class ConnectorConfig {
          */
         JAXRSServerFactoryBean sf = new JAXRSServerFactoryBean();
 
-//        List providers = new ArrayList();
-//        providers.add(getRootLocator());
-//        providers.add(getExceptionHandler());
-//        providers.add(getProvider());
         sf.setServiceBeans(Arrays.<Object>asList(getRootLocator(), getExceptionHandler(), getProvider()));
         return sf.create();
     }
