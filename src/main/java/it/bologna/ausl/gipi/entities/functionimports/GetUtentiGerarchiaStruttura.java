@@ -9,11 +9,13 @@ import java.io.IOException;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
 
-    private static final Logger logger = Logger.getLogger(GetIterUtente.class);
+    private static final Logger log = LoggerFactory.getLogger(GetUtentiGerarchiaStruttura.class);
 
     @PersistenceContext
     private EntityManager em;
@@ -55,8 +57,8 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
             @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = false)) final Integer idStruttura,
             @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = true)) final String searchString
     ) throws IOException {
-        logger.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
-        logger.info("Stringa di ricerca: " + searchString);
+        log.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
+        log.info("Stringa di ricerca: " + searchString);
 
         List<Integer> lista = ca.getGerarchiaStruttura(idStruttura);
 

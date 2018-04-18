@@ -21,7 +21,6 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
-import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
@@ -44,10 +43,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.Authentication;
@@ -95,7 +95,7 @@ public class CreaIter {
     @Autowired
     ObjectMapper objectMapper;
 
-    private static final Logger logger = Logger.getLogger(CreaIter.class);
+    private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
 
     public Fase getFaseIniziale(int idAzienda) {
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -308,12 +308,12 @@ public class CreaIter {
         responseg = client.newCall(requestg).execute();
 
         if (responseg != null && responseg.body() != null) {
-            logger.info("GDM RESPONSE STRING = " + responseg.body().string());
-            logger.info("GDM RESPONSE MESSAGE = " + responseg.message());
-            logger.info("GDM RESPONSE ISREDIRECT = " + responseg.isRedirect());
-            logger.info("GDM RESPONSE TOSTRING= " + responseg.body().toString());
+            log.info("GDM RESPONSE STRING = " + responseg.body().string());
+            log.info("GDM RESPONSE MESSAGE = " + responseg.message());
+            log.info("GDM RESPONSE ISREDIRECT = " + responseg.isRedirect());
+            log.info("GDM RESPONSE TOSTRING= " + responseg.body().toString());
         } else {
-            logger.info("la response è null");
+            log.info("la response è null");
         }
 
         if (!responseg.isSuccessful()) {

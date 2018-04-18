@@ -40,8 +40,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -81,7 +82,7 @@ public class Process {
     @Autowired
     ObjectMapper objectMapper;
 
-    private static final Logger logger = Logger.getLogger(CreaIter.class);
+    private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
 
     public Fase getNextFase(Iter iter) {
 
@@ -148,10 +149,10 @@ public class Process {
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public void stepOn(Iter iter, ProcessSteponParams processParams, boolean isLocalHost) throws ParseException, GipiRequestParamsException, IOException {
-        logger.info("iter" + iter);
-        logger.info("Params");
+        log.info("iter" + iter);
+        log.info("Params");
         processParams.getParams().forEach((key, value) -> {
-            logger.info("Key : " + key + " Value : " + value);
+            log.info("Key : " + key + " Value : " + value);
         });
 
         // INSERIMENTO NUOVA FASE-ITER

@@ -6,7 +6,7 @@ import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.OlingoRequestInterceptorImpl;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
 import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.jpa.processor.api.ODataJPAContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,6 +16,8 @@ import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Personalizzazione del generico handler secondo standard di progetto Estendere
@@ -27,7 +29,7 @@ import java.util.UUID;
 @Component
 public abstract class OlingoRequestInterceptorBase extends OlingoRequestInterceptorImpl {
 
-    private static Logger logger = Logger.getLogger(OlingoRequestInterceptorBase.class);
+    private static final Logger log = LoggerFactory.getLogger(OlingoRequestInterceptorBase.class);
 
 //    protected static String JPQL_ENTITY_NAME_REGEX = "(?:^|[^'])(%s)\\.\\w+[^']";
 //    protected Pattern JPQL_ENTITY_NAME_PATTERN;

@@ -21,11 +21,13 @@ import javax.persistence.PersistenceContext;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -39,7 +41,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class GetIterUtente extends EdmFunctionImportClassBase {
 
-    private static final Logger logger = Logger.getLogger(GetIterUtente.class);
+    private static final Logger log = LoggerFactory.getLogger(GetIterUtente.class);
 
     public static enum GetFascicoliUtente {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE
@@ -68,8 +70,8 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
             @EdmFunctionImportParameter(name = "numeroDocumento", facets = @EdmFacets(nullable = true)) final String numeroDocumento,
             @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento
     ) throws IOException {
-        logger.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
-        logger.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
+        log.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
+        log.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
 
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();

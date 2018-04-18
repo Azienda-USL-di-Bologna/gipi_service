@@ -1,22 +1,25 @@
 package it.bologna.ausl.gipi.thread;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.concurrent.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 @Service("threadPool")
 public class ThreadPool {
+
     public static final String DEFAULT_SHUTDOWN_ERROR_MESSAGE = "Il thread pool non si è fermato entro il timeout";
     public static final int MIN_CORE_THREADS = 10;
     private ExecutorService threadPool;
-    private static final Logger logger = Logger.getLogger(ThreadPool.class);
+
+    private static final Logger log = LoggerFactory.getLogger(ThreadPool.class);
 
     @PostConstruct
     protected void init() {
@@ -48,7 +51,7 @@ public class ThreadPool {
         try {
             threadPool.awaitTermination(30, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            logger.error(errorMessage, e);
+            log.error(errorMessage, e);
         }
     }
 }

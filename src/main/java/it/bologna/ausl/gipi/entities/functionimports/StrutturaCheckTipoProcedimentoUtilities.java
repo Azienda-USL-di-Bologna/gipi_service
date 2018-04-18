@@ -3,10 +3,12 @@ package it.bologna.ausl.gipi.entities.functionimports;
 import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import java.util.List;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
@@ -28,7 +30,7 @@ public class StrutturaCheckTipoProcedimentoUtilities {
     @Value("${functionimports.query-strutture-con-check}")
     private String queryStruttureText;
 
-    private static final Logger logger = Logger.getLogger(StrutturaCheckTipoProcedimentoUtilities.class);
+    private static final Logger log = LoggerFactory.getLogger(StrutturaCheckTipoProcedimentoUtilities.class);
 
 //    @Autowired
 //    private EntityManager em;
