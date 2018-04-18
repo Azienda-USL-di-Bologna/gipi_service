@@ -53,6 +53,8 @@ public class ConnectorConfig {
 
     /**
      * crea il bean se setta il contesto JPA
+     *
+     * @return JPAServiceFactory
      */
     @Bean
     public JPAServiceFactory jPAServiceFactory() {
@@ -62,6 +64,8 @@ public class ConnectorConfig {
     /**
      * imposta come rootLocator di Olingo i settaggi contenuti in
      * JPAServiceFactory
+     *
+     * @return OlingoRootLocator
      */
     @Bean
     public OlingoRootLocator getRootLocator() {
@@ -72,6 +76,8 @@ public class ConnectorConfig {
 
     /**
      * crea una response di errore secondo il formato OData
+     *
+     * @return ODataExceptionMapperImpl
      */
     @Bean
     public ODataExceptionMapperImpl getExceptionHandler() {
@@ -92,6 +98,8 @@ public class ConnectorConfig {
      * creazione di web services in accordo con l'architettura REST. JAX-RS usa
      * annotazioni per semplificare lo sviluppo e il deploy di web service ed
      * endpoints
+     *
+     * @return JAXRSServerFactoryBean
      */
     @Bean
     @DependsOn("cxf")
