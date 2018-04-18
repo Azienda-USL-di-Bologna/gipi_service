@@ -368,6 +368,12 @@
             <artifactId>IodaObjectLibrary</artifactId>
             <version>1</version>
         </dependency>
+        
+        <dependency>
+            <groupId>it.bologna.ausl.masterchefclient</groupId>
+            <artifactId>MasterChefClient</artifactId>
+            <version>1</version>
+        </dependency>
 
 
         <!--da tenere-->

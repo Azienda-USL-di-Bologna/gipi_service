@@ -350,7 +350,7 @@ public class IterController {
 
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
-        if(!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")){
+        if(!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")) {
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;

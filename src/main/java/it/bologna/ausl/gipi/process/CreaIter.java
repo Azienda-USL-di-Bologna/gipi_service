@@ -31,11 +31,14 @@ import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.gipi.utils.UtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxIterCommandParams;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -98,6 +101,9 @@ public class CreaIter {
     
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    UtilityFunctions utilityFunctions;
     
     private static final Logger logger = Logger.getLogger(CreaIter.class);
 
@@ -330,6 +336,10 @@ public class CreaIter {
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(uLoggato.getIdPersona().getCodiceFiscale());
+        PrimusCommandParams command = new RefreshBoxIterCommandParams();
+        utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command);
 
         return i;
     }
