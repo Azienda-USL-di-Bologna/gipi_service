@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 /**
@@ -36,23 +37,19 @@ public class RedisConfiguration {
     @Autowired
     AziendaRepository aziendaRepository;
 
-    @Bean(name = {"BabelSuiteRedisConnectionFactoryMap"})
-    public Map<String, RedisConnectionFactory> babelSuiteRedisConnectionFactoryMap() {
+    @Bean(name = {"BabelSuiteJedisPoolMap"})
+    public Map<String, JedisPool> babelSuiteJedisPoolMap() {
         List<Azienda> aziende = aziendaRepository.findAll();
-        Map<String, RedisConnectionFactory> res = new HashMap<>();
+        Map<String, JedisPool> res = new HashMap<>();
 
         aziende.stream().forEach(a -> {
             try {
+                AziendaParametriJson aziendaParametriJson = AziendaParametriJson.parse(objectMapper, a.getParametri());
                 JedisPoolConfig poolConfig = new JedisPoolConfig();
                 poolConfig.setMaxTotal(128);
                 poolConfig.setBlockWhenExhausted(false);
-                JedisConnectionFactory cf = new JedisConnectionFactory(poolConfig);
-                AziendaParametriJson aziendaParametriJson = AziendaParametriJson.parse(objectMapper, a.getParametri());
-                cf.setHostName(aziendaParametriJson.getMasterchefParams().getRedisHost());
-                cf.setPort(aziendaParametriJson.getMasterchefParams().getRedisPort());
-                cf.setTimeout(500);
-                cf.setUsePool(true);
-                res.put(a.getCodice(), cf);
+                JedisPool jp = new JedisPool(poolConfig, aziendaParametriJson.getMasterchefParams().getRedisHost(), aziendaParametriJson.getMasterchefParams().getRedisPort());
+                res.put(a.getCodice(), jp);
             } catch (Exception e) {
                 // TODO: usare il log slf4j
                 e.printStackTrace();
