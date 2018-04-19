@@ -52,7 +52,6 @@ public class EclipseLinkJPAConfig extends JpaBaseConfiguration {
         properties.put("eclipselink.logging.level", logginLevel);
         properties.put("eclipselink.logging.level.sql", logginLevelSQL);
         properties.put(PersistenceUnitProperties.TARGET_DATABASE_PROPERTIES, "shouldBindLiterals=false");
-        //properties.put("eclipselink.target-database",dataBaseDialect);
         return properties;
     }
 

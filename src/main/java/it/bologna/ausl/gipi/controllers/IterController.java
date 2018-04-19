@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
@@ -28,7 +23,6 @@ import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.querydsl.jpa.JPAExpressions;
-import io.jsonwebtoken.Claims;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
@@ -46,22 +40,17 @@ import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import it.bologna.ausl.gipi.utils.GestioneStatoIter;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import okhttp3.MultipartBody;
@@ -350,13 +339,13 @@ public class IterController {
 
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
-        if(!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")){
+        if (!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")) {
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
-    //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-    //        gestioneStatiParams.setAnnoIter(i.getAnno());
-    //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+            //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+            //        gestioneStatiParams.setAnnoIter(i.getAnno());
+            //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
 
             JsonObject o = new JsonObject();
             o.addProperty("idIter", i.getId());

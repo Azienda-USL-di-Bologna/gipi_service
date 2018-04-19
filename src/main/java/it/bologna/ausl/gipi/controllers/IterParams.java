@@ -1,11 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
-//import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +14,7 @@ import java.util.TimeZone;
 public class IterParams {
 //    @JsonProperty(value = "FK_id_responsabile_procedimento")
 //    private int FK_id_responsabile_procedimento;
-    
+
     private int idUtenteResponsabile;
     private int idUtenteLoggato;
     private int idProcedimento;
@@ -165,7 +159,6 @@ public class IterParams {
 //    public void setNomeProcedimento(String nomeProcedimento) {
 //        this.nomeProcedimento = nomeProcedimento;
 //    }
-      
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();

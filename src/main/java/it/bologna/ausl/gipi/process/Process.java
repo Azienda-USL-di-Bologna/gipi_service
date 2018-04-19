@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.process;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,8 +40,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -70,23 +66,23 @@ public class Process {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
-    
+
     @Value("${babelsuite.uri.localhost}")
     private String localhostBaseUrl;
-    
+
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
-    
+
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
-    
+
     @Autowired
     EntityManager em;
-    
+
     @Autowired
     ObjectMapper objectMapper;
-    
-    private static final Logger logger = Logger.getLogger(CreaIter.class);
+
+    private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
 
     public Fase getNextFase(Iter iter) {
 
@@ -153,10 +149,10 @@ public class Process {
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public void stepOn(Iter iter, ProcessSteponParams processParams, boolean isLocalHost) throws ParseException, GipiRequestParamsException, IOException {
-        logger.info("iter" + iter);
-        logger.info("Params");
+        log.info("iter" + iter);
+        log.info("Params");
         processParams.getParams().forEach((key, value) -> {
-            logger.info("Key : " + key + " Value : " + value);
+            log.info("Key : " + key + " Value : " + value);
         });
 
         // INSERIMENTO NUOVA FASE-ITER
@@ -186,14 +182,14 @@ public class Process {
         // AGGIORNA CAMPI SU ITER
         iter.setIdFaseCorrente(nextFase);
 
-        if(nextFase.getFaseDiChiusura()){
+        if (nextFase.getFaseDiChiusura()) {
             iter.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.CHIUSO));
             iter.setEsito((String) processParams.readParam("esito"));
             iter.setEsitoMotivazione((String) processParams.readParam("motivazioneEsito"));
         }
-        
+
         em.persist(iter); // questo salva anche la dataFineFase sulla fase appena finita
-        
+
         // inserisci DOCUMENTO-ITER
         DocumentoIter documentoIter = new DocumentoIter();
         documentoIter.setRegistro((String) processParams.readParam("codiceRegistroDocumento"));
@@ -202,7 +198,6 @@ public class Process {
         documentoIter.setIdIter(iter);
         documentoIter.setOggetto((String) processParams.readParam("oggettoDocumento"));
         em.persist(documentoIter);
-        
 
 //
         // INSERIMENTO EVENTO
@@ -212,7 +207,7 @@ public class Process {
                 .from(qEvento)
                 .where(qEvento.codice.eq(nextFase.getFaseDiChiusura() ? "chiusura_iter" : "passaggio_fase"))
                 .fetchOne();
-        
+
         // Mi prendo l'idUtente loggato
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
@@ -233,14 +228,15 @@ public class Process {
         eventoIter.setNote((String) processParams.readParam("notePassaggio"));
         eventoIter.setDataOraEvento(dataPassaggio);
         em.persist(eventoIter);
-        
+
         // Fascicolo il documento 
         String baseUrl;
-        if (isLocalHost)
+        if (isLocalHost) {
             baseUrl = localhostBaseUrl;
-        else
+        } else {
             baseUrl = GetBaseUrl.getBaseUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
-        
+        }
+
         // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
         String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) processParams.readParam("codiceRegistroDocumento"), null, (String) processParams.readParam("numeroDocumento"), null, null, null, null, null, null, null, (Integer) processParams.readParam("annoDocumento"));
@@ -250,9 +246,9 @@ public class Process {
         g.setFascicolazioni(a);
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
         RequestBody body = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
-                    .build();
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                .build();
         Request requestg = new Request.Builder()
                 .url(urlChiamata)
                 .post(body)
@@ -262,10 +258,10 @@ public class Process {
         if (!responseg.isSuccessful()) {
             throw new IOException("La fascicolazione non è andata a buon fine.");
         }
-        
+
         // Comunico a Babel l'iter appena creato
         urlChiamata = baseUrl + babelGestisciIterPath;
-         
+
         JsonObject o = new JsonObject();
         o.addProperty("idIter", iter.getId());
         o.addProperty("numeroIter", iter.getNumero());
@@ -275,21 +271,21 @@ public class Process {
         o.addProperty("codiceRegistroDocumento", (String) processParams.readParam("codiceRegistroDocumento"));
         o.addProperty("numeroDocumento", (String) processParams.readParam("numeroDocumento"));
         o.addProperty("annoDocumento", (Integer) processParams.readParam("annoDocumento"));
-               
+
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
-        
+
         requestg = new Request.Builder()
                 .url(urlChiamata)
                 .addHeader("X-HTTP-Method-Override", "associaDocumento")
                 .post(body)
                 .build();
-        
+
         client = new OkHttpClient();
         responseg = client.newCall(requestg).execute();
-          
+
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
-        
+
     }
 }

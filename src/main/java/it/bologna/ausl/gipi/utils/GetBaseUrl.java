@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,19 +15,19 @@ import javax.persistence.EntityManager;
  * @author f.gusella
  */
 public class GetBaseUrl {
-    
+
     public static String getBaseUrl(int idAzienda, EntityManager em, ObjectMapper objectMapper) throws IOException {
-        
+
         QAzienda qAzienda = QAzienda.azienda;
         JPQLQuery<Azienda> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
- 
+
         String parametri = query.select(qAzienda.parametri)
                 .from(qAzienda)
                 .where(qAzienda.id.eq(idAzienda)).fetchFirst();
-  
+
         AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
         String url = params.getBaseUrl();
-       
+
         return url;
     }
 }
