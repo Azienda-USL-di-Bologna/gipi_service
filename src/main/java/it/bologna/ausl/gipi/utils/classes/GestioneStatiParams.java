@@ -1,25 +1,18 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.utils.classes;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import it.bologna.ausl.entities.gipi.Stato;
 import java.util.Date;
 import java.util.TimeZone;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
 /**
  *
  * @author utente
  */
 public class GestioneStatiParams {
+
     public String statoRichiesto;
     public int idIter;
     public String cfAutore;
@@ -127,15 +120,15 @@ public class GestioneStatiParams {
     public void setDataEvento(Date dataEvento) {
         this.dataEvento = dataEvento;
     }
-        
+
     public String getAzione() {
         return azione;
     }
-    
+
     public void setAzione(String azione) {
         this.azione = azione;
     }
-    
+
     public String getIdOggettoOrigine() {
         return idOggettoOrigine;
     }
@@ -143,8 +136,8 @@ public class GestioneStatiParams {
     public void setIdOggettoOrigine(String idOggettoOrigine) {
         this.idOggettoOrigine = idOggettoOrigine;
     }
-    
-        public String getCfAutore() {
+
+    public String getCfAutore() {
         return cfAutore;
     }
 
@@ -159,7 +152,7 @@ public class GestioneStatiParams {
     public void setIdAzienda(int idAzienda) {
         this.idAzienda = idAzienda;
     }
-    
+
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();

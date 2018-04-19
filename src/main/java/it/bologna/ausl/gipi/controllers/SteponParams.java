@@ -1,8 +1,5 @@
 package it.bologna.ausl.gipi.controllers;
 
-import it.bologna.ausl.entities.gipi.Iter;
-import java.util.Date;
-
 public class SteponParams {
 
     private int idIter;

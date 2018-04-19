@@ -1,4 +1,4 @@
-package it.bologna.ausl.gipi.odata.contex;
+package it.bologna.ausl.gipi.odata.context;
 
 import it.nextsw.olingo.context.CustomOdataJpaContextImpl;
 import org.apache.olingo.odata2.api.processor.ODataContext;
@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Classe che estende {@link CustomOdataJpaContextImpl} aggiunge una mappa per eventuali parametri da tenere durante le esecuzioni di batch
- * Created by f.longhitano on 18/07/2017.
+ * Classe che estende {@link CustomOdataJpaContextImpl} aggiunge una mappa per
+ * eventuali parametri da tenere durante le esecuzioni di batch Created by
+ * f.longhitano on 18/07/2017.
  */
 public class CustomOdataJpaContextBase extends CustomOdataJpaContextImpl {
-
 
     private Map<String, Object> contextAdditionalData;
 
@@ -24,7 +24,6 @@ public class CustomOdataJpaContextBase extends CustomOdataJpaContextImpl {
         super(oDataContext);
         contextAdditionalData = new HashMap<>();
     }
-
 
     public Map<String, Object> getContextAdditionalData() {
         return contextAdditionalData;

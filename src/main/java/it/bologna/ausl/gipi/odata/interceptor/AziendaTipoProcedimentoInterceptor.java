@@ -25,7 +25,7 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
 
     @Override
     public Predicate onQueryInterceptor(OlingoQueryObject olingoQueryObject) {
-        System.out.println("GDMGDMGDMGMDGMDGMDMGDMGM AH! PAPAPISHU!");
+        System.out.println("onQueryInterceptor");
         return null;
     }
 
@@ -34,16 +34,15 @@ public class AziendaTipoProcedimentoInterceptor extends OlingoRequestInterceptor
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        
+
         List<RuoloCachable> ruoliCachable = userInfo.getRuoliUtente();
 
 //        ruoliCachable.stream().forEach(a -> {System.out.println(a.getNomeBreve() + ": " + a.getNomeBreve().getClass().getName());});
-        
         if (olingoInterceptorOperation == OlingoInterceptorOperation.CREATE && ruoliCachable.stream().anyMatch(
                 ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CI
         )) {
             return object;
-        } else if(olingoInterceptorOperation == OlingoInterceptorOperation.UPDATE && ruoliCachable.stream().anyMatch(
+        } else if (olingoInterceptorOperation == OlingoInterceptorOperation.UPDATE && ruoliCachable.stream().anyMatch(
                 ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CA
         )) {
             return object;
