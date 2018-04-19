@@ -160,6 +160,12 @@
             <version>0.6.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
         <!-- olingo -->
         <dependency>
             <groupId>org.apache.olingo</groupId>
@@ -302,7 +308,7 @@
             <artifactId>querydsl-jpa</artifactId>
             <version>3.7.4</version>
         </dependency> -->
-
+        
         <!-- Query dsl -->
         <dependency>
             <groupId>com.querydsl</groupId>

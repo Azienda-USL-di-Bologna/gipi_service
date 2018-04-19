@@ -32,7 +32,8 @@ import org.springframework.stereotype.Component;
  * @author f.gusella
  */
 @Component
-public class UtilityFunctions {
+@Qualifier("GipiUtilityFunctions")
+public class GipiUtilityFunctions {
     
     @Autowired
     @Qualifier ("BabelSuiteRedisConnectionFactoryMap")

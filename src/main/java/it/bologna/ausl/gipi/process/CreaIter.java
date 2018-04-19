@@ -27,11 +27,10 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
-import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
-import it.bologna.ausl.gipi.utils.UtilityFunctions;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
@@ -57,6 +56,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.Authentication;
@@ -103,7 +103,8 @@ public class CreaIter {
     ObjectMapper objectMapper;
     
     @Autowired
-    UtilityFunctions utilityFunctions;
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
     
     private static final Logger logger = Logger.getLogger(CreaIter.class);
 
