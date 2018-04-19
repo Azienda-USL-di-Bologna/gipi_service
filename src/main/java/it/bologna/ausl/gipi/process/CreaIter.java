@@ -92,13 +92,13 @@ public class CreaIter {
     @Value("${babelsuite.uri.localhost}")
     private String localhostBaseUrl;
 
-    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-
     @Autowired
     EntityManager em;
 
     @Autowired
     ObjectMapper objectMapper;
+    
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
     
