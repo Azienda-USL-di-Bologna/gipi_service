@@ -8,13 +8,13 @@
     <packaging>jar</packaging>
 
     <name>gipi-service</name>
-    <description>Next backend con Olingo e Spring - castelmaggiore</description>
+    <description>gipi server</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>1.5.2.RELEASE</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
 
     <properties>
@@ -31,58 +31,16 @@
         <profile>
             <id>local</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <settings.db.driverClass>com.mysql.jdbc.Driver</settings.db.driverClass>
-                <settings.db.connectionURL>jdbc:mysql://localhost:3306/organigramma</settings.db.connectionURL>
-                <settings.db.username>root</settings.db.username>
-                <settings.db.password>root</settings.db.password>
-                <settings.db.hibernate.dialect>org.hibernate.dialect.MySQL5Dialect</settings.db.hibernate.dialect>
-                <!--Cors setting-->
-                <settings.cors.allow.origin>http://localhost:4200</settings.cors.allow.origin>
-
-                <!-- Email settings -->
-                <!--<settings.system.email.address>prova@prova.it</settings.system.email.address>-->
-                <settings.email.thread.pool.size>1</settings.email.thread.pool.size>
-                <settings.mail.sender.host>smtp.gmail.com</settings.mail.sender.host>
-                <settings.mail.sender.port>465</settings.mail.sender.port>
-                <settings.mail.sender.protocol>smtps</settings.mail.sender.protocol>
-                <settings.mail.sender.username>username</settings.mail.sender.username>
-                <settings.mail.sender.password>password</settings.mail.sender.password>
-                <settings.mail.sender.smtps.auth>true</settings.mail.sender.smtps.auth>
-                <settings.mail.sender.smtp.auth.mechanisms>LOGIN PLAIN</settings.mail.sender.smtp.auth.mechanisms>
-                <!--<settings.mail.sender.smtps.starttls.enable>false</settings.mail.sender.smtps.starttls.enable>-->
-                <setting.db.eclipselink.weaving>true</setting.db.eclipselink.weaving>
-                <setting.db.eclipselink.dialect>PostgreSQL</setting.db.eclipselink.dialect>
-                <setting.db.eclipselink.ddl.generation>none</setting.db.eclipselink.ddl.generation>
-            </properties>
-        </profile>
-        <profile>
-            <id>postgres local</id>
-            <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
                 <settings.db.driverClass>org.postgresql.Driver</settings.db.driverClass>
-                <settings.db.connectionURL>jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/internauta?stringtype=unspecified
+                <settings.db.connectionURL>
+                    jdbc:postgresql://gdml.internal.ausl.bologna.it:5432/internauta?stringtype=unspecified
                 </settings.db.connectionURL>
                 <settings.db.username>gipi</settings.db.username>
                 <settings.db.password>siamofreschi</settings.db.password>
-                <!--<settings.db.hibernate.dialect>org.hibernate.dialect.PostgreSQL94Dialect</settings.db.hibernate.dialect>-->
-                <!--Cors setting-->
                 <settings.cors.allow.origin>*</settings.cors.allow.origin>
-
-                <!-- Email settings -->
-                <!--<settings.system.email.address>prova@prova.it</settings.system.email.address>-->
-                <settings.email.thread.pool.size>1</settings.email.thread.pool.size>
-                <settings.mail.sender.host>smtp.gmail.com</settings.mail.sender.host>
-                <settings.mail.sender.port>465</settings.mail.sender.port>
-                <settings.mail.sender.protocol>smtps</settings.mail.sender.protocol>
-                <settings.mail.sender.username>username</settings.mail.sender.username>
-                <settings.mail.sender.password>password</settings.mail.sender.password>
-                <settings.mail.sender.smtps.auth>true</settings.mail.sender.smtps.auth>
-                <settings.mail.sender.smtp.auth.mechanisms>LOGIN PLAIN</settings.mail.sender.smtp.auth.mechanisms>
                 <setting.db.eclipselink.weaving>true</setting.db.eclipselink.weaving>
                 <setting.db.eclipselink.dialect>PostgreSQL</setting.db.eclipselink.dialect>
                 <setting.db.eclipselink.ddl.generation>none</setting.db.eclipselink.ddl.generation>
@@ -95,6 +53,7 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-rest-hal-browser</artifactId>
         </dependency>
+        
         <!-- Spring Boot -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -130,7 +89,6 @@
             <version>${spring.boot.version}</version>
             <type>jar</type>
         </dependency>
-
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-instrument</artifactId>
@@ -153,7 +111,6 @@
             <artifactId>spring-security-openid</artifactId>
             <version>4.2.3.RELEASE</version>
         </dependency>
-
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
@@ -232,6 +189,7 @@
             <artifactId>olingo-odata2-spring</artifactId>
             <version>${olingo.odata2.version}</version>
         </dependency>
+        
         <!-- CXF -->
         <dependency>
             <groupId>org.apache.cxf</groupId>
@@ -243,6 +201,7 @@
             <artifactId>cxf-spring-boot-starter-jaxws</artifactId>
             <version>3.1.11</version>
         </dependency>
+        
         <!-- JSON support -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -252,11 +211,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.apache.cxf</groupId>-->
-        <!--<artifactId>cxf-bundle-jaxrs</artifactId>-->
-        <!--<version>2.7.17</version>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -273,6 +227,7 @@
             <version>2.7.1</version>
             <scope>provided</scope>
         </dependency>
+        
         <!-- apache commons utils -->
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -289,25 +244,12 @@
             <artifactId>commons-io</artifactId>
             <version>2.5</version>
         </dependency>
-
         <dependency>
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
             <version>3.6</version>
         </dependency>
 
-        <!--        <dependency>
-                    <groupId>com.mysema.querydsl</groupId>
-                    <artifactId>querydsl-apt</artifactId>
-                    <version>3.7.4</version>
-                    <scope>provided</scope>
-                </dependency>
-
-        <dependency>
-            <groupId>com.mysema.querydsl</groupId>
-            <artifactId>querydsl-jpa</artifactId>
-            <version>3.7.4</version>
-        </dependency> -->
         
         <!-- Query dsl -->
         <dependency>
@@ -323,14 +265,14 @@
             <type>jar</type>
         </dependency>
 
+        <!-- SLF -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.25</version>
         </dependency>
 
-
-
+        <!-- Postgres -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -344,31 +286,15 @@
             <artifactId>sql2o</artifactId>
             <version>1.5.4</version>
         </dependency>
-
-
-        <!-- email -->
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.integration</groupId>
-            <artifactId>spring-integration-mail</artifactId>
-            <version>4.3.11.RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.5.5</version>
-        </dependency>
-
+        
+        <!-- EclipseLInk -->
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>eclipselink</artifactId>
             <version>${eclipse.link.version}</version>
         </dependency>
 
+        <!-- dipendenze progetti -->
         <dependency>
             <groupId>it.bologna.ausl.iodaobjectlibrary</groupId>
             <artifactId>IodaObjectLibrary</artifactId>
@@ -382,7 +308,7 @@
         </dependency>
 
 
-        <!--da tenere-->
+        <!--Utility-->
         <!-- https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -401,26 +327,7 @@
             <artifactId>jackson-datatype-joda</artifactId>
             <version>2.5.3</version>
         </dependency>
-<!--        PER LA CACHE
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-            <version>1.5.9.RELEASE</version>
-        </dependency>
-
-         https://mvnrepository.com/artifact/redis.clients/jedis
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>2.9.0</version>
-        </dependency>
-         https://mvnrepository.com/artifact/org.projectlombok/lombok
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.20</version>
-            <scope>provided</scope>
-        </dependency>-->
+        
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>entities</artifactId>
@@ -450,24 +357,6 @@
                     <useDefaultDelimiters>false</useDefaultDelimiters>
                 </configuration>
             </plugin>
-<!--            <plugin>
-                <groupId>com.mysema.maven</groupId>
-                <artifactId>apt-maven-plugin</artifactId>
-                <version>1.1.3</version>
-                <executions>
-                    <execution>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>process</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/generated-sources/java</outputDirectory>
-                            <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
-                        </configuration>
-                    </execution>
-                </executions>
-
-            </plugin>-->
             <plugin>
                 <!-- Per avere versione di hg come property-->
                 <groupId>org.codehaus.mojo</groupId>
@@ -481,14 +370,15 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
+        
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
+        
     </build>
 
     <repositories>
@@ -508,6 +398,5 @@
             </releases>
         </repository>
     </repositories>
-
 
 </project>

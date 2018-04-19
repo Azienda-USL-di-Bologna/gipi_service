@@ -1,12 +1,12 @@
 package it.bologna.ausl.gipi.odata.processor;
 
-import it.bologna.ausl.gipi.odata.contex.CustomOdataJpaContextBase;
+import it.bologna.ausl.gipi.odata.context.CustomOdataJpaContextBase;
 import it.bologna.ausl.gipi.odata.utils.ODataContextUtil;
 import it.nextsw.olingo.edmextension.CustomProcessingEdmExtension;
 import it.nextsw.olingo.processor.CustomJpaProcessorImpl;
 
 import it.nextsw.olingo.processor.CustomOdataJpaSingleProcessor;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.api.ODataCallback;
 import org.apache.olingo.odata2.api.processor.ODataSingleProcessor;
 import org.apache.olingo.odata2.jpa.processor.api.ODataJPAContext;
@@ -14,25 +14,21 @@ import org.apache.olingo.odata2.jpa.processor.api.ODataJPAServiceFactory;
 import org.apache.olingo.odata2.jpa.processor.api.access.JPAProcessor;
 import org.apache.olingo.odata2.jpa.processor.api.exception.ODataJPARuntimeException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class JPAServiceFactory extends ODataJPAServiceFactory {
 
-    private static final Logger logger = Logger.getLogger(JPAServiceFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(JPAServiceFactory.class);
 
     public static final String DEFAULT_ENTITY_UNIT_NAME = "Model";
     public static final String ENTITY_MANAGER_FACTORY_ID = "entityManagerFactory";
-    private static final String MAPPING_MODEL = "SalesOrderProcessingMappingModel.xml";
-
-    // Error set
-    private static final String SHOW_DETAIL_ERROR = "showDetailError";
-    private static final String CONFIG = "serviceConfig";
 
     @Autowired
     private ApplicationContext applicationContext;
