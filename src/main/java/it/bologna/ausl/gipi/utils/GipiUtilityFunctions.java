@@ -47,13 +47,16 @@ public class GipiUtilityFunctions {
      * @param utenti lista dei codici fiscali degli utenti che riceveranno il comando 
      * @throws java.io.UnsupportedEncodingException 
      */
-    public void sendPrimusCommand(Azienda azienda, List<String> utenti, PrimusCommandParams command) throws UnsupportedEncodingException, IOException {
+    public void sendPrimusCommand(Azienda azienda, List<String> utenti, PrimusCommandParams command, String idApplicazione) throws UnsupportedEncodingException, IOException {
         AziendaParametriJson aziendaParametriJson = AziendaParametriJson.parse(objectMapper, azienda.getParametri());
         AziendaParametriJson.MasterChefParmas masterChefParmas = aziendaParametriJson.getMasterchefParams();
         String masteChefInQueue = masterChefParmas.getInQueue();
         
+        if (idApplicazione == null || idApplicazione.equals(""))
+            idApplicazione = "*";
+        
         PrimusCommand com = new PrimusCommand(command);
-        PrimusMessage m = new PrimusMessage(utenti, "*", com);
+        PrimusMessage m = new PrimusMessage(utenti, idApplicazione, com);
 
         JobParams j = new PrimusCommanderParams("1", "1", m);
         String tempQueue = "gipi_service_" + UUID.randomUUID();

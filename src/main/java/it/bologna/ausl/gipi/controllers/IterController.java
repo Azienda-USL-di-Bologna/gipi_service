@@ -426,7 +426,7 @@ public class IterController {
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
-        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command);
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
         
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
@@ -514,7 +514,7 @@ public class IterController {
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
             PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
-            utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command);
+            utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
         }
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }

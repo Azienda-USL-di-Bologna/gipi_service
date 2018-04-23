@@ -327,7 +327,7 @@ public class CreaIter {
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(uLoggato.getIdPersona().getCodiceFiscale());
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
-        utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command);
+        utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command, iterParams.getIdApplicazione());
 
         return i;
     }

@@ -311,6 +311,6 @@ public class Process {
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
-        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command);
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, (String) processParams.readParam("idApplicazione"));
     }
 }
