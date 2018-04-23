@@ -23,6 +23,7 @@ import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.querydsl.jpa.JPAExpressions;
+import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
@@ -37,21 +38,26 @@ import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
+import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import okhttp3.MultipartBody;
@@ -60,6 +66,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -104,6 +111,13 @@ public class IterController {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
+    
+    @Autowired
+    AziendaRepository aziendaRepository;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
 
     QIter qIter = QIter.iter;
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
@@ -362,7 +376,7 @@ public class IterController {
         if (!responseg.isSuccessful()) {
             System.out.println("La risposta --> " + responseg.toString());
             throw new IOException("La fascicolazione non è andata a buon fine.");
-        }
+        } 
 
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
@@ -403,6 +417,17 @@ public class IterController {
                 throw new IOException("La chiamata a Babel non è andata a buon fine.");
             }
         }
+        
+        // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+        PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
+        
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
 
@@ -480,6 +505,16 @@ public class IterController {
             // ritorno un oggetto di ok
             obj.addProperty("idIter", i.getId().toString());
             obj.addProperty("object", responseg.toString());
+            
+            // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+            String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+            List<String> cfUtentiDaRefreshare = new ArrayList<>();
+            cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+            PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+            utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
         }
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }

@@ -25,11 +25,14 @@ import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -53,6 +56,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  *
@@ -88,15 +92,20 @@ public class CreaIter {
     @Value("${babelsuite.uri.localhost}")
     private String localhostBaseUrl;
 
-    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-
     @Autowired
     EntityManager em;
 
     @Autowired
     ObjectMapper objectMapper;
+    
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
+    
 
     public Fase getFaseIniziale(int idAzienda) {
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -119,13 +128,8 @@ public class CreaIter {
 
     public int getNumeroIterMax() {
         JPQLQuery<Iter> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
-//        Long maxId = query(this.qIter.numeroIter.max());
         int i = query.select(this.qIter.numero.max())
                 .from(this.qIter).fetchFirst();
-//                .unique(this.qIter.numeroIter.max())
-//                .fetchFirst();
-//        JPQLQuery<Integer> a = JPAExpressions.select(this.qIter.numeroIter.max())
-//                  .from(this.qIter);
         return i;
     }
 
@@ -157,7 +161,7 @@ public class CreaIter {
         i.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.IN_CORSO));
         i.setDataCreazione(iterParams.getDataCreazioneIter());
         i.setDataAvvio(iterParams.getDataAvvioIter());
-        // i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
+        // i.setIdFascicolo(fascicolo.getNumerazioneGerarchica()); // Questo lo mettiamo dopo quando lo avremo
         i.setNomeFascicolo(iterParams.getOggettoIter());
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
@@ -182,12 +186,6 @@ public class CreaIter {
         List<String> vicari = new ArrayList<String>();
         // Passare da set a list è un trucco per non avere doppioni nella lista.
         vicari.addAll(set);
-//        List<String> vicari = new ArrayList<>();
-//        if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
-//            vicari.add(uLoggato.getIdPersona().getCodiceFiscale());
-//        }
-//        vicari.add(p.getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
-//        vicari.add(p.getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
         fascicolo.setVicari(vicari);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
@@ -289,10 +287,6 @@ public class CreaIter {
         // Comunico a Babel l'iter appena creato
         urlChiamata = baseUrl + babelGestisciIterPath;
 
-//        iterParams.setIdIter(i.getId());
-//        iterParams.setCfResponsabileProcedimento(uResponsabile.getIdPersona().getCodiceFiscale());
-//        iterParams.setAnnoIter(i.getAnno());
-//        iterParams.setNomeProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId());
         o.addProperty("numeroIter", i.getNumero());
@@ -328,6 +322,12 @@ public class CreaIter {
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
+        
+        // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(uLoggato.getIdPersona().getCodiceFiscale());
+        PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+        utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command, iterParams.getIdApplicazione());
 
         return i;
     }

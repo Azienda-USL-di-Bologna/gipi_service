@@ -33,6 +33,7 @@ public class GestioneStatiParams {
     public String azione;
     public String idOggettoOrigine;
     public String descrizione;
+    public String idApplicazione;
 
     public String getStatoRichiesto() {
         return statoRichiesto;
@@ -160,6 +161,14 @@ public class GestioneStatiParams {
 
     public void setIdAzienda(int idAzienda) {
         this.idAzienda = idAzienda;
+    }
+
+    public String getIdApplicazione() {
+        return idApplicazione;
+    }
+
+    public void setIdApplicazione(String idApplicazione) {
+        this.idApplicazione = idApplicazione;
     }
 
     @JsonIgnore
