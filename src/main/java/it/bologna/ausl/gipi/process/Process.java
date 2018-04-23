@@ -212,6 +212,9 @@ public class Process {
         documentoIter.setNumeroRegistro((String) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
         documentoIter.setOggetto((String) processParams.readParam("oggettoDocumento"));
+        documentoIter.setIdOggetto((String) processParams.readParam("idOggettoOrigine"));
+        documentoIter.setDescrizione((String) processParams.readParam("descrizione"));
+        documentoIter.setParziale(Boolean.FALSE);
         em.persist(documentoIter);
 
 //

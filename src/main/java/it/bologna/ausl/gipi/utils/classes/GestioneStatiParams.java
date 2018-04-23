@@ -32,6 +32,7 @@ public class GestioneStatiParams {
     public String esitoMotivazione;
     public String azione;
     public String idOggettoOrigine;
+    public String descrizione;
 
     public String getStatoRichiesto() {
         return statoRichiesto;
@@ -135,6 +136,14 @@ public class GestioneStatiParams {
 
     public void setIdOggettoOrigine(String idOggettoOrigine) {
         this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
     }
 
     public String getCfAutore() {
