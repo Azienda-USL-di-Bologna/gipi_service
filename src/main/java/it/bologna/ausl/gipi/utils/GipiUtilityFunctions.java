@@ -53,7 +53,7 @@ public class GipiUtilityFunctions {
         String masteChefInQueue = masterChefParmas.getInQueue();
         
         PrimusCommand com = new PrimusCommand(command);
-        PrimusMessage m = new PrimusMessage(utenti, "procton", com);
+        PrimusMessage m = new PrimusMessage(utenti, "*", com);
 
         JobParams j = new PrimusCommanderParams("1", "1", m);
         String tempQueue = "gipi_service_" + UUID.randomUUID();

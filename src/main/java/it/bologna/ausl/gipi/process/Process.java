@@ -5,8 +5,10 @@ import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -21,19 +23,24 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QStato;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
+import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.EntityManager;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -44,6 +51,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -81,6 +89,13 @@ public class Process {
 
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
+    
+    @Autowired
+    AziendaRepository aziendaRepository;
 
     private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
 
@@ -286,6 +301,13 @@ public class Process {
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
-
+        
+        // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+        PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command);
     }
 }
