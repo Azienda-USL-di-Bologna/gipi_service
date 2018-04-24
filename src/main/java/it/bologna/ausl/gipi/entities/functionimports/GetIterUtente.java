@@ -14,6 +14,7 @@ import it.nextsw.olingo.edmextension.EdmFunctionImportClassBase;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import javax.persistence.EntityManager;
@@ -26,6 +27,7 @@ import org.apache.olingo.odata2.api.annotation.edm.EdmFacets;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImport;
 import org.apache.olingo.odata2.api.annotation.edm.EdmFunctionImportParameter;
 import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,9 +70,15 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
             @EdmFunctionImportParameter(name = "stato", facets = @EdmFacets(nullable = true)) final String stato,
             @EdmFunctionImportParameter(name = "codiceRegistro", facets = @EdmFacets(nullable = true)) final String codiceRegistro,
             @EdmFunctionImportParameter(name = "numeroDocumento", facets = @EdmFacets(nullable = true)) final String numeroDocumento,
-            @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento
+            @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento,
+            // filtri
+            @EdmFunctionImportParameter(name = "oggetto", facets = @EdmFacets(nullable = true)) final String oggetto,
+            @EdmFunctionImportParameter(name = "numero", facets = @EdmFacets(nullable = true)) final Integer numero,
+            @EdmFunctionImportParameter(name = "dataAvvio", facets = @EdmFacets(nullable = true)) final String dataAvvio,
+            @EdmFunctionImportParameter(name = "idStato_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneStato,
+            @EdmFunctionImportParameter(name = "idResponsabileProcedimento_sep_idPersona_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneRespProc
     ) throws IOException {
-        log.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
+
         log.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
 
         Researcher r = new Researcher(null, null, 0);
@@ -122,6 +130,18 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         if (StringUtils.hasText(stato)) {
             String[] listaStati = stato.split(":");
             queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
+        }
+        if (StringUtils.hasText(oggetto)) {
+            queryDSL.where(QIter.iter.oggetto.likeIgnoreCase("%" + oggetto + "%"));
+        }
+        if (numero != null) {
+            queryDSL.where(QIter.iter.numero.stringValue().like("%" + Integer.toString(numero) + "%"));
+        }
+        if (StringUtils.hasText(descrizioneStato)) {
+            queryDSL.where(QIter.iter.idStato.descrizione.likeIgnoreCase("%" + descrizioneStato + "%"));
+        }
+        if (StringUtils.hasText(descrizioneRespProc)) {
+            queryDSL.where(QIter.iter.idResponsabileProcedimento.idPersona.descrizione.likeIgnoreCase("%" + descrizioneRespProc + "%"));
         }
 
         // queryDSL.orderBy(QIter.iter.idStato.codice.desc());
