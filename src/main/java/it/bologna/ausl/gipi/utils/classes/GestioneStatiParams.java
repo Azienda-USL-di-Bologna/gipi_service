@@ -32,6 +32,8 @@ public class GestioneStatiParams {
     public String esitoMotivazione;
     public String azione;
     public String idOggettoOrigine;
+    public String descrizione;
+    public String idApplicazione;
 
     public String getStatoRichiesto() {
         return statoRichiesto;
@@ -137,6 +139,14 @@ public class GestioneStatiParams {
         this.idOggettoOrigine = idOggettoOrigine;
     }
 
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+
     public String getCfAutore() {
         return cfAutore;
     }
@@ -151,6 +161,14 @@ public class GestioneStatiParams {
 
     public void setIdAzienda(int idAzienda) {
         this.idAzienda = idAzienda;
+    }
+
+    public String getIdApplicazione() {
+        return idApplicazione;
+    }
+
+    public void setIdApplicazione(String idApplicazione) {
+        this.idApplicazione = idApplicazione;
     }
 
     @JsonIgnore

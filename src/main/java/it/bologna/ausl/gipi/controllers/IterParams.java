@@ -27,6 +27,9 @@ public class IterParams {
     private int annoDocumento;
     private String oggettoDocumento;
     private String promotore;
+    private String idOggettoOrigine;
+    private String descrizione;
+    private String idApplicazione;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
@@ -128,6 +131,30 @@ public class IterParams {
         this.promotore = promotore;
     }
 
+    public String getIdOggettoOrigine() {
+        return idOggettoOrigine;
+    }
+
+    public void setIdOggettoOrigine(String idOggettoOrigine) {
+        this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+
+    public String getIdApplicazione() {
+        return idApplicazione;
+    }
+
+    public void setIdApplicazione(String idApplicazione) {
+        this.idApplicazione = idApplicazione;
+    }
+    
 //    public int getIdIter() {
 //        return idIter;
 //    }

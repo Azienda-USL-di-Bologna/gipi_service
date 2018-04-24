@@ -144,7 +144,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
             queryDSL.where(QIter.iter.idResponsabileProcedimento.idPersona.descrizione.likeIgnoreCase("%" + descrizioneRespProc + "%"));
         }
 
-        // queryDSL.orderBy(QIter.iter.idStato.codice.desc());
+        queryDSL.orderBy(QIter.iter.numero.desc());
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
     }
 }
