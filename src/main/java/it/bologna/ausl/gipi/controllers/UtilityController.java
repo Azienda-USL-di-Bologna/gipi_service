@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +5,6 @@ import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,7 +24,7 @@ public class UtilityController {
     private String revision;
     @Value("${modificationTime}")
     private String modificationTime;
-    
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -45,12 +39,11 @@ public class UtilityController {
         return revision + "\n" + modificationTime;
         //return new ResponseEntity<>(revision + "\n" + modificationTime, HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "save", method = RequestMethod.POST, consumes = "application/json;charset=UTF-8")
     public void save(@RequestBody AziendaTipoProcedimento entity) {
-        
+
 //        AziendaTipoProcedimento aziendaTipoProcedimento = objectMapper.convertValue(entity, AziendaTipoProcedimento.class);
-        
         System.out.println("aziendaTipoProcedimento: " + entity);
     }
 

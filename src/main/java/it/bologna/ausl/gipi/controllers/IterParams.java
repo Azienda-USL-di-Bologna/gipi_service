@@ -1,11 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
-//import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +14,7 @@ import java.util.TimeZone;
 public class IterParams {
 //    @JsonProperty(value = "FK_id_responsabile_procedimento")
 //    private int FK_id_responsabile_procedimento;
-    
+
     private int idUtenteResponsabile;
     private int idUtenteLoggato;
     private int idProcedimento;
@@ -33,6 +27,9 @@ public class IterParams {
     private int annoDocumento;
     private String oggettoDocumento;
     private String promotore;
+    private String idOggettoOrigine;
+    private String descrizione;
+    private String idApplicazione;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
@@ -134,6 +131,30 @@ public class IterParams {
         this.promotore = promotore;
     }
 
+    public String getIdOggettoOrigine() {
+        return idOggettoOrigine;
+    }
+
+    public void setIdOggettoOrigine(String idOggettoOrigine) {
+        this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+
+    public String getIdApplicazione() {
+        return idApplicazione;
+    }
+
+    public void setIdApplicazione(String idApplicazione) {
+        this.idApplicazione = idApplicazione;
+    }
+    
 //    public int getIdIter() {
 //        return idIter;
 //    }
@@ -165,7 +186,6 @@ public class IterParams {
 //    public void setNomeProcedimento(String nomeProcedimento) {
 //        this.nomeProcedimento = nomeProcedimento;
 //    }
-      
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();

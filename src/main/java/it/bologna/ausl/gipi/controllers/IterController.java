@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
@@ -28,7 +23,7 @@ import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.querydsl.jpa.JPAExpressions;
-import io.jsonwebtoken.Claims;
+import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
@@ -36,32 +31,33 @@ import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.FaseIter;
+import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
+import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import it.bologna.ausl.gipi.utils.GestioneStatoIter;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import okhttp3.MultipartBody;
@@ -70,6 +66,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -114,8 +111,16 @@ public class IterController {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
+    
+    @Autowired
+    AziendaRepository aziendaRepository;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
 
     QIter qIter = QIter.iter;
+    QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
 
@@ -175,6 +180,8 @@ public class IterController {
         processSteponParams.insertParam("esito", data.getEsito());
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
         processSteponParams.insertParam("oggettoDocumento", data.getOggettoDocumento());
+        processSteponParams.insertParam("idOggettoOrigine", data.getIdOggettoOrigine());
+        processSteponParams.insertParam("descrizione", data.getDescrizione());
 
         process.stepOn(iter, processSteponParams, request.getServerName().equalsIgnoreCase("localhost"));
 
@@ -300,15 +307,38 @@ public class IterController {
         }
 
         em.persist(i);
-        // Creo il documento iter
-        DocumentoIter d = new DocumentoIter();
-        d.setAnno(gestioneStatiParams.getAnnoDocumento());
-        d.setIdIter(i);
-        d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
-        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
-        d.setOggetto(gestioneStatiParams.getOggettoDocumento());
-        em.persist(d);
-        em.flush();
+        
+        Boolean isDifferito = gestioneStatiParams.getAzione().equals("cambio_di_stato_differito");
+        
+        DocumentoIter d;
+        if (!isDifferito) {
+            // Creo il documento iter
+            d = new DocumentoIter();
+            d.setAnno(gestioneStatiParams.getAnnoDocumento());
+            d.setIdIter(i);
+            d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
+            d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
+            d.setOggetto(gestioneStatiParams.getOggettoDocumento());
+            d.setDescrizione(gestioneStatiParams.getDescrizione());
+            d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
+            d.setParziale(Boolean.FALSE);
+            em.persist(d);
+            em.flush();
+        } else {
+            JPQLQuery<DocumentoIter> queryDocumentoIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+            
+            d = queryDocumentoIter
+                .from(qDocumentoIter)
+                .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
+                .and(qDocumentoIter.idIter.eq(i)).and(qDocumentoIter.parziale.eq(Boolean.TRUE)))
+                .fetchOne();
+            d.setAnno(gestioneStatiParams.getAnnoDocumento());
+            d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
+            d.setOggetto(gestioneStatiParams.getOggettoDocumento()); // Non so se riaggiungerlo o lasciare la descrizione di quando era parziale
+            d.setDescrizione(gestioneStatiParams.getDescrizione());
+            d.setParziale(Boolean.FALSE);
+            em.merge(d);
+        }
 
         // Creo l'evento iter
         EventoIter ei = new EventoIter();
@@ -346,17 +376,17 @@ public class IterController {
         if (!responseg.isSuccessful()) {
             System.out.println("La risposta --> " + responseg.toString());
             throw new IOException("La fascicolazione non è andata a buon fine.");
-        }
+        } 
 
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
-        if(!gestioneStatiParams.getAzione().equals("cambio_di_stato_differito")){
+        if(!isDifferito){
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
-    //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-    //        gestioneStatiParams.setAnnoIter(i.getAnno());
-    //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+            //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+            //        gestioneStatiParams.setAnnoIter(i.getAnno());
+            //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
 
             JsonObject o = new JsonObject();
             o.addProperty("idIter", i.getId());
@@ -387,6 +417,17 @@ public class IterController {
                 throw new IOException("La chiamata a Babel non è andata a buon fine.");
             }
         }
+        
+        // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+        PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
+        
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
 
@@ -424,6 +465,18 @@ public class IterController {
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
         o.addProperty("datiDifferiti", dati_differiti.toString());
 
+         // Creo il documento iter parziale
+        DocumentoIter d = new DocumentoIter();
+        d.setIdIter(i);
+        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
+        d.setOggetto(gestioneStatiParams.getOggettoDocumento());
+        d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
+        d.setDescrizione(gestioneStatiParams.getDescrizione());
+        d.setParziale(Boolean.TRUE);
+        d.setDati_differiti(dati_differiti.toString());
+        em.persist(d);
+        em.flush();
+        
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
@@ -452,6 +505,16 @@ public class IterController {
             // ritorno un oggetto di ok
             obj.addProperty("idIter", i.getId().toString());
             obj.addProperty("object", responseg.toString());
+            
+            // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+            String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+            List<String> cfUtentiDaRefreshare = new ArrayList<>();
+            cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+            PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+            utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
         }
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }

@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
 import com.google.gson.JsonObject;
@@ -56,20 +51,19 @@ public class Tests {
     @Autowired
     EntityManager em;
 
-
     @RequestMapping(value = "TestGetFascicoliUtente", method = RequestMethod.GET)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> TestGetFascicoliUtente() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
-        
+
         Researcher r = new Researcher(null, null, 0);
-        java.util.HashMap additionalData = (java.util.HashMap)new java.util.HashMap();
+        java.util.HashMap additionalData = (java.util.HashMap) new java.util.HashMap();
         additionalData.put("TIPO_FASCICOLO", "2");
         additionalData.put("SOLO_ITER", "true");
         additionalData.put("CODICE_FISCALE", "GSLFNC89A05G224Y");
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
-        
+
         String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
-        
+
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         Request request = new Request.Builder()
@@ -82,36 +76,33 @@ public class Tests {
         return new ResponseEntity(resString, HttpStatus.OK);
     }
 
-    
     @RequestMapping(value = "TestFascicolazione", method = RequestMethod.GET)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> TestFascicolazione() throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
         // 213/2018  hy
         // PG 0000459  2017
         // f.gusella
-        
+
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, "PG", null, "0000459", null, null, null, null, null, null, null, 2017);
         Fascicolazione f = new Fascicolazione("213/2018", "hy", "f.gusella", null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
         a.add(f);
         g.setFascicolazioni(a);
-        
+
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", g);
         String baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";             // Questo va spostato e reso parametrico
         //String baseUrl = getBaseUrl(iterParams.getIdAzienda()) + baseUrlBds;
-        
+
         OkHttpClient client = new OkHttpClient();
         //okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
-        
+
 //        private final String REQUEST_DESCRIPTOR_PART_NAME = "request_descriptor";
 // entityBuilder.addTextBody(REQUEST_DESCRIPTOR_PART_NAME, requestData.toJSONString(), ContentType.APPLICATION_JSON);
-
         RequestBody body = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8")))
-                    .build();
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8")))
+                .build();
 
-        
         Request request = new Request.Builder()
                 .url(baseUrl)
                 .post(body)
@@ -119,14 +110,13 @@ public class Tests {
         Response response = client.newCall(request).execute();
         String resString = response.body().string();
         //g = (GdDoc) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, GdDoc.class);
-        
+
         JsonObject o = new JsonObject();
         o.addProperty("gddoc", "ciao");
 
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
 
-    
     @RequestMapping(value = "getNextFase", method = RequestMethod.GET)
     public ResponseEntity getNextFase() {
         Iter iter = new Iter();
@@ -222,31 +212,31 @@ public class Tests {
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity testWebApi(@org.springframework.web.bind.annotation.RequestBody ItemsDaPassare data)
             throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
-        
-        System.out.println("DATA = " + data );
-        
+
+        System.out.println("DATA = " + data);
+
         String baseUrl = "http://localhost:8080/Procton/AvviaIter";
-        
-        System.out.println("DATI = " + data.getJSONString() );
-        
+
+        System.out.println("DATI = " + data.getJSONString());
+
         RequestBody body = RequestBody.create(JSON, data.getJSONString().getBytes("UTF-8"));
-        
+
         Request requestg = new Request.Builder()
                 .url(baseUrl)
                 .addHeader("X-HTTP-Method-Override", "associaDocumentoAiter")
                 .post(body)
                 .build();
-        
+
         OkHttpClient client = new OkHttpClient();
-        
+
         Response responseg = client.newCall(requestg).execute();
         if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata non è andata a buon fine.");
         }
-        
-        System.out.println("DATI = " + data );
-        
+
+        System.out.println("DATI = " + data);
+
         return new ResponseEntity(data, HttpStatus.OK);
     }
-    
+
 }

@@ -1,13 +1,12 @@
 package it.bologna.ausl.gipi.odata.interceptor;
 
 import com.querydsl.core.types.Predicate;
-//import it.nextsw.entities.Utente;
-import it.bologna.ausl.gipi.odata.contex.CustomOdataJpaContextBase;
+import it.bologna.ausl.gipi.odata.context.CustomOdataJpaContextBase;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.OlingoRequestInterceptorImpl;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
 import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
-import org.apache.log4j.Logger;
+
 import org.apache.olingo.odata2.jpa.processor.api.ODataJPAContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,25 +16,25 @@ import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Personalizzazione del generico handler secondo standard di progetto
- * Estendere questo handler per implementare la sicurezza sulle chiamate alla servlet di olingo
+ * Personalizzazione del generico handler secondo standard di progetto Estendere
+ * questo handler per implementare la sicurezza sulle chiamate alla servlet di
+ * olingo
  * <p>
  * Created by f.longhitano on 30/06/2017.
  */
 @Component
 public abstract class OlingoRequestInterceptorBase extends OlingoRequestInterceptorImpl {
 
-    private static Logger logger = Logger.getLogger(OlingoRequestInterceptorBase.class);
-
+    private static final Logger log = LoggerFactory.getLogger(OlingoRequestInterceptorBase.class);
 
 //    protected static String JPQL_ENTITY_NAME_REGEX = "(?:^|[^'])(%s)\\.\\w+[^']";
 //    protected Pattern JPQL_ENTITY_NAME_PATTERN;
 //    protected static Pattern JPQL_AND_PATTER=Pattern.compile("(?!\\B'[^']*)(&&)(?![^']*'\\B)");
 //    protected static Pattern JPQL_OR_PATTER=Pattern.compile("(?!\\B'[^']*)(\\|\\|)(?![^']*'\\B)");
-
 //    @PostConstruct
 //    public void init() {
 //        this.compilePatterns();
@@ -45,14 +44,11 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
 //        String entityPattern = String.format(JPQL_ENTITY_NAME_REGEX, getReferenceEntity().getSimpleName().toLowerCase());
 //        JPQL_ENTITY_NAME_PATTERN = Pattern.compile(entityPattern);
 //    }
-
-
     @Override
     public final void onUpdateEntityQueryEdit(OlingoQueryObject olingoQueryObject) {
         Predicate predicate = this.onQueryInterceptor(olingoQueryObject);
         olingoQueryObject.setCustomWhere(preticateToString(olingoQueryObject, predicate));
     }
-
 
     @Override
     public final Object onUpdateEntityPostProcess(Object object, ODataJPAContext oDataJPAContext) throws OlingoRequestRollbackException {
@@ -65,11 +61,10 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         olingoQueryObject.setCustomWhere(preticateToString(olingoQueryObject, predicate));
     }
 
-
     protected String preticateToString(OlingoQueryObject olingoQueryObject, Predicate predicate) {
 
         if (predicate != null) {
-            String predicateString= OlingoRequestInterceptorBase.DSLQueryStringToJPQL(predicate.toString(),olingoQueryObject.getOlingoEntityName().toLowerCase(),olingoQueryObject.getOlingoEntityAlias());
+            String predicateString = OlingoRequestInterceptorBase.DSLQueryStringToJPQL(predicate.toString(), olingoQueryObject.getOlingoEntityName().toLowerCase(), olingoQueryObject.getOlingoEntityAlias());
             predicateString = predicateString.replace("[", "(").replace("]", ")");
             return predicateString;
             //cambia nome entità
@@ -89,16 +84,18 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
     }
 
     /**
-     * Converte un predicato DSL nella forma JPQL. In particolare:
-     * - sostituisce && e || con 'and' e 'or' (omettendo eventuali && o || indicati tra apici)
-     * - sostituisce le entità  indicate nel parametro 'entityName' con la stringa indicata nel parametro 'jpqlEntityName'
-     * (anche in questo caso omettendo quelle tra apici)
+     * Converte un predicato DSL nella forma JPQL. In particolare: - sostituisce
+     * && e || con 'and' e 'or' (omettendo eventuali && o || indicati tra apici)
+     * - sostituisce le entità  indicate nel parametro 'entityName' con la
+     * stringa indicata nel parametro 'jpqlEntityName' (anche in questo caso
+     * omettendo quelle tra apici)
+     *
      * @param str stringa corrispondente alla query DSL
      * @param entityName nome dell'entità  interrogata
      * @param jpqlEntityName nuovo nome da assegnare all'entitÃ 
      * @return la query nel formato JPQL
      */
-    public static String DSLQueryStringToJPQL(String str, String entityName, String jpqlEntityName){
+    public static String DSLQueryStringToJPQL(String str, String entityName, String jpqlEntityName) {
         String andReplacement = generateReplacementGuid(str);
         String orReplacement = generateReplacementGuid(str);
         String squareOpenedReplacement = generateReplacementGuid(str);
@@ -109,9 +106,9 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         // c'è il carattere '\', perché vuol dire che si tratta di un escape)
         ArrayList<Integer> indexes = new ArrayList<>();
         int actualPosition = 0;
-        while (str.indexOf("'", actualPosition) != -1){
+        while (str.indexOf("'", actualPosition) != -1) {
             int foundPosition = str.indexOf("'", actualPosition);
-            if (str.charAt(foundPosition - 1) != '\\'){
+            if (str.charAt(foundPosition - 1) != '\\') {
                 indexes.add(foundPosition);
             }
             actualPosition = foundPosition + 1;
@@ -124,7 +121,7 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         int prevPosition = 0;
         String resultString = "";
         for (Integer position : indexes) {
-            if (i % 2 == 0){
+            if (i % 2 == 0) {
                 // Se l'apice che sto considerando è in una posizione pari della lista, vuol dire che è un'apice di chiusura.
                 // Posso quindi recuperare tutto il testo tra apici (utilizzando la posizione precedente) ed effettuare le sostituzioni
                 String stringInApexes = str.substring(prevPosition, position);
@@ -136,7 +133,7 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
                         .replace(entityName, entityReplacement);
                 resultString += stringInApexes;
             } else {
-                resultString += str.substring(prevPosition,position);
+                resultString += str.substring(prevPosition, position);
 
             }
             prevPosition = position;
@@ -159,14 +156,15 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
     }
 
     /**
-     * Genera un GUID per la sostituzione all'interno della stringa: ossia genera un UUID che non è presente
-     * all'interno della stringa passata
+     * Genera un GUID per la sostituzione all'interno della stringa: ossia
+     * genera un UUID che non è presente all'interno della stringa passata
+     *
      * @param str
      * @return il UUID generato
      */
-    public static String generateReplacementGuid(String str){
+    public static String generateReplacementGuid(String str) {
         String replacementGuid = UUID.randomUUID().toString();
-        while (str.contains(replacementGuid)){
+        while (str.contains(replacementGuid)) {
             replacementGuid = UUID.randomUUID().toString();
         }
         return replacementGuid;
@@ -187,8 +185,6 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
 //        return sb.toString();
 //
 //    }
-
-
     @Override
     public Object onQueryEntityPostProcess(Object object, ODataJPAContext oDataJPAContext) {
         return object;
@@ -200,12 +196,10 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         olingoQueryObject.setCustomWhere(preticateToString(olingoQueryObject, predicate));
     }
 
-
     @Override
     public final void onDeleteEntityPostProcess(Object object, ODataJPAContext oDataJPAContext) throws OlingoRequestRollbackException {
         onDeleteInterceptor(object, oDataJPAContext.getEntityManager(), getAdditionalDataFromContext(oDataJPAContext));
     }
-
 
     @Override
     public final Object onCreateEntityPostProcess(Object object, ODataJPAContext oDataJPAContext) throws OlingoRequestRollbackException {
@@ -216,40 +210,52 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
         return oDataJPAContext.getClass().isAssignableFrom(CustomOdataJpaContextBase.class) ? ((CustomOdataJpaContextBase) oDataJPAContext).getContextAdditionalData() : null;
     }
 
-
     /**
-     * Metodo richiamato ogni qual volta venga fatta una query sul tipo di entità dichiarato {@link #getReferenceEntity()}
+     * Metodo richiamato ogni qual volta venga fatta una query sul tipo di
+     * entità dichiarato {@link #getReferenceEntity()}
      *
      * @param olingoQueryObject Contiene le informazioni sulla query richiesta
-     * @return un predicato che andrà in and con le altre condizioni provenienti dall'url
+     * @return un predicato che andrà in and con le altre condizioni provenienti
+     * dall'url
      */
     public abstract Predicate onQueryInterceptor(final OlingoQueryObject olingoQueryObject);
 
     /**
-     * Metodo richiamato ogni qual volta un'entità di tipo {@link #getReferenceEntity()} venga creata o updatata
+     * Metodo richiamato ogni qual volta un'entità di tipo
+     * {@link #getReferenceEntity()} venga creata o updatata
      *
      * @param olingoInterceptorOperation il tipo di operazione: CREATE, UPDATE
-     * @param object                  l'oggetto che si sta creando o updatando
-     * @param entityManager           l'entity manager contenete la transazione su cui vengono eseguite le operazioni
-     * @param contextAdditionalData   una mappa che contiene eventuali informazioni di sessione (da l'ingresso di OdataRequest all'uscita di OdataResponse), ha un reale utilizzo solo in caso di batch
+     * @param object l'oggetto che si sta creando o updatando
+     * @param entityManager l'entity manager contenete la transazione su cui
+     * vengono eseguite le operazioni
+     * @param contextAdditionalData una mappa che contiene eventuali
+     * informazioni di sessione (da l'ingresso di OdataRequest all'uscita di
+     * OdataResponse), ha un reale utilizzo solo in caso di batch
      * @return l'oggetto eventualmente modificato
-     * @throws OlingoRequestRollbackException lanciando questa eccezione il sistema fa rollback della transazione
+     * @throws OlingoRequestRollbackException lanciando questa eccezione il
+     * sistema fa rollback della transazione
      */
     public abstract Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException;
 
     /**
-     * Metodo richiamato ogni qual volta un'entità di tipo {@link #getReferenceEntity()} venga cancellata
+     * Metodo richiamato ogni qual volta un'entità di tipo
+     * {@link #getReferenceEntity()} venga cancellata
      *
-     * @param object                l'entità che sta per essere cancellata
-     * @param entityManager         l'entity manager contenete la transazione su cui vengono eseguite le operazioni
-     * @param contextAdditionalData una mappa che contiene eventuali informazioni di sessione (da l'ingresso di OdataRequest all'uscita di OdataResponse), ha un reale utilizzo solo in caso di batch
-     * @throws OlingoRequestRollbackException lanciando questa eccezione il sistema fa rollback della transazione
+     * @param object l'entità che sta per essere cancellata
+     * @param entityManager l'entity manager contenete la transazione su cui
+     * vengono eseguite le operazioni
+     * @param contextAdditionalData una mappa che contiene eventuali
+     * informazioni di sessione (da l'ingresso di OdataRequest all'uscita di
+     * OdataResponse), ha un reale utilizzo solo in caso di batch
+     * @throws OlingoRequestRollbackException lanciando questa eccezione il
+     * sistema fa rollback della transazione
      */
     public abstract void onDeleteInterceptor(Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException;
 
     protected Authentication getAuthentication() {
-        if (SecurityContextHolder.getContext().getAuthentication() != null)
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
             return SecurityContextHolder.getContext().getAuthentication();
+        }
         return null;
     }
 
@@ -258,6 +264,4 @@ public abstract class OlingoRequestInterceptorBase extends OlingoRequestIntercep
 //            return (Utente) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 //        return null;
 //    }
-
-
 }
