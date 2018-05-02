@@ -283,12 +283,13 @@ public class IterController {
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
 
-        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
+        
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-        if (s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
+        if (gestioneStatiParams.getAzione().equals("associa")) // qui siamo se stiamo solo aggiungendo un documento
         {
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
         } else {
+            Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
             // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
             // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
             if (s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString())) {
