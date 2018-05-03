@@ -309,7 +309,7 @@ public class IterController {
 
         em.persist(i);
         
-        Boolean isDifferito = gestioneStatiParams.getAzione().equals("cambio_di_stato_differito");
+        Boolean isDifferito = gestioneStatiParams.isDifferito();
         
         DocumentoIter d;
         if (!isDifferito) {
