@@ -285,7 +285,7 @@ public class IterController {
 
         
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-        if (gestioneStatiParams.getAzione().equals("associa")) // qui siamo se stiamo solo aggiungendo un documento
+        if (gestioneStatiParams.getAzione().equals("associazione")) // qui siamo se stiamo solo aggiungendo un documento
         {
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
         } else {
