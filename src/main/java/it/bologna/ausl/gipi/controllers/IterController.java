@@ -111,10 +111,10 @@ public class IterController {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
-    
+
     @Autowired
     AziendaRepository aziendaRepository;
-    
+
     @Autowired
     @Qualifier("GipiUtilityFunctions")
     GipiUtilityFunctions utilityFunctions;
@@ -144,17 +144,6 @@ public class IterController {
 //        Class<?> clazz = data.getClass();
 //        Field field = clazz.getField("iter"); //Note, this can throw an exception if the field doesn't exist.
 //        Object fieldValue = field.get(data);
-
-        System.out.println("ANTONELLA PARLA PIU' PIANO");
-        System.out.println(data.getIdIter());
-        System.out.println(data.getDataPassaggio());
-        System.out.println(data.getCodiceRegistroDocumento());
-        System.out.println(data.getNumeroDocumento());
-        System.out.println(data.getAnnoDocumento());
-        System.out.println(data.getEsito());
-        System.out.println(data.getMotivazioneEsito());
-        System.out.println(data.getNotePassaggio());
-        System.out.println(data.getOggettoDocumento());
 
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
 
@@ -307,9 +296,9 @@ public class IterController {
         }
 
         em.persist(i);
-        
+
         Boolean isDifferito = gestioneStatiParams.getAzione().equals("cambio_di_stato_differito");
-        
+
         DocumentoIter d;
         if (!isDifferito) {
             // Creo il documento iter
@@ -326,12 +315,12 @@ public class IterController {
             em.flush();
         } else {
             JPQLQuery<DocumentoIter> queryDocumentoIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
-            
+
             d = queryDocumentoIter
-                .from(qDocumentoIter)
-                .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
-                .and(qDocumentoIter.idIter.eq(i)).and(qDocumentoIter.parziale.eq(Boolean.TRUE)))
-                .fetchOne();
+                    .from(qDocumentoIter)
+                    .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
+                            .and(qDocumentoIter.idIter.eq(i)).and(qDocumentoIter.parziale.eq(Boolean.TRUE)))
+                    .fetchOne();
             d.setAnno(gestioneStatiParams.getAnnoDocumento());
             d.setNumeroRegistro(gestioneStatiParams.getNumeroDocumento());
             d.setOggetto(gestioneStatiParams.getOggettoDocumento()); // Non so se riaggiungerlo o lasciare la descrizione di quando era parziale
@@ -376,11 +365,11 @@ public class IterController {
         if (!responseg.isSuccessful()) {
             System.out.println("La risposta --> " + responseg.toString());
             throw new IOException("La fascicolazione non è andata a buon fine.");
-        } 
+        }
 
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
-        if(!isDifferito){
+        if (!isDifferito) {
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
@@ -417,17 +406,17 @@ public class IterController {
                 throw new IOException("La chiamata a Babel non è andata a buon fine.");
             }
         }
-        
+
         // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
         utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, gestioneStatiParams.getIdApplicazione());
-        
+
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
 
@@ -465,7 +454,7 @@ public class IterController {
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
         o.addProperty("datiDifferiti", dati_differiti.toString());
 
-         // Creo il documento iter parziale
+        // Creo il documento iter parziale
         DocumentoIter d = new DocumentoIter();
         d.setIdIter(i);
         d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
@@ -476,7 +465,7 @@ public class IterController {
         d.setDati_differiti(dati_differiti.toString());
         em.persist(d);
         em.flush();
-        
+
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
@@ -505,12 +494,12 @@ public class IterController {
             // ritorno un oggetto di ok
             obj.addProperty("idIter", i.getId().toString());
             obj.addProperty("object", responseg.toString());
-            
+
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
             String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
             PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
