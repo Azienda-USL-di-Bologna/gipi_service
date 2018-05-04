@@ -56,6 +56,7 @@ import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandPara
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -107,6 +108,30 @@ public class IterController {
 
     public static enum GetFascicoliUtente {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE
+    }
+    
+    public static enum AzioneRichiesta {
+        CAMBIO_DI_STATO("cambio_di_stato"),
+        CAMBIO_DI_STATO_DIFFERITO("cambio_di_stato_differito"), 
+        ASSOCIAZIONE("associazione"), 
+        ASSOCIAZIONE_DIFFERITA("associazione_differita");
+        
+        private final String text;
+
+        /**
+         * @param text
+         */
+        AzioneRichiesta(final String text) {
+            this.text = text;
+        }
+
+        /* (non-Javadoc)
+         * @see java.lang.Enum#toString()
+         */
+        @Override
+        public String toString() {
+            return text;
+        }
     }
 
     @Autowired
@@ -272,12 +297,13 @@ public class IterController {
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
 
-        Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
+        
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-        if (s.getCodice().equals(i.getIdStato().getCodice())) // qui siamo se stiamo solo aggiungendo un documento
+        if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE_DIFFERITA.toString()) ) // qui siamo se stiamo solo aggiungendo un documento
         {
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
-        } else {
+        } else if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO_DIFFERITO.toString()) ) {
+            Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
             // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
             // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
             if (s.getCodice().equals(Stato.CodiciStato.SOSPESO.toString())) {
@@ -297,7 +323,7 @@ public class IterController {
 
         em.persist(i);
 
-        Boolean isDifferito = gestioneStatiParams.getAzione().equals("cambio_di_stato_differito");
+        Boolean isDifferito = gestioneStatiParams.isDifferito();
 
         DocumentoIter d;
         if (!isDifferito) {
@@ -336,7 +362,7 @@ public class IterController {
         ei.setIdEvento(eventoDiCambioStato);
         ei.setIdIter(i);
         ei.setAutore(u);
-        ei.setDataOraEvento(gestioneStatiParams.getDataEvento());
+        ei.setDataOraEvento(isDifferito ? new Date() : gestioneStatiParams.getDataEvento());
         ei.setIdFaseIter(fi);
         em.persist(ei);
 
