@@ -39,6 +39,8 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
+import it.bologna.ausl.entities.utilities.response.controller.ControllerHandledExceptions;
+import it.bologna.ausl.entities.utilities.response.exceptions.InternalServerErrorResponseException;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
@@ -46,6 +48,7 @@ import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
+import it.bologna.ausl.gipi.utils.IterUtilities;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
@@ -80,8 +83,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @RestController
 @RequestMapping(value = "${custom.mapping.url.root}" + "/iter")
 @PropertySource("classpath:query.properties")
-public class IterController {
+public class IterController extends ControllerHandledExceptions{
 
+    private final Integer FASCICOLAZIONE_ERROR = 0;
+    
     @Autowired
     Process process;
 
@@ -93,6 +98,9 @@ public class IterController {
 
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    IterUtilities iterUtilities;
 
     @Value("${getFascicoliUtente}")
     private String bdsGetFascicoliUtentePath;
@@ -195,6 +203,7 @@ public class IterController {
         processSteponParams.insertParam("motivazioneEsito", data.getMotivazioneEsito());
         processSteponParams.insertParam("oggettoDocumento", data.getOggettoDocumento());
         processSteponParams.insertParam("idOggettoOrigine", data.getIdOggettoOrigine());
+        processSteponParams.insertParam("tipoOggettoOrigine", data.getTipoOggettoOrigine());
         processSteponParams.insertParam("descrizione", data.getDescrizione());
 
         process.stepOn(iter, processSteponParams, request.getServerName().equalsIgnoreCase("localhost"));
@@ -365,39 +374,19 @@ public class IterController {
         ei.setDataOraEvento(isDifferito ? new Date() : gestioneStatiParams.getDataEvento());
         ei.setIdFaseIter(fi);
         em.persist(ei);
-
-        // Fascicolo il documento
-        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
-
-        // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
-        GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) gestioneStatiParams.getCodiceRegistroDocumento(), null, (String) gestioneStatiParams.getNumeroDocumento(), null, null, null, null, null, null, null, (Integer) gestioneStatiParams.getAnnoDocumento());
-        Fascicolazione fascicolazione = new Fascicolazione(i.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
-        ArrayList a = new ArrayList();
-        a.add(fascicolazione);
-        g.setFascicolazioni(a);
-        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
-        okhttp3.RequestBody body = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
-                .build();
-        Request requestg = new Request.Builder()
-                .url(urlChiamata)
-                .post(body)
-                .build();
-        OkHttpClient client = new OkHttpClient();
-        System.out.println("La richiesta --> " + requestg.toString());
-        Response responseg = client.newCall(requestg).execute();
-        if (!responseg.isSuccessful()) {
-            System.out.println("La risposta --> " + responseg.toString());
-            throw new IOException("La fascicolazione non è andata a buon fine.");
-        }
-
+                    
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
         if (!isDifferito) {
+            // Fascicolo il documento se non è differito in quanto viene già fascicolato
+            
+            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+            if (!fascicolato.isSuccessful()) {
+                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+            }
+
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -417,16 +406,16 @@ public class IterController {
             JsonObject dati_differiti = new JsonObject();
             o.addProperty("datiDifferiti", dati_differiti.toString());
 
-            body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+            okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
-            requestg = new Request.Builder()
+            Request requestg = new Request.Builder()
                     .url(urlChiamata)
                     .addHeader("X-HTTP-Method-Override", "associaDocumento")
                     .post(body)
                     .build();
 
-            client = new OkHttpClient();
-            responseg = client.newCall(requestg).execute();
+            OkHttpClient client = new OkHttpClient();
+            Response responseg = client.newCall(requestg).execute();
 
             if (!responseg.isSuccessful()) {
                 throw new IOException("La chiamata a Babel non è andata a buon fine.");
@@ -492,12 +481,17 @@ public class IterController {
         em.persist(d);
         em.flush();
 
+        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+        if (!fascicolato.isSuccessful()) {
+            throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+        }
+        
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
         String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
-
+        
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
                 .url(urlChiamata)

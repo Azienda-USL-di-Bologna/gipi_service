@@ -32,6 +32,7 @@ public class GestioneStatiParams {
     public String esitoMotivazione;
     public String azione;
     public String idOggettoOrigine;
+    public String tipoOggettoOrigine;
     public String descrizione;
     public String idApplicazione;
 
@@ -137,6 +138,14 @@ public class GestioneStatiParams {
 
     public void setIdOggettoOrigine(String idOggettoOrigine) {
         this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
     }
 
     public String getDescrizione() {
