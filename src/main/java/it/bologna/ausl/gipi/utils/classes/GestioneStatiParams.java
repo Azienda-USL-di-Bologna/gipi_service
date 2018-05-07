@@ -170,6 +170,10 @@ public class GestioneStatiParams {
     public void setIdApplicazione(String idApplicazione) {
         this.idApplicazione = idApplicazione;
     }
+    
+    public boolean isDifferito() {
+        return getAzione().equals("associazione_differita") || getAzione().equals("cambio_di_stato_differito");
+    }
 
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
