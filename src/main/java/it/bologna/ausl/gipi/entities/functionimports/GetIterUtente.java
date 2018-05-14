@@ -68,10 +68,17 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
             @EdmFunctionImportParameter(name = "stato", facets = @EdmFacets(nullable = true)) final String stato,
             @EdmFunctionImportParameter(name = "codiceRegistro", facets = @EdmFacets(nullable = true)) final String codiceRegistro,
             @EdmFunctionImportParameter(name = "numeroDocumento", facets = @EdmFacets(nullable = true)) final String numeroDocumento,
-            @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento
+            @EdmFunctionImportParameter(name = "annoDocumento", facets = @EdmFacets(nullable = true)) final Integer annoDocumento,
+            @EdmFunctionImportParameter(name = "idOggettoOrigine", facets = @EdmFacets(nullable = true)) final String idOggettoOrigine,
+            // filtri
+            @EdmFunctionImportParameter(name = "oggetto", facets = @EdmFacets(nullable = true)) final String oggetto,
+            @EdmFunctionImportParameter(name = "numero", facets = @EdmFacets(nullable = true)) final Integer numero,
+            @EdmFunctionImportParameter(name = "dataAvvio", facets = @EdmFacets(nullable = true)) final String dataAvvio,
+            @EdmFunctionImportParameter(name = "idStato_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneStato,
+            @EdmFunctionImportParameter(name = "idResponsabileProcedimento_sep_idPersona_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneRespProc
     ) throws IOException {
         log.info("sono in getIterUtente, idAzienda: " + idAzienda + ", cf: " + cf);
-        log.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento);
+        log.info("il documento, se passato, e': " + codiceRegistro + ", " + numeroDocumento + ", " + annoDocumento + ", " + idOggettoOrigine);
 
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
@@ -100,16 +107,15 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
 
         JPAQuery queryDSL = new JPAQuery(em);
 
-        if (codiceRegistro != null && !codiceRegistro.equals("")
-                && numeroDocumento != null && !numeroDocumento.equals("")
-                && annoDocumento != null) {
+        if (idOggettoOrigine != null && !idOggettoOrigine.equals("")) {
             queryDSL
                     .select(QIter.iter)
                     .from(QIter.iter)
                     .leftJoin(QIter.iter.documentiIterList, QDocumentoIter.documentoIter)
-                    .on(QDocumentoIter.documentoIter.numeroRegistro.eq(numeroDocumento)
-                            .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
-                                    .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
+                    .on(QDocumentoIter.documentoIter.idOggetto.eq(idOggettoOrigine))
+                    //                    .on(QDocumentoIter.documentoIter.numeroRegistro.eq(numeroDocumento)
+                    //                            .and(QDocumentoIter.documentoIter.registro.eq(codiceRegistro)
+                    //                                    .and(QDocumentoIter.documentoIter.anno.eq(annoDocumento))))
                     .where(QIter.iter.id.in(listaIter)
                             .and(QDocumentoIter.documentoIter.id.isNull()))
                     .distinct();
@@ -122,6 +128,19 @@ public class GetIterUtente extends EdmFunctionImportClassBase {
         if (StringUtils.hasText(stato)) {
             String[] listaStati = stato.split(":");
             queryDSL.where(QIter.iter.idStato.codice.in(listaStati));
+        }
+
+        if (StringUtils.hasText(oggetto)) {
+            queryDSL.where(QIter.iter.oggetto.likeIgnoreCase("%" + oggetto + "%"));
+        }
+        if (numero != null) {
+            queryDSL.where(QIter.iter.numero.stringValue().like("%" + Integer.toString(numero) + "%"));
+        }
+        if (StringUtils.hasText(descrizioneStato)) {
+            queryDSL.where(QIter.iter.idStato.descrizione.likeIgnoreCase("%" + descrizioneStato + "%"));
+        }
+        if (StringUtils.hasText(descrizioneRespProc)) {
+            queryDSL.where(QIter.iter.idResponsabileProcedimento.idPersona.descrizione.likeIgnoreCase("%" + descrizioneRespProc + "%"));
         }
 
         queryDSL.orderBy(QIter.iter.numero.desc());

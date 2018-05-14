@@ -28,6 +28,7 @@ public class IterParams {
     private String oggettoDocumento;
     private String promotore;
     private String idOggettoOrigine;
+    private String tipoOggettoOrigine;
     private String descrizione;
     private String idApplicazione;
 //    private int idIter;
@@ -137,6 +138,14 @@ public class IterParams {
 
     public void setIdOggettoOrigine(String idOggettoOrigine) {
         this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
     }
 
     public String getDescrizione() {

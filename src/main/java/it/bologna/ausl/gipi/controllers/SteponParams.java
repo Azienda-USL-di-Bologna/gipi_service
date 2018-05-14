@@ -12,6 +12,7 @@ public class SteponParams {
     private String motivazioneEsito;
     private String oggettoDocumento;
     private String idOggettoOrigine;
+    private String tipoOggettoOrigine;
     private String descrizione;
 
     public int getIdIter() {
@@ -94,6 +95,14 @@ public class SteponParams {
         this.idOggettoOrigine = idOggettoOrigine;
     }
 
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
+    }
+    
     public String getDescrizione() {
         return descrizione;
     }

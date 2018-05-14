@@ -32,6 +32,7 @@ public class GestioneStatiParams {
     public String esitoMotivazione;
     public String azione;
     public String idOggettoOrigine;
+    public String tipoOggettoOrigine;
     public String descrizione;
     public String idApplicazione;
 
@@ -139,6 +140,14 @@ public class GestioneStatiParams {
         this.idOggettoOrigine = idOggettoOrigine;
     }
 
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
+    }
+
     public String getDescrizione() {
         return descrizione;
     }
@@ -169,6 +178,10 @@ public class GestioneStatiParams {
 
     public void setIdApplicazione(String idApplicazione) {
         this.idApplicazione = idApplicazione;
+    }
+    
+    public boolean isDifferito() {
+        return getAzione().equals("associazione_differita") || getAzione().equals("cambio_di_stato_differito");
     }
 
     @JsonIgnore
