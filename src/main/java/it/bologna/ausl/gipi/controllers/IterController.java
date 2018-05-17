@@ -403,8 +403,8 @@ public class IterController extends ControllerHandledExceptions{
             o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
             o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
             // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
-            JsonObject dati_differiti = new JsonObject();
-            o.addProperty("datiDifferiti", dati_differiti.toString());
+            JsonObject datiAggiuntivi = new JsonObject();
+            o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -446,15 +446,15 @@ public class IterController extends ControllerHandledExceptions{
         // Recupero l'iter
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
 
-        // Setto i dati_differiti (sono quelli da usare alla numerazione del documento)
-        JsonObject dati_differiti = new JsonObject();
-        dati_differiti.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
-        dati_differiti.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
-        dati_differiti.addProperty("azione", gestioneStatiParams.getAzione());
-        dati_differiti.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
-        dati_differiti.addProperty("note", gestioneStatiParams.getNote());
-        dati_differiti.addProperty("esito", gestioneStatiParams.getEsito());
-        dati_differiti.addProperty("esitoMotivazione", gestioneStatiParams.getEsitoMotivazione());
+        // Setto i datiAggiuntivi (sono quelli da usare alla numerazione del documento)
+        JsonObject datiAggiuntivi = new JsonObject();
+        datiAggiuntivi.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
+        datiAggiuntivi.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
+        datiAggiuntivi.addProperty("azione", gestioneStatiParams.getAzione());
+        datiAggiuntivi.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
+        datiAggiuntivi.addProperty("note", gestioneStatiParams.getNote());
+        datiAggiuntivi.addProperty("esito", gestioneStatiParams.getEsito());
+        datiAggiuntivi.addProperty("esitoMotivazione", gestioneStatiParams.getEsitoMotivazione());
 
         // Preparo l'oggetto da passare alla web api di associazione documento
         JsonObject o = new JsonObject();
@@ -467,7 +467,7 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
-        o.addProperty("datiDifferiti", dati_differiti.toString());
+        o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
         // Creo il documento iter parziale
         DocumentoIter d = new DocumentoIter();
@@ -477,7 +477,7 @@ public class IterController extends ControllerHandledExceptions{
         d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
         d.setDescrizione(gestioneStatiParams.getDescrizione());
         d.setParziale(Boolean.TRUE);
-        d.setDati_differiti(dati_differiti.toString());
+        d.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(d);
         em.flush();
 
