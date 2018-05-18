@@ -122,7 +122,8 @@ public class IterController extends ControllerHandledExceptions{
         CAMBIO_DI_STATO("cambio_di_stato"),
         CAMBIO_DI_STATO_DIFFERITO("cambio_di_stato_differito"), 
         ASSOCIAZIONE("associazione"), 
-        ASSOCIAZIONE_DIFFERITA("associazione_differita");
+        ASSOCIAZIONE_DIFFERITA("associazione_differita"),
+        CREAZIONE("creazione");
         
         private final String text;
 
@@ -333,7 +334,10 @@ public class IterController extends ControllerHandledExceptions{
         em.persist(i);
 
         Boolean isDifferito = gestioneStatiParams.isDifferito();
-
+        
+        // Lo definisco qui fuori perché mi può servire due volte
+        JsonObject datiAggiuntivi = new JsonObject();
+                
         DocumentoIter d;
         if (!isDifferito) {
             // Creo il documento iter
@@ -346,6 +350,9 @@ public class IterController extends ControllerHandledExceptions{
             d.setDescrizione(gestioneStatiParams.getDescrizione());
             d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
             d.setParziale(Boolean.FALSE);
+            datiAggiuntivi.addProperty("azione", gestioneStatiParams.getAzione());
+            datiAggiuntivi.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
             em.persist(d);
             em.flush();
         } else {
@@ -402,8 +409,7 @@ public class IterController extends ControllerHandledExceptions{
             o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
             o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
             o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
-            // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
-            JsonObject datiAggiuntivi = new JsonObject();
+            // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));

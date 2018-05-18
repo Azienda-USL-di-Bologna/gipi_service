@@ -22,6 +22,7 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
+import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
@@ -261,7 +262,12 @@ public class CreaIter {
         fi.setIdFase(f);
         fi.setDataInizioFase(i.getDataAvvio());
         em.persist(fi);
-
+        
+        // Mi preparo il json dati aggiuntivi. Lo userò due volte
+        JsonObject datiAggiuntivi = new JsonObject();
+        datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
+        datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
+        
         // Buildo il documento
         DocumentoIter di = new DocumentoIter();
         di.setIdIter(i);
@@ -272,6 +278,7 @@ public class CreaIter {
         di.setIdOggetto(iterParams.getIdOggettoOrigine());
         di.setDescrizione(iterParams.getDescrizione());
         di.setParziale(Boolean.FALSE);
+        di.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(di);
 
         // Buildo l'evento Iter
@@ -297,7 +304,7 @@ public class CreaIter {
         o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
         o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
         o.addProperty("idOggettoOrigine", "");
-        o.addProperty("datiAggiuntivi", "{}");
+        o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
