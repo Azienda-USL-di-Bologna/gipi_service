@@ -387,7 +387,7 @@ public class IterController extends ControllerHandledExceptions{
         if (!isDifferito) {
             // Fascicolo il documento se non è differito in quanto viene già fascicolato
             
-            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, u.getIdPersona().getCodiceFiscale());
             if (!fascicolato.isSuccessful()) {
                 throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
             }
@@ -486,8 +486,14 @@ public class IterController extends ControllerHandledExceptions{
         d.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(d);
         em.flush();
-
-        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+        
+        // Recupero il codice fiscale dall'utente cacheable
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        
+        // Fascicolo il documento nel fascicolo dell'iter
+        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
         if (!fascicolato.isSuccessful()) {
             throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
         }
@@ -522,9 +528,6 @@ public class IterController extends ControllerHandledExceptions{
             obj.addProperty("object", responseg.toString());
 
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-            String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
             Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
