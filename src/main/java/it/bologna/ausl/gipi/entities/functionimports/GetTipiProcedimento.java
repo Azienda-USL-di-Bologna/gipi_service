@@ -29,8 +29,8 @@ import org.springframework.util.StringUtils;
  * Dato un idUtente restituisco tutti i tipi di procedimento delle Strutture di afferenza, dirette e funzionali,
  * e delle strutture cugine e di tutti i loro figli
  *
- * @param idUtente
- * @return
+ * @param 
+ * @return 
  * @throws IOException
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
@@ -65,14 +65,18 @@ public class GetTipiProcedimento extends EdmFunctionImportClassBase implements F
         @EdmFunctionImportParameter(name = "sort", facets = @EdmFacets(nullable = true)) final String sort
         ) throws IOException {
         
+        log.info("Chiamata della function import GetTipiProcedimento");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         int idUtente = (int) userInfo.get(UtenteCachable.KEYS.ID);
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        log.info("Caricati i dati dell'utente: ", idUtente, ", idAzienda: ", idAzienda);
         
+        log.info("Carico la lista delle mie strutture di afferenza e cugine e figli");
         List<Integer> listaStrutture = ca.getMieStruttureEcugine(idUtente);
-        
+        log.info("Lista delle strutture caricata");
+        log.info("Definisco la query");
         Date now = new Date();
         JPAQuery queryDSL = new JPAQuery(em);
         queryDSL.select(QProcedimento.procedimento)
@@ -102,7 +106,7 @@ public class GetTipiProcedimento extends EdmFunctionImportClassBase implements F
             queryDSL.orderBy(QProcedimento.procedimento.idStruttura.nome.asc(),
                     QProcedimento.procedimento.idAziendaTipoProcedimento.idTipoProcedimento.nome.asc());
          }
-        
+        log.info("Lancio la query e restituisco i risultati");
         return createQueryInfo(queryDSL, QProcedimento.procedimento.id.count(), em);
     }
     
