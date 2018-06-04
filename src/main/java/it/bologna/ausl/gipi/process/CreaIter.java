@@ -35,8 +35,10 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
 import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -89,6 +91,15 @@ public class CreaIter {
 
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
+    
+    @Value("${proctonGestisciIter}")
+    private String proctonGestisciIterPath;
+    
+    @Value("${deteGestisciIter}")
+    private String deteGestisciIterPath;
+    
+    @Value("${deliGestisciIter}")
+    private String deliGestisciIterPath;
 
     @Value("${babelsuite.uri.localhost}")
     private String localhostBaseUrl;
@@ -145,6 +156,8 @@ public class CreaIter {
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
+        Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
+        Utente uTitolare = GetEntityById.getUtente(p.getIdTitolarePotereSostitutivo().getId(), em);
         Fase f = this.getFaseIniziale(p.getIdAziendaTipoProcedimento().getIdAzienda().getId());
         Evento e = this.getEventoCreazioneIter();
         // Sistemo il numero documento che ho in iterParams deve avere 7 cifre, se non le ha, aggiungo degli zeri da sinistra
@@ -268,6 +281,21 @@ public class CreaIter {
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
         
+        JsonObject acipParams = new JsonObject();
+        acipParams.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
+        acipParams.addProperty("numeroDocumento", String.valueOf(iterParams.getNumeroDocumento()));
+        acipParams.addProperty("annoDocumento", String.valueOf(iterParams.getAnnoDocumento()));
+        acipParams.addProperty("numeroIter", String.valueOf(i.getNumero()));
+        acipParams.addProperty("annoIter", String.valueOf(i.getAnno()));
+        acipParams.addProperty("tipoProcedimento", p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        acipParams.addProperty("dataCreazioneIter", new SimpleDateFormat("dd/MM/yyyy").format(i.getDataCreazione()));
+        acipParams.addProperty("dataAvvioIter", new SimpleDateFormat("dd/MM/yyyy").format(i.getDataAvvio()));
+        acipParams.addProperty("responsabileDelProcedimento", uResponsabile.getIdPersona().getCodiceFiscale());
+        acipParams.addProperty("responsabileAdozioneAttoFinale", uResponsabileAdozione.getIdPersona().getCodiceFiscale());
+        acipParams.addProperty("titolarePotereEsecutivo", uTitolare.getIdPersona().getCodiceFiscale());
+        
+        datiAggiuntivi.addProperty("acipParams", acipParams.toString());
+        
         // Buildo il documento
         DocumentoIter di = new DocumentoIter();
         di.setIdIter(i);
@@ -291,9 +319,11 @@ public class CreaIter {
         ei.setAutore(uLoggato);
         em.persist(ei);
 
-        // Comunico a Babel l'iter appena creato
-        urlChiamata = baseUrl + babelGestisciIterPath;
+        // Comunico a Babel l'iter appena creato      
+        urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
+        // urlChiamata = "http://127.0.0.1:8080/Procton/GestisciIter";
+        
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId());
         o.addProperty("numeroIter", i.getNumero());
@@ -337,5 +367,23 @@ public class CreaIter {
         utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command, iterParams.getIdApplicazione());
 
         return i;
+    }
+    
+    public String switchGestisciIterPahtByCodiceRegistro(String codiceRegistroDocumento){
+        String path = babelGestisciIterPath;
+        switch(codiceRegistroDocumento){
+            case "DETE":
+                path = deteGestisciIterPath;
+            break;
+            
+            case "DELI":
+                path = deliGestisciIterPath;
+            break;
+            
+            case "PG":
+                path = proctonGestisciIterPath;
+            break;
+        }
+        return path;
     }
 }
