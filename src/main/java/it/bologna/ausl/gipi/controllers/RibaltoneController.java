@@ -49,7 +49,7 @@ public class RibaltoneController extends ControllerHandledExceptions {
     @RequestMapping(value = "lanciaRibaltone", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity ribaltaAzienda(@RequestBody RibaltoneParams params) {
-        System.out.println("entro qua");
+        
         // Controllo di avere i parametri necessari. Se non li ho torno bad request
         if(!StringUtils.hasText(params.getCodiceAzienda()) || !StringUtils.hasText(params.getIndirizzoMail())) {
             throw new BadRequestResponseException(0, "Attenzione, i parametri per il lancio del ribaltone non sono corretti.", "");
@@ -63,7 +63,7 @@ public class RibaltoneController extends ControllerHandledExceptions {
         // Controllo se l'utente ha il ruolo di super demiurgo. Altrimenti torno Forbidden
         if (ruoliCachable.stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.SD)) {
             try {
-                ribaltoniDaLanciareRepository.inserisciRibaltoneDaLanciare(params.getCodiceAzienda(), params.getIndirizzoMail());
+                ribaltoniDaLanciareRepository.inserisciRibaltoneDaLanciare(params.getCodiceAzienda(), params.getIndirizzoMail(), (Integer) userInfo.get(UtenteCachable.KEYS.ID));
             } catch(JpaSystemException ex) {
                 if (ex.getRootCause() != null && ex.getRootCause().getMessage().contains(ribaltoniDaLanciareUniqueIndex)) {
                     throw new ConflictResponseException(0, "Attenzione, è già previsto il lancio del ribaltone su questa azienda e per questa mail.\n Se la mail non dovesse arrivare entro qualche minuto si prega di contattare Babelcare.", ex.getMessage());
