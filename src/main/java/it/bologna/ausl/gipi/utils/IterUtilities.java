@@ -6,6 +6,7 @@
 package it.bologna.ausl.gipi.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
@@ -42,7 +43,7 @@ public class IterUtilities {
     private String updateGdDocPath;
     
     /* Fascicolo il documento */
-    public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams) throws IOException{
+    public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams, String cfUtenteFascicolatore) throws IOException{
         
         String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
 
@@ -51,6 +52,7 @@ public class IterUtilities {
         
         GdDoc g = new GdDoc((String) gestioneStatiParams.getIdOggettoOrigine(), gestioneStatiParams.getTipoOggettoOrigine(), null, null, null, null, null, (String) gestioneStatiParams.getCodiceRegistroDocumento(), null, null, null, null, null, null, null, null, null, null);
         Fascicolazione fascicolazione = new Fascicolazione(i.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
+        fascicolazione.setCfUtenteFascicolatore(cfUtenteFascicolatore);
         ArrayList a = new ArrayList();
         a.add(fascicolazione);
         g.setFascicolazioni(a);

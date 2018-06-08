@@ -122,7 +122,8 @@ public class IterController extends ControllerHandledExceptions{
         CAMBIO_DI_STATO("cambio_di_stato"),
         CAMBIO_DI_STATO_DIFFERITO("cambio_di_stato_differito"), 
         ASSOCIAZIONE("associazione"), 
-        ASSOCIAZIONE_DIFFERITA("associazione_differita");
+        ASSOCIAZIONE_DIFFERITA("associazione_differita"),
+        CREAZIONE("creazione");
         
         private final String text;
 
@@ -333,7 +334,10 @@ public class IterController extends ControllerHandledExceptions{
         em.persist(i);
 
         Boolean isDifferito = gestioneStatiParams.isDifferito();
-
+        
+        // Lo definisco qui fuori perché mi può servire due volte
+        JsonObject datiAggiuntivi = new JsonObject();
+                
         DocumentoIter d;
         if (!isDifferito) {
             // Creo il documento iter
@@ -346,6 +350,9 @@ public class IterController extends ControllerHandledExceptions{
             d.setDescrizione(gestioneStatiParams.getDescrizione());
             d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
             d.setParziale(Boolean.FALSE);
+            datiAggiuntivi.addProperty("azione", gestioneStatiParams.getAzione());
+            datiAggiuntivi.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
             em.persist(d);
             em.flush();
         } else {
@@ -380,7 +387,7 @@ public class IterController extends ControllerHandledExceptions{
         if (!isDifferito) {
             // Fascicolo il documento se non è differito in quanto viene già fascicolato
             
-            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, u.getIdPersona().getCodiceFiscale());
             if (!fascicolato.isSuccessful()) {
                 throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
             }
@@ -402,9 +409,8 @@ public class IterController extends ControllerHandledExceptions{
             o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
             o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
             o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
-            // questo è solo  un segnaposto: il parametro è obbligatorio ma il documento non è più una bozza.
-            JsonObject dati_differiti = new JsonObject();
-            o.addProperty("datiDifferiti", dati_differiti.toString());
+            // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
+            o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -446,15 +452,15 @@ public class IterController extends ControllerHandledExceptions{
         // Recupero l'iter
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
 
-        // Setto i dati_differiti (sono quelli da usare alla numerazione del documento)
-        JsonObject dati_differiti = new JsonObject();
-        dati_differiti.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
-        dati_differiti.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
-        dati_differiti.addProperty("azione", gestioneStatiParams.getAzione());
-        dati_differiti.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
-        dati_differiti.addProperty("note", gestioneStatiParams.getNote());
-        dati_differiti.addProperty("esito", gestioneStatiParams.getEsito());
-        dati_differiti.addProperty("esitoMotivazione", gestioneStatiParams.getEsitoMotivazione());
+        // Setto i datiAggiuntivi (sono quelli da usare alla numerazione del documento)
+        JsonObject datiAggiuntivi = new JsonObject();
+        datiAggiuntivi.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
+        datiAggiuntivi.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
+        datiAggiuntivi.addProperty("azione", gestioneStatiParams.getAzione());
+        datiAggiuntivi.addProperty("statoRichiesto", gestioneStatiParams.getStatoRichiesto());
+        datiAggiuntivi.addProperty("note", gestioneStatiParams.getNote());
+        datiAggiuntivi.addProperty("esito", gestioneStatiParams.getEsito());
+        datiAggiuntivi.addProperty("esitoMotivazione", gestioneStatiParams.getEsitoMotivazione());
 
         // Preparo l'oggetto da passare alla web api di associazione documento
         JsonObject o = new JsonObject();
@@ -467,7 +473,7 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("numeroDocumento", gestioneStatiParams.getNumeroDocumento());
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
-        o.addProperty("datiDifferiti", dati_differiti.toString());
+        o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
 
         // Creo il documento iter parziale
         DocumentoIter d = new DocumentoIter();
@@ -477,11 +483,17 @@ public class IterController extends ControllerHandledExceptions{
         d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
         d.setDescrizione(gestioneStatiParams.getDescrizione());
         d.setParziale(Boolean.TRUE);
-        d.setDati_differiti(dati_differiti.toString());
+        d.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(d);
         em.flush();
-
-        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams);
+        
+        // Recupero il codice fiscale dall'utente cacheable
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        
+        // Fascicolo il documento nel fascicolo dell'iter
+        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
         if (!fascicolato.isSuccessful()) {
             throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
         }
@@ -516,9 +528,6 @@ public class IterController extends ControllerHandledExceptions{
             obj.addProperty("object", responseg.toString());
 
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-            String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
             Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
