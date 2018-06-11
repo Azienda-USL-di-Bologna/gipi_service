@@ -151,12 +151,18 @@ public class CreaIter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
+        log.info("IdUtenteLoggato" + idUtenteLoggato.toString());
         
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
+        
+        log.info("Carico utente loggato");
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
+        log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
+        log.info("Carico utente resp. adoz.");
         Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
+        log.info("Carico utente titolare pot. esec.");
         Utente uTitolare = GetEntityById.getUtente(p.getIdTitolarePotereSostitutivo().getId(), em);
         Fase f = this.getFaseIniziale(p.getIdAziendaTipoProcedimento().getIdAzienda().getId());
         Evento e = this.getEventoCreazioneIter();
@@ -165,6 +171,7 @@ public class CreaIter {
 
         // *********************************************
         // Buildo l'iter
+        log.info("Build dell'iter...");
         Iter i = new Iter();
         i.setIdFaseCorrente(f);
         i.setIdProcedimento(p);
@@ -182,9 +189,10 @@ public class CreaIter {
         i.setPromotore(iterParams.getPromotore());
         em.persist(i);
         em.flush();
-
+        log.info("Iter salvato");
         // *********************************************
         // Creo il fascicolo dell'iter.
+        log.info("Creazione fascicolo");
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
@@ -200,6 +208,7 @@ public class CreaIter {
         List<String> vicari = new ArrayList<String>();
         // Passare da set a list è un trucco per non avere doppioni nella lista.
         vicari.addAll(set);
+        log.info("Setto i vicari del fascicolo...");
         fascicolo.setVicari(vicari);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
@@ -212,26 +221,34 @@ public class CreaIter {
             baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         }
         String urlChiamata = baseUrl + insertFascicoloPath;
+        log.info("Url chiamata chiamata = " + urlChiamata);
         OkHttpClient client = new OkHttpClient();
         RequestBody body = RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        log.info("Preparo la request");
         Request request = new Request.Builder()
                 .url(urlChiamata)
                 .post(body)
                 .build();
+        log.info("faccio la chimata...");
         Response response = client.newCall(request).execute();
         String resString = null;
+        log.info("response --> " + response.toString());
         if (response != null && response.body() != null) {
             resString = response.body().string();
         }
+        log.info("casto il fascicolo...");
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
 
         // Aggiungo la numerazione gerarchica del fascicolo all'iter
+        log.info("Aggiungo la numerazione gerarchica del fascicolo all'iter" );
         i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
         em.persist(i);
+        log.info("fascicolo salvato!");
 
         // *********************************************
         // Fascicolo il documento // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
         urlChiamata = baseUrl + updateGdDocPath;
+        log.info("urlChiamata per l'updategddoc = " + urlChiamata);
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, iterParams.getCodiceRegistroDocumento(), null, iterParams.getNumeroDocumento(), null, null, null, null, null, null, null, iterParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(fascicolo.getNumerazioneGerarchica(), fascicolo.getNomeFascicolo(), fascicolo.getIdUtenteCreazione(), null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
@@ -246,7 +263,9 @@ public class CreaIter {
                 .url(urlChiamata)
                 .post(bodyg)
                 .build();
+        log.info("chiamo ioda");
         Response responseg = client.newCall(requestg).execute();
+        log.info("responseg --> " + responseg.toString());
         if (!responseg.isSuccessful()) {
             throw new IOException("La fascicolazione non è andata a buon fine.");
         }
@@ -254,6 +273,7 @@ public class CreaIter {
         // *********************************************
         // Costruisco gli altri vari oggetti connessi all'iter
         // Buildo il Procedimento Cache
+        log.info("buildo il procedimento");
         ProcedimentoCache pc = new ProcedimentoCache();
         pc.setId(i.getId());                                // ?? Ma qui non dovrei passere l'iter intero e non solo l'id?? forse manca fk?
         pc.setNomeTipoProcedimento(p.getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
@@ -268,15 +288,19 @@ public class CreaIter {
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
-
+        log.info("procedimento salvato");
+        
         // Buildo la fase Iter
+        log.info("buildo la faseIter");
         FaseIter fi = new FaseIter();
         fi.setIdIter(i);
         fi.setIdFase(f);
         fi.setDataInizioFase(i.getDataAvvio());
         em.persist(fi);
+        log.info("fase iter salvata");
         
         // Mi preparo il json dati aggiuntivi. Lo userò due volte
+        log.info("preparo il json dati_aggiuntivi");
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
@@ -295,9 +319,11 @@ public class CreaIter {
         acipParams.addProperty("titolarePotereEsecutivo", uTitolare.getIdPersona().getCodiceFiscale());
         
         datiAggiuntivi.addProperty("acipParams", acipParams.toString());
+        log.info("dati_aggiuntivi --> " + datiAggiuntivi.toString());
         
         // Buildo il documento
         DocumentoIter di = new DocumentoIter();
+        log.info("preparo il documentoIter");
         di.setIdIter(i);
         di.setNumeroRegistro(String.valueOf(iterParams.getNumeroDocumento()));
         di.setAnno(iterParams.getAnnoDocumento());
@@ -308,8 +334,10 @@ public class CreaIter {
         di.setParziale(Boolean.FALSE);
         di.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(di);
-
+        log.info("documentoIter salvato");
+        
         // Buildo l'evento Iter
+        log.info("Buildo evento iter");
         EventoIter ei = new EventoIter();
         ei.setIdEvento(e);
         ei.setIdIter(i);
@@ -318,11 +346,15 @@ public class CreaIter {
         ei.setIdDocumentoIter(di);
         ei.setAutore(uLoggato);
         em.persist(ei);
-
+        log.info("eventoIter salvato");
+        
+        
         // Comunico a Babel l'iter appena creato      
         urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
         // urlChiamata = "http://127.0.0.1:8080/Procton/GestisciIter";
+        
+        log.info("urlChiamata per la web api PDD --> " + urlChiamata);
         
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId());
@@ -338,6 +370,9 @@ public class CreaIter {
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
+        log.info("body a pdd questi dati --> " + body.toString());
+        
+        log.info("chiamo pdd...");
         requestg = new Request.Builder()
                 .url(urlChiamata)
                 .addHeader("X-HTTP-Method-Override", "associaDocumento")
@@ -346,7 +381,7 @@ public class CreaIter {
 
         client = new OkHttpClient();
         responseg = client.newCall(requestg).execute();
-
+        log.info("responseg --> " + responseg.toString());
         if (responseg != null && responseg.body() != null) {
             log.info("GDM RESPONSE STRING = " + responseg.body().string());
             log.info("GDM RESPONSE MESSAGE = " + responseg.message());
@@ -357,15 +392,18 @@ public class CreaIter {
         }
 
         if (!responseg.isSuccessful()) {
+            log.info("la risposta non è successful --> La chiamata a Babel non è andata a buon fine");
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
         
+        log.info("mando messaggio a primus di aggiornare finestra aperta pdd");
         // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(uLoggato.getIdPersona().getCodiceFiscale());
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
         utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command, iterParams.getIdApplicazione());
-
+        
+        log.info("Ritorno l'iter");
         return i;
     }
     
