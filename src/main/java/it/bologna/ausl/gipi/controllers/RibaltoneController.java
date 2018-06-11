@@ -61,7 +61,7 @@ public class RibaltoneController extends ControllerHandledExceptions {
         List<RuoloCachable> ruoliCachable = userInfo.getRuoliUtente();
         
         // Controllo se l'utente ha il ruolo di super demiurgo. Altrimenti torno Forbidden
-        if (ruoliCachable.stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.SD)) {
+        if (ruoliCachable.stream().anyMatch(ruolo -> ruolo.getNomeBreve() == Ruolo.CodiciRuolo.CA)) {
             try {
                 ribaltoniDaLanciareRepository.inserisciRibaltoneDaLanciare(params.getCodiceAzienda(), params.getIndirizzoMail(), (Integer) userInfo.get(UtenteCachable.KEYS.ID));
             } catch(JpaSystemException ex) {
