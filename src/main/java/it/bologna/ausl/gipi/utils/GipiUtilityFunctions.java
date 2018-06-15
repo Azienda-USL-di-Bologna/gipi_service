@@ -8,6 +8,9 @@ package it.bologna.ausl.gipi.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.AziendaParametriJson;
+import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
+import it.bologna.ausl.entities.repository.UtenteRepository;
 import it.bologna.ausl.masterchefclient.JobParams;
 import it.bologna.ausl.masterchefclient.PrimusCommanderParams;
 import it.bologna.ausl.masterchefclient.WorkerData;
@@ -21,6 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -39,6 +44,9 @@ public class GipiUtilityFunctions {
     
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    UtenteRepository utenteRepository;
     
     /**
      * 
@@ -67,5 +75,11 @@ public class GipiUtilityFunctions {
         try (Jedis jd = jedisPool.getResource()) {
             jd.rpush(masteChefInQueue, w.getStringForRedis());
         }
+    }
+    
+    public Utente getUtenteLoggatto() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        return utenteRepository.findOne((Integer) userInfo.get(UtenteCachable.KEYS.ID));
     }
 }

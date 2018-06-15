@@ -22,6 +22,7 @@ import it.bologna.ausl.gipi.process.Process;
 import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Utente;
@@ -39,7 +40,9 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
+import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.entities.utilities.response.controller.ControllerHandledExceptions;
+import it.bologna.ausl.entities.utilities.response.exceptions.ForbiddenResponseException;
 import it.bologna.ausl.entities.utilities.response.exceptions.InternalServerErrorResponseException;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
@@ -49,9 +52,6 @@ import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.gipi.utils.IterUtilities;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
-import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
@@ -64,12 +64,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -101,6 +99,13 @@ public class IterController extends ControllerHandledExceptions{
     
     @Autowired
     IterUtilities iterUtilities;
+    
+    @Autowired
+    IterRepository iterRepository;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
 
     @Value("${getFascicoliUtente}")
     private String bdsGetFascicoliUtentePath;
@@ -148,10 +153,6 @@ public class IterController extends ControllerHandledExceptions{
 
     @Autowired
     AziendaRepository aziendaRepository;
-
-    @Autowired
-    @Qualifier("GipiUtilityFunctions")
-    GipiUtilityFunctions utilityFunctions;
 
     QIter qIter = QIter.iter;
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
@@ -601,5 +602,41 @@ public class IterController extends ControllerHandledExceptions{
         String CurrentStato = iter.getIdStato().getCodice();
 
         return new ResponseEntity(CurrentStato, HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "riattivaIterSenzaDocumento", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws  IOException {
+        // Mi prendo l'occorrente
+        Utente u = utilityFunctions.getUtenteLoggatto();
+        Iter i = iterRepository.findOne(params.getIdIter());
+        FaseIter fi = getFaseIter(i);
+        Evento e = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
+        Stato s = GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em);
+        
+        // Mi assicuro che l'utente abbia il permesso sull'iter
+        ResponseEntity re = hasPermissionOnFascicolo(i.getIdFascicolo());
+        JsonObject obj = new JsonParser().parse(re.getBody().toString()).getAsJsonObject();
+        if (!obj.get("hasPermission").getAsBoolean()) {
+            throw new ForbiddenResponseException(0, "Attenzione, non sei abilitato all'utilizzo di questa funzione.", "");
+        }
+        
+        // Aggiorno l'iter
+        i.setIdStato(s);
+        em.persist(i);
+        
+        // Creo l'evento
+        EventoIter ei = new EventoIter();
+        ei.setNote(params.getNote());
+        ei.setIdIter(i);
+        ei.setAutore(u);
+        ei.setIdEvento(e);
+        ei.setDataOraEvento(new Date());
+        ei.setIdFaseIter(fi);
+        em.persist(ei);
+        
+        JsonObject o = new JsonObject();
+        o.addProperty("tuttook", "ehsi");
+        return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
 }
