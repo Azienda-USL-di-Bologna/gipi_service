@@ -115,6 +115,12 @@ public class IterController extends ControllerHandledExceptions{
     
     @Value("${proctonGestisciIter}")
     private String proctonGestisciIterPath;
+    
+    @Value("${deteGestisciIter}")
+    private String deteGestisciIterPath;
+    
+    @Value("${deliGestisciIter}")
+    private String deliGestisciIterPath;
 
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
@@ -398,7 +404,7 @@ public class IterController extends ControllerHandledExceptions{
 
             String webApiPath = "";
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + proctonGestisciIterPath;
+            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
             urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
@@ -481,6 +487,7 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
+        o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
         // Creo il documento iter parziale
         DocumentoIter d = new DocumentoIter();
@@ -509,7 +516,7 @@ public class IterController extends ControllerHandledExceptions{
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
-        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
+        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
         
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
@@ -651,6 +658,14 @@ public class IterController extends ControllerHandledExceptions{
         switch(application){
             case "Procton":
                 path = proctonGestisciIterPath;
+            break;
+            
+            case "Dete":
+                path = deteGestisciIterPath;
+            break;
+            
+            case "Deli":
+                path = deliGestisciIterPath;
             break;
         }
         return path;

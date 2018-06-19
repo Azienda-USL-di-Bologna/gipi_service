@@ -367,6 +367,7 @@ public class CreaIter {
         o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
         o.addProperty("idOggettoOrigine", "");
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
+        o.addProperty("glogParams", iterParams.getGlogParams());
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 

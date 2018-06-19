@@ -31,10 +31,15 @@ public class IterParams {
     private String tipoOggettoOrigine;
     private String descrizione;
     private String idApplicazione;
+    private String glogParams;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
 //    private String nomeProcedimento;
+
+    public String getGlogParams() {
+        return glogParams;
+    }
 
     public int getIdUtenteResponsabile() {
         return idUtenteResponsabile;
