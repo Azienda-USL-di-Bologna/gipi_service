@@ -112,6 +112,9 @@ public class IterController extends ControllerHandledExceptions{
 
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
+    
+    @Value("${proctonGestisciIter}")
+    private String proctonGestisciIterPath;
 
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
@@ -393,8 +396,10 @@ public class IterController extends ControllerHandledExceptions{
                 throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
             }
 
+            String webApiPath = "";
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + proctonGestisciIterPath;
+            urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -412,6 +417,7 @@ public class IterController extends ControllerHandledExceptions{
             o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
             // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
+            o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -638,5 +644,15 @@ public class IterController extends ControllerHandledExceptions{
         JsonObject o = new JsonObject();
         o.addProperty("tuttook", "ehsi");
         return new ResponseEntity(o.toString(), HttpStatus.OK);
+    }
+    
+    public String getWebApiPathByIdApplicazione(String application){
+        String path = "";
+        switch(application){
+            case "Procton":
+                path = proctonGestisciIterPath;
+            break;
+        }
+        return path;
     }
 }

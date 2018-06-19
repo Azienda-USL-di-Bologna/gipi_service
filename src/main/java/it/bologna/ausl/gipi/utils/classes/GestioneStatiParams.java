@@ -35,6 +35,11 @@ public class GestioneStatiParams {
     public String tipoOggettoOrigine;
     public String descrizione;
     public String idApplicazione;
+    public String glogParams;
+
+    public String getGlogParams() {
+        return glogParams;
+    }
 
     public String getStatoRichiesto() {
         return statoRichiesto;
