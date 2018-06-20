@@ -476,7 +476,7 @@ public class IterController extends ControllerHandledExceptions{
                     .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
                 .fetch();
             if (!registriTipoProc.isEmpty()){
-                JsonObject pubblicazioni = iterUtilities.pubblicaIter(i, registriTipoProc);
+                JsonObject pubblicazioni = iterUtilities.pubblicaIter(i, d, registriTipoProc);
                 log.info("Stato pubblicazioni: " + pubblicazioni.toString());
             }        
         }

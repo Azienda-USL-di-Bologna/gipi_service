@@ -119,7 +119,7 @@ public class IterUtilities {
         return responseg;
     }
     
-    public JsonObject pubblicaIter(Iter i, List<RegistroTipoProcedimento> registriTipoProc) throws IOException, GipiPubblicazioneException{
+    public JsonObject pubblicaIter(Iter i, DocumentoIter doc, List<RegistroTipoProcedimento> registriTipoProc) throws IOException, GipiPubblicazioneException{
         
         JsonObject statoPubblicazioni = new JsonObject();
         
@@ -147,7 +147,7 @@ public class IterUtilities {
                     log.info("Pubblico sul registro degli accessi...");
                     urlChiamata += registroAccessiPath;
                     log.info("URL Chiamata = " + urlChiamata);
-                    RegistroAccessi iterAlbo = buildaRegistroAccessi(i);
+                    RegistroAccessi iterAlbo = buildaRegistroAccessi(i, doc);
                     body = okhttp3.RequestBody.create(JSON, iterAlbo.getJSONString().getBytes("UTF-8"));
                     break;
                 default:
@@ -191,7 +191,7 @@ public class IterUtilities {
         return statoPubblicazioni;
     }
     
-    private RegistroAccessi buildaRegistroAccessi(Iter i){
+    private RegistroAccessi buildaRegistroAccessi(Iter i, DocumentoIter doc){
         JPQLQuery<EventoIter> queryEventiIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         
         // Trovo il documento che ha creato l'iter
@@ -200,10 +200,10 @@ public class IterUtilities {
                 .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(1)))
                 .fetchOne();
         // Trovo il documento che ha chiuso l'iter
-        EventoIter evChius = queryEventiIter
-                .from(qEventoIter)
-                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
-                .fetchOne();
+//        EventoIter evChius = queryEventiIter
+//                .from(qEventoIter)
+//                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
+//                .fetchOne();
 
         RegistroAccessi iterAlbo = new RegistroAccessi();
 
@@ -221,10 +221,10 @@ public class IterUtilities {
         iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
         iterAlbo.setControinteressati(i.getNoteControinteressati());
         iterAlbo.setEsito(i.getEsito());
-        iterAlbo.setCodiceRegistroChiusura(evChius.getIdDocumentoIter().getRegistro());
-        iterAlbo.setRegistroChiusura(evChius.getIdDocumentoIter().getRegistro());
-        iterAlbo.setNumeroRegistroChiusura(evChius.getIdDocumentoIter().getNumeroRegistro());
-        iterAlbo.setAnnoRegistroChiusura(evChius.getIdDocumentoIter().getAnno());
+        iterAlbo.setCodiceRegistroChiusura(doc.getRegistro());
+        iterAlbo.setRegistroChiusura(doc.getRegistro());
+        iterAlbo.setNumeroRegistroChiusura(doc.getNumeroRegistro());
+        iterAlbo.setAnnoRegistroChiusura(doc.getAnno());
         iterAlbo.setDataChiusura(formatter.format(i.getDataChiusura()));
         iterAlbo.setSintesiMotivazioneRifuto(i.getEsitoMotivazione());
         
