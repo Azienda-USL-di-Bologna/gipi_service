@@ -37,6 +37,8 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
@@ -45,6 +47,7 @@ import it.bologna.ausl.entities.utilities.response.controller.ControllerHandledE
 import it.bologna.ausl.entities.utilities.response.exceptions.ForbiddenResponseException;
 import it.bologna.ausl.entities.utilities.response.exceptions.InternalServerErrorResponseException;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
+import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
@@ -68,6 +71,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -167,6 +172,9 @@ public class IterController extends ControllerHandledExceptions{
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
+    QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
+    
+    private static final Logger log = LoggerFactory.getLogger(IterController.class);
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
@@ -306,7 +314,7 @@ public class IterController extends ControllerHandledExceptions{
 
     @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
+    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException, GipiPubblicazioneException {
         if (gestioneStatiParams.getNumeroDocumento().equals("")) {
             return gestisciStatoIterDaBozza(gestioneStatiParams);
         }
@@ -317,6 +325,7 @@ public class IterController extends ControllerHandledExceptions{
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
 
+        Boolean isChiusura = false;
         
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE_DIFFERITA.toString()) ) // qui siamo se stiamo solo aggiungendo un documento
@@ -333,6 +342,7 @@ public class IterController extends ControllerHandledExceptions{
                 i.setDataChiusura(gestioneStatiParams.getDataEvento());
                 i.setEsito(gestioneStatiParams.getEsito());
                 i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
+                isChiusura = true;
             } else {
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
             }
@@ -454,6 +464,22 @@ public class IterController extends ControllerHandledExceptions{
 
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
+        
+        if (isChiusura) {
+            JPQLQuery<RegistroTipoProcedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+            /* Controllo se l'iter deve essere pubblicato - Avrò un elemento
+             * nella lista per ogni registro in cui dovrà essere pubblicato */
+            log.info("Check pubblicazione iter...");
+            List<RegistroTipoProcedimento> registriTipoProc = query
+                .from(qRegistroTipoProcedimento)
+                .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
+                    .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
+                .fetch();
+            if (!registriTipoProc.isEmpty()){
+                JsonObject pubblicazioni = iterUtilities.pubblicaIter(i, registriTipoProc);
+                log.info("Stato pubblicazioni: " + pubblicazioni.toString());
+            }        
+        }
 
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }

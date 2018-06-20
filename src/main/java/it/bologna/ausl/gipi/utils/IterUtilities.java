@@ -6,8 +6,22 @@
 package it.bologna.ausl.gipi.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.bologna.ausl.entities.baborg.Utente;
+import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonObject;
+import com.querydsl.jpa.EclipseLinkTemplates;
+import com.querydsl.jpa.JPQLQuery;
+import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.AziendaParametriJson;
+import it.bologna.ausl.entities.gipi.DocumentoIter;
+import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.QEventoIter;
+import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.Registro;
+import it.bologna.ausl.entities.gipi.RegistroIter;
+import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
+import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
+import it.bologna.ausl.gipi.jwt.utils.TokenGenerator;
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
@@ -20,11 +34,29 @@ import okhttp3.MultipartBody;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.pubblicazioni.RegistroAccessi;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Requestable;
+import java.io.FileNotFoundException;
+import java.security.Key;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.logging.Level;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.jose4j.lang.JoseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import it.bologna.ausl.gipi.pubblicazioni.Marshaller;
 
 /**
  *
@@ -39,8 +71,19 @@ public class IterUtilities {
     @Autowired
     ObjectMapper objectMapper;
     
+    @Autowired
+    TokenGenerator tokenGenerator;
+    
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
+    
+    @Value("${gipi.api.registro-accessi}")
+    private String registroAccessiPath;
+    
+    QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
+    QEventoIter qEventoIter = QEventoIter.eventoIter;
+    
+    private static final Logger log = LoggerFactory.getLogger(IterUtilities.class);
     
     /* Fascicolo il documento */
     public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams, String cfUtenteFascicolatore) throws IOException{
@@ -74,6 +117,118 @@ public class IterUtilities {
 //        } 
         
         return responseg;
-    }    
+    }
+    
+    public JsonObject pubblicaIter(Iter i, List<RegistroTipoProcedimento> registriTipoProc) throws IOException, GipiPubblicazioneException{
+        
+        JsonObject statoPubblicazioni = new JsonObject();
+        
+        if (registriTipoProc.isEmpty()) {
+            JPQLQuery<RegistroTipoProcedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+            registriTipoProc = query
+                .from(qRegistroTipoProcedimento)
+                .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
+                    .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
+                .fetch();
+        }
+                
+        okhttp3.RequestBody body = null;
+        log.info("Inizio pubblicazione dell'iter con id " + i.getId() + " sugli opportuni registri...");
+        String baseUrl = GetBaseUrl.getShalboApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        //String urlChiamata = "http://localhost:10011/shalbo-api/registroaccessi";
+        String urlChiamata;
+        String token = tokenGenerator.getToken(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda());
+        Registro registro;
+        for (RegistroTipoProcedimento reg : registriTipoProc) {
+            urlChiamata = baseUrl;
+            registro = reg.getIdRegistro();
+            switch (registro.getCodice()){
+                case "REGISTRO_ACCESSI":
+                    log.info("Pubblico sul registro degli accessi...");
+                    urlChiamata += registroAccessiPath;
+                    log.info("URL Chiamata = " + urlChiamata);
+                    RegistroAccessi iterAlbo = buildaRegistroAccessi(i);
+                    body = okhttp3.RequestBody.create(JSON, iterAlbo.getJSONString().getBytes("UTF-8"));
+                    break;
+                default:
+                    log.info("Codice di registro non valido");
+                    continue;
+            }                                             
+            Request requestg = new Request.Builder()
+                    .url(urlChiamata).addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                    .post(body)
+                    .build();
+            OkHttpClient client = new OkHttpClient();
+
+            RegistroIter registroIter = new RegistroIter();
+            registroIter.setIdIter(i);
+            registroIter.setIdRegistro(registro);
+            log.info("Effettuo la chiamata a shalbo...");
+            try {
+                Response responseg = client.newCall(requestg).execute();
+                log.info("RISPOSTA = " + responseg.toString());
+                if (responseg.isSuccessful()) {
+                    log.info("Pubblicazione avvenuta con successo.");
+                    log.info("Aggiorno il database...");
+                    RegistroAccessi registroAccessi = Marshaller.parse(responseg.body().string(), RegistroAccessi.class);
+                    registroIter.setNumeroPubblicazione(registroAccessi.getNumeroPubblicazione());
+                    registroIter.setAnnoPubblicazione(registroAccessi.getAnnoPubblicazione());
+
+                    statoPubblicazioni.addProperty(registro.getCodice(), "OK - N.Pubb " + registroAccessi.getNumeroPubblicazione());
+                } else {
+                    statoPubblicazioni.addProperty(registro.getCodice(), "ERROR");
+                    throw new GipiPubblicazioneException("La pubblicazione non è andata a buon fine.");
+                }
+            } catch (IOException | GipiPubblicazioneException ex) {
+                log.error("Errore: " + ex);
+            } finally {
+                log.info("Salvo nella registri iter..");
+                em.persist(registroIter);
+                em.flush();
+                log.info("Salvataggio effettuato.");
+            }
+        }                  
+        return statoPubblicazioni;
+    }
+    
+    private RegistroAccessi buildaRegistroAccessi(Iter i){
+        JPQLQuery<EventoIter> queryEventiIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        
+        // Trovo il documento che ha creato l'iter
+        EventoIter evIniz = queryEventiIter
+                .from(qEventoIter)
+                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(1)))
+                .fetchOne();
+        // Trovo il documento che ha chiuso l'iter
+        EventoIter evChius = queryEventiIter
+                .from(qEventoIter)
+                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
+                .fetchOne();
+
+        RegistroAccessi iterAlbo = new RegistroAccessi();
+
+        iterAlbo.setOggetto(i.getOggetto());
+        iterAlbo.setTipoProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        // Segnaposto per TipoProcedimento Precedente, per quando sarà inserito
+        iterAlbo.setModalitaCollegamento("Undefined"); // Campo ancora da definire
+        iterAlbo.setUoProcedente(i.getIdProcedimento().getIdStruttura().getNome());
+        iterAlbo.setResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getDescrizione());
+        iterAlbo.setCodiceRegistroIniziativa(evIniz.getIdDocumentoIter().getRegistro());
+        iterAlbo.setRegistroIniziativa(evIniz.getIdDocumentoIter().getRegistro());
+        iterAlbo.setNumeroRegistroIniziativa(evIniz.getIdDocumentoIter().getNumeroRegistro());
+        iterAlbo.setAnnoRegistroIniziativa(evIniz.getIdDocumentoIter().getAnno());
+        DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
+        iterAlbo.setControinteressati(i.getNoteControinteressati());
+        iterAlbo.setEsito(i.getEsito());
+        iterAlbo.setCodiceRegistroChiusura(evChius.getIdDocumentoIter().getRegistro());
+        iterAlbo.setRegistroChiusura(evChius.getIdDocumentoIter().getRegistro());
+        iterAlbo.setNumeroRegistroChiusura(evChius.getIdDocumentoIter().getNumeroRegistro());
+        iterAlbo.setAnnoRegistroChiusura(evChius.getIdDocumentoIter().getAnno());
+        iterAlbo.setDataChiusura(formatter.format(i.getDataChiusura()));
+        iterAlbo.setSintesiMotivazioneRifuto(i.getEsitoMotivazione());
+        
+        return iterAlbo;
+    }
     
 }

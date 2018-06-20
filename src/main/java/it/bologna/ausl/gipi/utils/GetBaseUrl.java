@@ -30,4 +30,18 @@ public class GetBaseUrl {
 
         return url;
     }
+    
+    public static String getShalboApiUrl(int idAzienda, EntityManager em, ObjectMapper objectMapper) throws IOException {
+        QAzienda qAzienda = QAzienda.azienda;
+        JPQLQuery<Azienda> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+
+        String parametri = query.select(qAzienda.parametri)
+                .from(qAzienda)
+                .where(qAzienda.id.eq(idAzienda)).fetchFirst();
+
+        AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
+        String url = params.getShalboApiUrl();
+
+        return url;
+    }
 }

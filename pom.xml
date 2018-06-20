@@ -302,6 +302,12 @@
         </dependency>
         
         <dependency>
+            <groupId>it.bologna.ausl.jwtgenerator</groupId>
+            <artifactId>JWTGenerator</artifactId>
+            <version>1</version>
+        </dependency>
+        
+        <dependency>
             <groupId>it.bologna.ausl.masterchefclient</groupId>
             <artifactId>MasterChefClient</artifactId>
             <version>1</version>
