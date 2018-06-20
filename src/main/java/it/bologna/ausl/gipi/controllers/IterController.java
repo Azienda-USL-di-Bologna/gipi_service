@@ -402,10 +402,11 @@ public class IterController extends ControllerHandledExceptions{
                 throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
             }
 
-            String webApiPath = "";
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
-            urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;
+            
+            // localhost da commentare
+            urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -517,6 +518,9 @@ public class IterController extends ControllerHandledExceptions{
 
         // Chiamata alla web api GestisciIter.associaDocumento
         String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+        
+        // localhost da commentare
+        urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;
         
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
@@ -656,15 +660,15 @@ public class IterController extends ControllerHandledExceptions{
     public String getWebApiPathByIdApplicazione(String application){
         String path = "";
         switch(application){
-            case "Procton":
+            case "procton":
                 path = proctonGestisciIterPath;
             break;
             
-            case "Dete":
+            case "dete":
                 path = deteGestisciIterPath;
             break;
             
-            case "Deli":
+            case "deli":
                 path = deliGestisciIterPath;
             break;
         }

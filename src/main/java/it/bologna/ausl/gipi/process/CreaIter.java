@@ -318,6 +318,22 @@ public class CreaIter {
         acipParams.addProperty("responsabileAdozioneAttoFinale", uResponsabileAdozione.getIdPersona().getCodiceFiscale());
         acipParams.addProperty("titolarePotereEsecutivo", uTitolare.getIdPersona().getCodiceFiscale());
         
+        acipParams.addProperty("azienda", p.getIdAziendaTipoProcedimento().getIdAzienda().getDescrizione());
+        acipParams.addProperty("oggettoIter", i.getOggetto());
+        acipParams.addProperty("StrutturaResponsabileDelProcedimento", p.getIdStrutturaTitolarePotereSostitutivo().getNome());
+        // questi poi?? come faremo??
+        acipParams.addProperty("dataRegistrazione", new SimpleDateFormat("dd/MM/yyyy").format(iterParams.getDataRegistrazioneDocumento()));
+        
+        Date chiusuraPrevista = new Date();
+        
+        int durataMassimaProcedimento = i.getIdProcedimento().getIdAziendaTipoProcedimento().getDurataMassimaProcedimento();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(i.getDataAvvio());
+        cal.add(Calendar.DATE, durataMassimaProcedimento); // aggiungo la durata massima del procedimento.
+        chiusuraPrevista = cal.getTime();
+        
+        acipParams.addProperty("dataConclusionePrevista", new SimpleDateFormat("dd/MM/yyyy").format(chiusuraPrevista));
+        
         datiAggiuntivi.addProperty("acipParams", acipParams.toString());
         log.info("dati_aggiuntivi --> " + datiAggiuntivi.toString());
         
@@ -352,7 +368,8 @@ public class CreaIter {
         // Comunico a Babel l'iter appena creato      
         urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
-        // urlChiamata = "http://127.0.0.1:8080/Procton/GestisciIter";
+        // logalhost da commentare
+        urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;;
         
         log.info("urlChiamata per la web api PDD --> " + urlChiamata);
         
@@ -365,12 +382,14 @@ public class CreaIter {
         o.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
         o.addProperty("numeroDocumento", iterParams.getNumeroDocumento());
         o.addProperty("annoDocumento", iterParams.getAnnoDocumento());
-        o.addProperty("idOggettoOrigine", "");
+        o.addProperty("idOggettoOrigine", iterParams.getIdOggettoOrigine());
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
         o.addProperty("glogParams", iterParams.getGlogParams());
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
+        log.info("JSON inviato --> " + o.toString());
+        
         log.info("body a pdd questi dati --> " + body.toString());
         
         log.info("chiamo pdd...");
