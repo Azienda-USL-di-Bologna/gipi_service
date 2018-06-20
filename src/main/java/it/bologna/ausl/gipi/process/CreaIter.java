@@ -369,7 +369,7 @@ public class CreaIter {
         urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
         // logalhost da commentare
-        urlChiamata = "http://localhost:8080" + proctonGestisciIterPath;;
+        // urlChiamata = "http://localhost:8080" + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
         
         log.info("urlChiamata per la web api PDD --> " + urlChiamata);
         
