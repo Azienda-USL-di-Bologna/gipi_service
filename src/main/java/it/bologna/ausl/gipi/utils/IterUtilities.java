@@ -11,7 +11,6 @@ import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
-import it.bologna.ausl.entities.baborg.AziendaParametriJson;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.Iter;
@@ -35,28 +34,18 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.pubblicazioni.RegistroAccessi;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Requestable;
-import java.io.FileNotFoundException;
-import java.security.Key;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
-import java.util.logging.Level;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.gipi.pubblicazioni.Marshaller;
+import java.util.EnumMap;
 
 /**
  *
@@ -82,6 +71,10 @@ public class IterUtilities {
     
     QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
+    
+    public enum Esiti {
+        ACCOLTO, RIFIUTO_TOTALE, RIFIUTO_PARZIALE 
+    }
     
     private static final Logger log = LoggerFactory.getLogger(IterUtilities.class);
     
@@ -205,6 +198,10 @@ public class IterUtilities {
 //                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
 //                .fetchOne();
 
+        EnumMap<Esiti, String> esitiMap = new EnumMap<Esiti, String>(Esiti.class);
+        esitiMap.put(Esiti.ACCOLTO, "Accolto");
+        esitiMap.put(Esiti.RIFIUTO_TOTALE, "Rifiuto totale");
+        esitiMap.put(Esiti.RIFIUTO_PARZIALE, "Rifiuto parziale");
         RegistroAccessi iterAlbo = new RegistroAccessi();
 
         iterAlbo.setOggetto(i.getOggetto());
@@ -220,7 +217,7 @@ public class IterUtilities {
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
         iterAlbo.setControinteressati(i.getNoteControinteressati());
-        iterAlbo.setEsito(i.getEsito());
+        iterAlbo.setEsito(esitiMap.get(Esiti.valueOf(i.getEsito())));
         iterAlbo.setCodiceRegistroChiusura(doc.getRegistro());
         iterAlbo.setRegistroChiusura(doc.getRegistro());
         iterAlbo.setNumeroRegistroChiusura(doc.getNumeroRegistro());
