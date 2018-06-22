@@ -22,6 +22,7 @@ import it.bologna.ausl.gipi.process.Process;
 import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Utente;
@@ -36,12 +37,17 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
+import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.entities.utilities.response.controller.ControllerHandledExceptions;
+import it.bologna.ausl.entities.utilities.response.exceptions.ForbiddenResponseException;
 import it.bologna.ausl.entities.utilities.response.exceptions.InternalServerErrorResponseException;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
+import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
@@ -49,9 +55,6 @@ import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.gipi.utils.IterUtilities;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
-import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
@@ -64,12 +67,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
-import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -101,12 +104,28 @@ public class IterController extends ControllerHandledExceptions{
     
     @Autowired
     IterUtilities iterUtilities;
+    
+    @Autowired
+    IterRepository iterRepository;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
 
     @Value("${getFascicoliUtente}")
     private String bdsGetFascicoliUtentePath;
 
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
+    
+    @Value("${proctonGestisciIter}")
+    private String proctonGestisciIterPath;
+    
+    @Value("${deteGestisciIter}")
+    private String deteGestisciIterPath;
+    
+    @Value("${deliGestisciIter}")
+    private String deliGestisciIterPath;
 
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
@@ -149,14 +168,13 @@ public class IterController extends ControllerHandledExceptions{
     @Autowired
     AziendaRepository aziendaRepository;
 
-    @Autowired
-    @Qualifier("GipiUtilityFunctions")
-    GipiUtilityFunctions utilityFunctions;
-
     QIter qIter = QIter.iter;
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
+    QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
+    
+    private static final Logger log = LoggerFactory.getLogger(IterController.class);
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
@@ -296,7 +314,7 @@ public class IterController extends ControllerHandledExceptions{
 
     @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException {
+    public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException, GipiPubblicazioneException {
         if (gestioneStatiParams.getNumeroDocumento().equals("")) {
             return gestisciStatoIterDaBozza(gestioneStatiParams);
         }
@@ -307,6 +325,7 @@ public class IterController extends ControllerHandledExceptions{
         Evento eventoDiCambioStato = new Evento();
         FaseIter fi = getFaseIter(i);
 
+        Boolean isChiusura = false;
         
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
         if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE_DIFFERITA.toString()) ) // qui siamo se stiamo solo aggiungendo un documento
@@ -323,6 +342,7 @@ public class IterController extends ControllerHandledExceptions{
                 i.setDataChiusura(gestioneStatiParams.getDataEvento());
                 i.setEsito(gestioneStatiParams.getEsito());
                 i.setEsitoMotivazione(gestioneStatiParams.getEsitoMotivazione());
+                isChiusura = true;
             } else {
                 eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
             }
@@ -393,7 +413,10 @@ public class IterController extends ControllerHandledExceptions{
             }
 
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+            
+            // localhost da commentare
+            // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -411,6 +434,7 @@ public class IterController extends ControllerHandledExceptions{
             o.addProperty("idOggettoOrigine", gestioneStatiParams.getIdOggettoOrigine());
             // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
+            o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -440,6 +464,22 @@ public class IterController extends ControllerHandledExceptions{
 
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
+        
+        if (isChiusura) {
+            JPQLQuery<RegistroTipoProcedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+            /* Controllo se l'iter deve essere pubblicato - Avrò un elemento
+             * nella lista per ogni registro in cui dovrà essere pubblicato */
+            log.info("Check pubblicazione iter...");
+            List<RegistroTipoProcedimento> registriTipoProc = query
+                .from(qRegistroTipoProcedimento)
+                .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
+                    .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
+                .fetch();
+            if (!registriTipoProc.isEmpty()){
+                JsonObject pubblicazioni = iterUtilities.pubblicaIter(i, d, registriTipoProc);
+                log.info("Stato pubblicazioni: " + pubblicazioni.toString());
+            }        
+        }
 
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
     }
@@ -474,6 +514,7 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("annoDocumento", gestioneStatiParams.getAnnoDocumento());
         o.addProperty("codiceRegistroDocumento", gestioneStatiParams.getCodiceRegistroDocumento());
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
+        o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
         // Creo il documento iter parziale
         DocumentoIter d = new DocumentoIter();
@@ -502,7 +543,10 @@ public class IterController extends ControllerHandledExceptions{
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
-        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
+        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+        
+        // localhost da commentare
+        // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
         
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
@@ -601,5 +645,60 @@ public class IterController extends ControllerHandledExceptions{
         String CurrentStato = iter.getIdStato().getCodice();
 
         return new ResponseEntity(CurrentStato, HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "riattivaIterSenzaDocumento", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws  IOException {
+        // Mi prendo l'occorrente
+        Utente u = utilityFunctions.getUtenteLoggatto();
+        Iter i = iterRepository.findOne(params.getIdIter());
+        FaseIter fi = getFaseIter(i);
+        Evento e = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
+        Stato s = GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em);
+        
+        // Mi assicuro che l'utente abbia il permesso sull'iter
+        ResponseEntity re = hasPermissionOnFascicolo(i.getIdFascicolo());
+        JsonObject obj = new JsonParser().parse(re.getBody().toString()).getAsJsonObject();
+        if (!obj.get("hasPermission").getAsBoolean()) {
+            throw new ForbiddenResponseException(0, "Attenzione, non sei abilitato all'utilizzo di questa funzione.", "");
+        }
+        
+        // Aggiorno l'iter
+        i.setIdStato(s);
+        em.persist(i);
+        
+        // Creo l'evento
+        EventoIter ei = new EventoIter();
+        ei.setNote(params.getNote());
+        ei.setIdIter(i);
+        ei.setAutore(u);
+        ei.setIdEvento(e);
+        ei.setDataOraEvento(new Date());
+        ei.setIdFaseIter(fi);
+        em.persist(ei);
+        
+        JsonObject o = new JsonObject();
+        o.addProperty("tuttook", "ehsi");
+        return new ResponseEntity(o.toString(), HttpStatus.OK);
+    }
+    
+    public String getWebApiPathByIdApplicazione(String application){
+        String path = "";
+        switch(application){
+            
+            case "procton":
+                path = proctonGestisciIterPath;
+            break;
+            
+            case "dete":
+                path = deteGestisciIterPath;
+            break;
+            
+            case "deli":
+                path = deliGestisciIterPath;
+            break;
+        }
+        return path;
     }
 }

@@ -23,7 +23,7 @@ import org.springframework.context.annotation.DependsOn;
 public class ConnectorConfig {
 
     @Bean
-    public EmbeddedServletContainerFactory servletContainer(@Value("${server.protocol.ajp.port:8202}") int ajpPort) {
+    public EmbeddedServletContainerFactory servletContainer(@Value("${gipi.server.protocol.ajp.port:8202}") int ajpPort) {
         TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory();
 
         /**
