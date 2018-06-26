@@ -33,7 +33,7 @@ public class CacheableFunctions {
     public List<Integer> getMieStruttureEcugine(Integer idUtente) {
         /* Restituisce tutte le strutture di afferenza dell'utente e le cugine, 
          * con tutti i loro figli */ 
-        String hcQuery = "select * from organigramma.get_mie_strutture_e_cugine(?)";
+        String hcQuery = "select * from organigramma.get_figlie_e_cugine_ricorsiva(?)";
         Query query = em.createNativeQuery(hcQuery);
         query.setParameter(1, idUtente);
         List<Integer> listaId = query.getResultList();
