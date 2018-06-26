@@ -51,41 +51,41 @@ import java.util.EnumMap;
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
-
 @Component
 public class IterUtilities {
+
     @Autowired
     EntityManager em;
-    
+
     @Autowired
     ObjectMapper objectMapper;
-    
+
     @Autowired
     TokenGenerator tokenGenerator;
-    
+
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
-    
+
     @Value("${gipi.api.registro-accessi}")
     private String registroAccessiPath;
-    
+
     QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
-    
+
     public enum Esiti {
-        ACCOLTO, RIFIUTO_TOTALE, RIFIUTO_PARZIALE 
+        ACCOLTO, RIFIUTO_TOTALE, RIFIUTO_PARZIALE, RITIRATO
     }
-    
+
     private static final Logger log = LoggerFactory.getLogger(IterUtilities.class);
-    
+
     /* Fascicolo il documento */
-    public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams, String cfUtenteFascicolatore) throws IOException{
-        
+    public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams, String cfUtenteFascicolatore) throws IOException {
+
         String baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
 
         // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
         String urlChiamata = baseUrl + updateGdDocPath;
-        
+
         GdDoc g = new GdDoc((String) gestioneStatiParams.getIdOggettoOrigine(), gestioneStatiParams.getTipoOggettoOrigine(), null, null, null, null, null, (String) gestioneStatiParams.getCodiceRegistroDocumento(), null, null, null, null, null, null, null, null, null, null);
         Fascicolazione fascicolazione = new Fascicolazione(i.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
         fascicolazione.setCfUtenteFascicolatore(cfUtenteFascicolatore);
@@ -107,24 +107,24 @@ public class IterUtilities {
 //        if (!responseg.isSuccessful()) {
 //            System.out.println("La risposta --> " + responseg.toString());
 //            throw new IOException("La fascicolazione non è andata a buon fine.");
-//        } 
-        
+//        }
+
         return responseg;
     }
-    
-    public JsonObject pubblicaIter(Iter i, DocumentoIter doc, List<RegistroTipoProcedimento> registriTipoProc) throws IOException, GipiPubblicazioneException{
-        
+
+    public JsonObject pubblicaIter(Iter i, DocumentoIter doc, List<RegistroTipoProcedimento> registriTipoProc) throws IOException, GipiPubblicazioneException {
+
         JsonObject statoPubblicazioni = new JsonObject();
-        
+
         if (registriTipoProc.isEmpty()) {
             JPQLQuery<RegistroTipoProcedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
             registriTipoProc = query
-                .from(qRegistroTipoProcedimento)
-                .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
-                    .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
-                .fetch();
+                    .from(qRegistroTipoProcedimento)
+                    .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
+                            .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
+                    .fetch();
         }
-                
+
         okhttp3.RequestBody body = null;
         log.info("Inizio pubblicazione dell'iter con id " + i.getId() + " sugli opportuni registri...");
         String baseUrl = GetBaseUrls.getShalboApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
@@ -135,7 +135,7 @@ public class IterUtilities {
         for (RegistroTipoProcedimento reg : registriTipoProc) {
             urlChiamata = baseUrl;
             registro = reg.getIdRegistro();
-            switch (registro.getCodice()){
+            switch (registro.getCodice()) {
                 case "REGISTRO_ACCESSI":
                     log.info("Pubblico sul registro degli accessi...");
                     urlChiamata += registroAccessiPath;
@@ -146,7 +146,7 @@ public class IterUtilities {
                 default:
                     log.info("Codice di registro non valido");
                     continue;
-            }                                             
+            }
             Request requestg = new Request.Builder()
                     .url(urlChiamata).addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .post(body)
@@ -180,13 +180,13 @@ public class IterUtilities {
                 em.flush();
                 log.info("Salvataggio effettuato.");
             }
-        }                  
+        }
         return statoPubblicazioni;
     }
-    
-    private RegistroAccessi buildaRegistroAccessi(Iter i, DocumentoIter doc){
+
+    private RegistroAccessi buildaRegistroAccessi(Iter i, DocumentoIter doc) {
         JPQLQuery<EventoIter> queryEventiIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
-        
+
         // Trovo il documento che ha creato l'iter
         EventoIter evIniz = queryEventiIter
                 .from(qEventoIter)
@@ -202,6 +202,7 @@ public class IterUtilities {
         esitiMap.put(Esiti.ACCOLTO, "Accolto");
         esitiMap.put(Esiti.RIFIUTO_TOTALE, "Rifiuto totale");
         esitiMap.put(Esiti.RIFIUTO_PARZIALE, "Rifiuto parziale");
+        esitiMap.put(Esiti.RITIRATO, "Ritirato");
         RegistroAccessi iterAlbo = new RegistroAccessi();
 
         iterAlbo.setOggetto(i.getOggetto());
@@ -224,8 +225,8 @@ public class IterUtilities {
         iterAlbo.setAnnoRegistroChiusura(doc.getAnno());
         iterAlbo.setDataChiusura(formatter.format(i.getDataChiusura()));
         iterAlbo.setSintesiMotivazioneRifuto(i.getEsitoMotivazione());
-        
+
         return iterAlbo;
     }
-    
+
 }
