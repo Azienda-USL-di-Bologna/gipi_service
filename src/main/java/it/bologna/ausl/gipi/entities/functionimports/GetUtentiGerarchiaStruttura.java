@@ -3,6 +3,7 @@ package it.bologna.ausl.gipi.entities.functionimports;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.QUtenteStruttura;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.nextsw.olingo.edmextension.EdmFunctionImportClassBase;
 import it.nextsw.olingo.edmextension.annotation.EdmFunctionImportClass;
 import java.io.IOException;
@@ -17,6 +18,8 @@ import org.apache.olingo.odata2.jpa.processor.core.access.data.JPAQueryInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
@@ -54,23 +57,27 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
             httpMethod = EdmFunctionImport.HttpMethod.GET
     )
     public JPAQueryInfo getUtentiGerarchiaStruttura(
-            @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = false)) final Integer idStruttura,
             @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = true)) final String searchString
     ) throws IOException {
-        log.info("sono in getUtentiGerarchiaStruttura, idStruttura: " + idStruttura);
+        
+        log.info("Chiamata della function import getUtentiGerarchiaStruttura");
         log.info("Stringa di ricerca: " + searchString);
-
-        List<Integer> lista = ca.getGerarchiaStruttura(idStruttura);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        int idUtente = (int) userInfo.get(UtenteCachable.KEYS.ID);
+        List<Integer> lista = ca.getMieStruttureEcugine(idUtente);
 
         // Ora creo la query che recupera gli utenti in base alla lista di strutture appena creata
         JPAQuery queryDSL = new JPAQuery(em);
         queryDSL.select(QUtenteStruttura.utenteStruttura)
                 .from(QUtenteStruttura.utenteStruttura)
                 .join(QUtente.utente).on(QUtenteStruttura.utenteStruttura.idUtente.eq(QUtente.utente))
-                .where(QUtenteStruttura.utenteStruttura.idStruttura.id.in(lista));
+                .where(QUtenteStruttura.utenteStruttura.idStruttura.id.in(lista))
+                .orderBy(QUtenteStruttura.utenteStruttura.idStruttura.id.asc());
 
         if (searchString != null && !searchString.equals("")) {
-            queryDSL.where(QUtente.utente.idPersona.descrizione.likeIgnoreCase("%" + searchString + "%"));
+            queryDSL.where(QUtente.utente.idPersona.descrizione.likeIgnoreCase("%" + searchString + "%")
+                    .or(QUtente.utente.idPersona.nome.likeIgnoreCase(searchString).or(QUtente.utente.idPersona.cognome.likeIgnoreCase(searchString))));
         }
 
         return createQueryInfo(queryDSL, QUtenteStruttura.utenteStruttura.id.count(), em);
