@@ -63,6 +63,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 
         if (service != null && service.getActive()) {
             log.info(delimiter + "START: " + getJobName() + delimiter);
+            serviceManager.setDataInizioRun(getJobName());
 
             QIter qIter = QIter.iter;
 
@@ -115,7 +116,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 //            }
             iterRepository.save(iters);
             log.info(getJobName() + strPostElaborazione + "salvataggio degli iter modificati andara a buon fine");
-
+            serviceManager.setDataFineRun(getJobName());
             log.info(delimiter + "STOP: " + getJobName() + delimiter);
         } else {
             log.info(getJobName() + ": servizio non attivo");
