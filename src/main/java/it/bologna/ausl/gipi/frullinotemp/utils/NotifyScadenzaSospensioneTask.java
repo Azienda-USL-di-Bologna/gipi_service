@@ -18,7 +18,6 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
-import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTaskProva.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrl;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -68,7 +67,7 @@ public class NotifyScadenzaSospensioneTask {
     QAzienda qAzienda = QAzienda.azienda;
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
-    private static final Logger log = LoggerFactory.getLogger(NotifyScadenzaSospensioneTaskProva.class);
+    private static final Logger log = LoggerFactory.getLogger(NotifyScadenzaSospensioneTask.class);
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     public static final String MESSAGGIO = "L'iter %s - %s, in stato Sospeso, ha esaurito i tempi previsti per la sua sospensione."; // Mesasggio fisso agli utenti a cui vanno aggiunte le stringhe: numero-anno dell'iter, nome_del_procedimento
     private static final String logContextName = "NotifyScadenzaSospensioneTask.";
@@ -78,10 +77,8 @@ public class NotifyScadenzaSospensioneTask {
     public void callBabel(int idAzienda, JSONArray ja) throws ParseException {
         String functionName = "callBabel";
         if(ja.size() > 0){
-            System.out.println("PORCO GIUDA FUNZIONA!!!" + "\n" + ja.toString());
             try {
                 String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
-                urlChiamata = "http://localhost:8080/Babel/InviaNotifiche";
                 JSONObject jo = new JSONObject();
                 jo.put("ja", ja.toString());
                 okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, jo.toString().getBytes("UTF-8"));
@@ -117,15 +114,23 @@ public class NotifyScadenzaSospensioneTask {
     
     public JSONObject getJsonOfThisIter(Iter iter){
         JSONObject o = new JSONObject();
-        JSONArray ja = new JSONArray();
-        ja.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-        if(!ja.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
-            ja.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
-        if(!ja.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
-            ja.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
-        o.put("cfUtenti", ja.toString());
+//        JSONArray ja = new JSONArray();
+//        ja.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+//        if(!ja.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
+//            ja.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+//        if(!ja.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
+//            ja.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        
+        ArrayList<String> utenti = new ArrayList<String>();
+        utenti.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        if(!utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
+            utenti.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        if(!utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
+            utenti.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        o.put("cfUtenti", utenti);
         o.put("messaggio", String.format(MESSAGGIO, iter.getNumero() + "/" + iter.getAnno().toString(), iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome()));
         o.put("idIter", iter.getId());
+        o.put("descrizioneNotifica", "EsaurimentoTempiSospensione");
         return o;
     }
     
@@ -177,6 +182,7 @@ public class NotifyScadenzaSospensioneTask {
         String functionName = "notifyMain";
         log.info(functionName + "--> sono entrato nel main del servizio di notifica per Iter Sospesi");        
         List<Azienda> aziende = new ArrayList<>();
+        megaJsonArray = new JSONArray(); 
         JPQLQuery<Iter> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
         aziende = query.select(this.qAzienda).from(this.qAzienda).fetch();
         aziende.forEach(item->System.out.println(item.getId() + "\t" + item.getDescrizione()));
@@ -191,7 +197,8 @@ public class NotifyScadenzaSospensioneTask {
         // ORA DOVREI AVERE IL MEGAJSONARRAY POPOLATO: ciclare e chiamare Babel per ogni azienda
         System.out.println("*****************************************************************");
         System.out.println("*****************************************************************");
-        megaJsonArray.forEach(item->System.out.println(item.toString()));
+        log.info(functionName + "--> ITER DA NOTIFICARE TROVATI:");
+        megaJsonArray.forEach(item->log.info(item.toString()));
         System.out.println("*****************************************************************");
         System.out.println("********************* LET'S CALL BABEL **************************");
         megaJsonArray.forEach(item->{
