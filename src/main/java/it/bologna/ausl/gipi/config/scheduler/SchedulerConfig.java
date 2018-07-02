@@ -34,14 +34,14 @@ public class SchedulerConfig implements SchedulingConfigurer {
 
     @Bean(destroyMethod = "shutdown")
     public Executor taskExecutor() {
-        System.out.println("destroyed method");
+//        System.out.println("destroyed method");
         // parametro: numero di thread da tenere nel pool
-        return Executors.newScheduledThreadPool(100);
+        return Executors.newScheduledThreadPool(1);
     }
 
     @PreDestroy
     public void destroy() {
-        System.out.println("destroyed method");
+//        System.out.println("destroyed method");
         this.scheduledTaskRegistrar.destroy();
     }
 

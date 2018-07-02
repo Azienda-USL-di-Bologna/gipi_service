@@ -1,6 +1,8 @@
-package it.bologna.ausl.gipi.config.scheduler;
+package it.bologna.ausl.gipi.config.scheduler.jobs;
 
 import it.bologna.ausl.entities.gipi.Servizio;
+import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
+import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

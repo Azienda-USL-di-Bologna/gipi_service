@@ -1,8 +1,6 @@
 package it.bologna.ausl.gipi.config.scheduler;
 
-import it.bologna.ausl.entities.gipi.Servizio;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import it.bologna.ausl.gipi.config.scheduler.jobs.JobAggiornaCampiIter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,43 +20,50 @@ public class ScheduledTasks {
     @Autowired
     ServiceManager serviceManager;
 
+//    @Autowired
+//    Servizio1 servizio1;
+//
+//    @Autowired
+//    Servizio2 servizio2;
     @Autowired
-    Servizio1 servizio1;
+    JobAggiornaCampiIter jobAggiornaCampiIter;
 
-    @Autowired
-    Servizio2 servizio2;
-
-    @Scheduled(fixedRate = 1000)
-    public void esempioServizio1() throws InterruptedException {
-
-        servizio1.run();
-//        Servizio service = serviceManager.getService("simple_service");
+//    @Scheduled(fixedRate = 1000)
+//    public void esempioServizio1() throws InterruptedException {
+//        log.debug("servizio1");
+//        servizio1.run();
+////        Servizio service = serviceManager.getService("simple_service");
+////
+////        if (service != null && service.getActive()) {
+////            System.out.println("servizio_1, attivo! ");
+////            System.out.println("AAA inizio" + String.format("Current Thread : {%s: %s}", Thread.currentThread().getName(), dateTimeFormatter.format(LocalDateTime.now())));
+////            int min = 1;
+////            int max = 10;
+////
+////            long tempo = (min + (long) (Math.random() * ((max - min))));
+////            System.out.println("time: " + tempo);
+////            System.out.println("AAA fine" + String.format("Current Thread : {%s: %s}", Thread.currentThread().getName(), dateTimeFormatter.format(LocalDateTime.now())));
+////
+////        } else {
+////            System.out.println("servizio_1 non presente o non attivo");
+////        }
 //
-//        if (service != null && service.getActive()) {
-//            System.out.println("servizio_1, attivo! ");
-//            System.out.println("AAA inizio" + String.format("Current Thread : {%s: %s}", Thread.currentThread().getName(), dateTimeFormatter.format(LocalDateTime.now())));
-//            int min = 1;
-//            int max = 10;
-//
-//            long tempo = (min + (long) (Math.random() * ((max - min))));
-//            System.out.println("time: " + tempo);
-//            System.out.println("AAA fine" + String.format("Current Thread : {%s: %s}", Thread.currentThread().getName(), dateTimeFormatter.format(LocalDateTime.now())));
-//
-//        } else {
-//            System.out.println("servizio_1 non presente o non attivo");
-//        }
+//    }
+//    @Scheduled(fixedRate = 500)
+//    public void esempioServizio2() throws InterruptedException {
+//        log.debug("servizio2");
+//        servizio2.run();
+////        Servizio service = serviceManager.getService("simple_service2");
+////
+////        if (service != null && service.getActive()) {
+////            System.out.println("servizio_2, attivo!");
+////        } else {
+////            System.out.println("servizio_2 non presente o non attivo");
+////        }
+//    }
+    @Scheduled(cron = "0 30 0 1/1 * ?")
+    public void esempio() throws InterruptedException {
 
-    }
-
-    @Scheduled(fixedRate = 500)
-    public void esempioServizio2() throws InterruptedException {
-        servizio2.run();
-//        Servizio service = serviceManager.getService("simple_service2");
-//
-//        if (service != null && service.getActive()) {
-//            System.out.println("servizio_2, attivo!");
-//        } else {
-//            System.out.println("servizio_2 non presente o non attivo");
-//        }
+        jobAggiornaCampiIter.run();
     }
 }
