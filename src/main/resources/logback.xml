@@ -59,10 +59,9 @@
     </rollingPolicy>  
   </appender>-->
   
-<!--  <logger name="it.bologna.ausl.gipi" level="debug" additivity="false">
+  <logger name="it.bologna.ausl.gipi" level="debug" additivity="false">
     <appender-ref ref="STDOUT"/>
-    <appender-ref ref="SAVE-TO-FILE"/>
-  </logger>-->
+  </logger>
   
   <logger name="it.bologna.ausl.gipi.config.scheduler">
     <level value="ALL" />
