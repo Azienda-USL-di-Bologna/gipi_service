@@ -24,7 +24,7 @@ import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
@@ -218,7 +218,7 @@ public class CreaIter {
         if (isLocalHost) {
             baseUrl = localhostBaseUrl;
         } else {
-            baseUrl = GetBaseUrl.getBaseUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         }
         String urlChiamata = baseUrl + insertFascicoloPath;
         log.info("Url chiamata chiamata = " + urlChiamata);
@@ -365,7 +365,8 @@ public class CreaIter {
         log.info("eventoIter salvato");
         
         
-        // Comunico a Babel l'iter appena creato      
+        // Comunico a Babel l'iter appena creato
+        baseUrl = GetBaseUrls.getBabelSuiteWebApiUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
         // logalhost da commentare
