@@ -11,7 +11,7 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.utilities.FunctionImportSorting;
 import it.bologna.ausl.gipi.controllers.IterController;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
@@ -99,7 +99,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
         additionalData.put(IterController.GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
 
-        String baseUrl = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
+        String baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
         // String baseUrl = "http://localhost:8084/bds_tools/ioda/api/fascicolo/getFascicoliUtente";
         OkHttpClient client = new OkHttpClient();
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));

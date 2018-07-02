@@ -14,9 +14,9 @@ import javax.persistence.EntityManager;
  *
  * @author f.gusella
  */
-public class GetBaseUrl {
+public class GetBaseUrls {
 
-    public static String getBaseUrl(int idAzienda, EntityManager em, ObjectMapper objectMapper) throws IOException {
+    public static String getBabelSuiteBdsToolsUrl(int idAzienda, EntityManager em, ObjectMapper objectMapper) throws IOException {
 
         QAzienda qAzienda = QAzienda.azienda;
         JPQLQuery<Azienda> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -26,7 +26,22 @@ public class GetBaseUrl {
                 .where(qAzienda.id.eq(idAzienda)).fetchFirst();
 
         AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
-        String url = params.getBaseUrl();
+        String url = params.getBabelSuiteBdsToolsUrl();
+
+        return url;
+    }
+    
+    public static String getBabelSuiteWebApiUrl(int idAzienda, EntityManager em, ObjectMapper objectMapper) throws IOException {
+
+        QAzienda qAzienda = QAzienda.azienda;
+        JPQLQuery<Azienda> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+
+        String parametri = query.select(qAzienda.parametri)
+                .from(qAzienda)
+                .where(qAzienda.id.eq(idAzienda)).fetchFirst();
+
+        AziendaParametriJson params = AziendaParametriJson.parse(objectMapper, parametri);
+        String url = params.getBabelSuiteWebApiUrl();
 
         return url;
     }

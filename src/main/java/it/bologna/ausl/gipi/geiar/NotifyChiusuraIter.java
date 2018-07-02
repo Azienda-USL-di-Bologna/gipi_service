@@ -16,7 +16,7 @@ import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -154,7 +154,7 @@ public class NotifyChiusuraIter {
             JSONObject o = new JSONObject();
             o.put("ja", ja.toString());
             try {
-                urlChiamata = GetBaseUrl.getBaseUrl(Integer.parseInt(key), em, objectMapper);
+                urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(Integer.parseInt(key), em, objectMapper);
                 urlChiamata += "/Babel/InviaNotificheIter";
 
                 okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));

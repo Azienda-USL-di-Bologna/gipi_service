@@ -51,7 +51,7 @@ import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.gipi.utils.IterUtilities;
@@ -413,7 +413,7 @@ public class IterController extends ControllerHandledExceptions{
             }
 
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            String urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+            String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
             
             // localhost da commentare
             // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
@@ -543,7 +543,7 @@ public class IterController extends ControllerHandledExceptions{
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
-        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
         
         // localhost da commentare
         // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
@@ -594,7 +594,7 @@ public class IterController extends ControllerHandledExceptions{
 
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + hasUserAnyPermissionOnFascicoloPath;
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + hasUserAnyPermissionOnFascicoloPath;
 
         // String localUrl =  " http://localhost:8081/" + hasUserAnyPermissionOnFascicoloPath;
         Researcher r = new Researcher(null, null, 0);
