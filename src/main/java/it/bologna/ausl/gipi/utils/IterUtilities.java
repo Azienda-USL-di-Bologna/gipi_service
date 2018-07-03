@@ -81,7 +81,7 @@ public class IterUtilities {
     /* Fascicolo il documento */
     public Response inserisciFascicolazione(Iter i, GestioneStatiParams gestioneStatiParams, String cfUtenteFascicolatore) throws IOException {
 
-        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        String baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
 
         // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
         String urlChiamata = baseUrl + updateGdDocPath;
@@ -127,7 +127,7 @@ public class IterUtilities {
 
         okhttp3.RequestBody body = null;
         log.info("Inizio pubblicazione dell'iter con id " + i.getId() + " sugli opportuni registri...");
-        String baseUrl = GetBaseUrl.getShalboApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        String baseUrl = GetBaseUrls.getShalboApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         //String urlChiamata = "http://localhost:10011/shalbo-api/registroaccessi";
         String urlChiamata;
         String token = tokenGenerator.getToken(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda());

@@ -122,10 +122,10 @@ public class GestioneStatoIter {
         em.persist(ei);
 
         // Fascicolo il documento 
-        String baseUrl = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        String baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
 
         // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
-        String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
+        String urlChiamata = baseUrl + updateGdDocPath;
         GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) gestioneStatiParams.getCodiceRegistroDocumento(), null, (String) gestioneStatiParams.getNumeroDocumento(), null, null, null, null, null, null, null, (Integer) gestioneStatiParams.getAnnoDocumento());
         Fascicolazione fascicolazione = new Fascicolazione(i.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
         ArrayList a = new ArrayList();
@@ -147,7 +147,7 @@ public class GestioneStatoIter {
         }
 
         // Comunico a Babel l'associazione documento/iter appena avvenuta
-        urlChiamata = GetBaseUrl.getBaseUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
+        urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + babelGestisciIterPath;
         //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
 //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
 //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -218,7 +218,7 @@ public class GestioneStatoIter {
         // System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
-        String urlChiamata = GetBaseUrl.getBaseUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + babelGestisciIterPath;
 
         // DA CANCELLARE!!!!
         // urlChiamata = "http://127.0.0.1:8080/Babel/GestisciIter";

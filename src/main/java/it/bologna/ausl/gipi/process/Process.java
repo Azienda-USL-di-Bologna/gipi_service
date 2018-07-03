@@ -26,7 +26,7 @@ import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
@@ -252,7 +252,7 @@ public class Process {
         if (isLocalHost) {
             baseUrl = localhostBaseUrl;
         } else {
-            baseUrl = GetBaseUrl.getBaseUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         }
 
         // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
@@ -278,6 +278,7 @@ public class Process {
         }
 
         // Comunico a Babel l'iter appena creato
+        baseUrl = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         urlChiamata = baseUrl + babelGestisciIterPath;
 
         JsonObject o = new JsonObject();
