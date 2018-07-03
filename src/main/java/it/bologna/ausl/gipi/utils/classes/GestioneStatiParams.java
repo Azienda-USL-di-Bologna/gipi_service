@@ -37,6 +37,10 @@ public class GestioneStatiParams {
     public String idApplicazione;
     public String glogParams;
 
+    public void setGlogParams(String glogParams) {
+        this.glogParams = glogParams;
+    }
+
     public String getGlogParams() {
         return glogParams;
     }
