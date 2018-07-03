@@ -22,7 +22,7 @@ import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
 import it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask;
 import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.JSON;
 import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.MESSAGGIO;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +83,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
         String functionName = "callBabel";
         if(ja.size() > 0){
             try {
-                String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
+                String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
                 JSONObject jo = new JSONObject();
                 jo.put("ja", ja.toString());
                 okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, jo.toString().getBytes("UTF-8"));

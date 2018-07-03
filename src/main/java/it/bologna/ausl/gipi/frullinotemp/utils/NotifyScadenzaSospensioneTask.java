@@ -18,7 +18,7 @@ import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
-import it.bologna.ausl.gipi.utils.GetBaseUrl;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -78,7 +78,7 @@ public class NotifyScadenzaSospensioneTask {
         String functionName = "callBabel";
         if(ja.size() > 0){
             try {
-                String urlChiamata = GetBaseUrl.getBaseUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
+                String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
                 JSONObject jo = new JSONObject();
                 jo.put("ja", ja.toString());
                 okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, jo.toString().getBytes("UTF-8"));
