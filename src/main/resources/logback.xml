@@ -60,7 +60,7 @@
     </appender>
   
     <root level="info">
-        <!--<appender-ref ref="GIPI_SERVICE-FILE" />-->
+        <appender-ref ref="GIPI_SERVICE-FILE" />
         <appender-ref ref="STDOUT"/>
     </root>
   
