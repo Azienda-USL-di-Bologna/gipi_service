@@ -50,7 +50,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseScheduledJob {
     private static final Logger log = LoggerFactory.getLogger(JobInviaNotificheTerminiSospensioneIterScaduti.class);
-    JSONArray megaJsonArray;
+    private static JSONArray megaJsonArray;
     
     @Value("${inviaNotificheWebApi}")
     private String inviaNotificheWebApiPath;
@@ -119,12 +119,26 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
     
     public JSONObject getJsonOfThisIter(Iter iter){
         JSONObject o = new JSONObject();
-        ArrayList<String> utenti = new ArrayList<String>();
-        utenti.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-        if(!utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
-            utenti.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
-        if(!utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
-            utenti.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        List<String> utenti = new ArrayList<String>();
+        try{
+            utenti.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        }catch(Error e){
+            log.error("Non è stato trovato il responsabile del procedimento dell'iter " + iter.getId().toString());
+        }
+        try {
+            if(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale() != null && !utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
+                utenti.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        }catch (Error e) {
+            log.error("Non è stato trovato il responsabile adozione dell'atto finale dell'iter " + iter.getId().toString() 
+                    + " dal procedimento " + iter.getIdProcedimento().getId().toString());
+        }
+        try {
+            if(iter.getIdProcedimento().getIdTitolarePotereSostitutivo() != null && !utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
+                utenti.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        }catch(Error e){
+            log.error("Non è stato trovato il titolare del potere esecutivo dell'iter " + iter.getId().toString() 
+                    + " dal procedimento " + iter.getIdProcedimento().getId().toString());
+        }
         o.put("cfUtenti", utenti);
         o.put("messaggio", String.format(MESSAGGIO, iter.getNumero() + "/" + iter.getAnno().toString(), iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome()));
         o.put("idIter", iter.getId());
