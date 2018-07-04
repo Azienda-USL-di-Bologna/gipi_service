@@ -53,12 +53,14 @@ public class ServiceManager {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setActive(Boolean.TRUE);
         serviceMap.put(key, servizio);
+        servizioRepository.save(servizio);
     }
 
     public synchronized void stopService(String key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setActive(Boolean.FALSE);
         serviceMap.put(key, servizio);
+        servizioRepository.save(servizio);
     }
 
     public synchronized void stopAllService() {
@@ -66,6 +68,7 @@ public class ServiceManager {
             Servizio servizio = (Servizio) entry.getValue();
             servizio.setActive(Boolean.FALSE);
             serviceMap.put(entry.getKey(), servizio);
+            servizioRepository.save(servizio);
         }
     }
 

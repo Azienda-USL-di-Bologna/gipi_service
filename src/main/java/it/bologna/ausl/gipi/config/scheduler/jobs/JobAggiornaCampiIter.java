@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 public class JobAggiornaCampiIter implements BaseScheduledJob {
 
     private static final Logger log = LoggerFactory.getLogger(JobAggiornaCampiIter.class);
-//    private static final Logger log2 = LoggerFactory.getLogger("analytics");
+//    private static final Logger log2 = LoggerFactory.getLogger("otherlog");
 
     private static final String strElaborazione = " [elaborazione] ";
     private static final String strPreElaborazione = " [pre-elaborazione] ";
