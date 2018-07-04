@@ -5,6 +5,7 @@ import it.bologna.ausl.gipi.config.scheduler.jobs.JobInviaNotificheTerminiSospen
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
  * @author spritz
  */
 @Component
+@PropertySource("classpath:cron_expressions.properties")
 public class ScheduledTasks {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledTasks.class);
@@ -28,7 +30,7 @@ public class ScheduledTasks {
 //    Servizio2 servizio2;
     @Autowired
     JobAggiornaCampiIter jobAggiornaCampiIter;
-    
+
     @Autowired
     JobInviaNotificheTerminiSospensioneIterScaduti notificheSospensioneIter;
 
@@ -65,11 +67,11 @@ public class ScheduledTasks {
 ////            System.out.println("servizio_2 non presente o non attivo");
 ////        }
 //    }
-    @Scheduled(cron = "0 30 0 1/1 * ?")
+    @Scheduled(cron = "${service.job-aggiorna-campi-iter}")
     public void jobAggiornaCampiIterAndInviaNotifiche() throws InterruptedException {
-
+        System.out.println("QUIIIII");
         jobAggiornaCampiIter.run();
-        
-        notificheSospensioneIter.run();
+
+        // notificheSospensioneIter.run();
     }
 }
