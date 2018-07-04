@@ -69,9 +69,8 @@ public class ScheduledTasks {
 //    }
     @Scheduled(cron = "${service.job-aggiorna-campi-iter}")
     public void jobAggiornaCampiIterAndInviaNotifiche() throws InterruptedException {
-        System.out.println("QUIIIII");
         jobAggiornaCampiIter.run();
 
-        // notificheSospensioneIter.run();
+        notificheSospensioneIter.run();
     }
 }
