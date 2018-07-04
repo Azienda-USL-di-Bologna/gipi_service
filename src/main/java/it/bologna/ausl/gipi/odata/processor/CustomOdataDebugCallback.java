@@ -15,7 +15,7 @@ public class CustomOdataDebugCallback implements ODataErrorCallback {
     @Override
     public ODataResponse handleError(ODataErrorContext context) throws ODataApplicationException {
         context.getException().printStackTrace();
-        log.error(context.getException().getClass().getName() + ":" + context.getMessage());
+        log.error(context.getException().getClass().getName(), context.getException());
         return EntityProvider.writeErrorDocument(context);
     }
 }

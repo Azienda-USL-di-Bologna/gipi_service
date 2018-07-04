@@ -2,7 +2,7 @@ package it.bologna.ausl.gipi.config.scheduler;
 
 import it.bologna.ausl.entities.gipi.Servizio;
 import it.bologna.ausl.entities.repository.ServizioRepository;
-import static java.time.LocalDateTime.now;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -88,13 +88,13 @@ public class ServiceManager {
 
     public void setDataInizioRun(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
-        servizio.setDataInizio(now());
+        servizio.setDataInizio(new Date());
         servizioRepository.save(servizio);
     }
 
     public void setDataFineRun(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
-        servizio.setDataFine(now());
+        servizio.setDataFine(new Date());
         servizioRepository.save(servizio);
     }
 
