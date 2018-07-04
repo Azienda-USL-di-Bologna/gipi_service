@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ServiceManager {
 
-    private volatile ConcurrentHashMap<String, Object> serviceMap;
+    private volatile ConcurrentHashMap<ServiceKey, Object> serviceMap;
 
     @Autowired
     ServizioRepository servizioRepository;
@@ -32,31 +32,31 @@ public class ServiceManager {
         serviceMap = new ConcurrentHashMap<>();
     }
 
-    public synchronized ConcurrentHashMap<String, Object> getServiceMap() {
+    public synchronized ConcurrentHashMap<ServiceKey, Object> getServiceMap() {
         return serviceMap;
     }
 
-    public synchronized void setServiceMap(ConcurrentHashMap<String, Object> serviceMap) {
+    public synchronized void setServiceMap(ConcurrentHashMap<ServiceKey, Object> serviceMap) {
         this.serviceMap = serviceMap;
     }
 
-    public Servizio getService(String key) {
+    public Servizio getService(ServiceKey key) {
 
         return (Servizio) serviceMap.get(key);
     }
 
-    public synchronized void setService(String key, Object obj) {
+    public synchronized void setService(ServiceKey key, Object obj) {
         serviceMap.put(key, obj);
     }
 
-    public synchronized void startService(String key) {
+    public synchronized void startService(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setActive(Boolean.TRUE);
         serviceMap.put(key, servizio);
         servizioRepository.save(servizio);
     }
 
-    public synchronized void stopService(String key) {
+    public synchronized void stopService(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setActive(Boolean.FALSE);
         serviceMap.put(key, servizio);
@@ -64,7 +64,7 @@ public class ServiceManager {
     }
 
     public synchronized void stopAllService() {
-        for (ConcurrentHashMap.Entry<String, Object> entry : serviceMap.entrySet()) {
+        for (ConcurrentHashMap.Entry<ServiceKey, Object> entry : serviceMap.entrySet()) {
             Servizio servizio = (Servizio) entry.getValue();
             servizio.setActive(Boolean.FALSE);
             serviceMap.put(entry.getKey(), servizio);
@@ -78,17 +78,21 @@ public class ServiceManager {
         List<Servizio> servizi = servizioRepository.findAll();
         for (Iterator<Servizio> iterator = servizi.iterator(); iterator.hasNext();) {
             Servizio servizio = (Servizio) iterator.next();
-            setService(servizio.getNome(), servizio);
+            if (servizio.getIdAzienda() != null) {
+                setService(new ServiceKey(servizio.getNome(), servizio.getIdAzienda().getId()), servizio);
+            } else {
+                setService(new ServiceKey(servizio.getNome(), null), servizio);
+            }
         }
     }
 
-    public void setDataInizioRun(String key) {
+    public void setDataInizioRun(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setDataInizio(now());
         servizioRepository.save(servizio);
     }
 
-    public void setDataFineRun(String key) {
+    public void setDataFineRun(ServiceKey key) {
         Servizio servizio = ((Servizio) serviceMap.get(key));
         servizio.setDataFine(now());
         servizioRepository.save(servizio);

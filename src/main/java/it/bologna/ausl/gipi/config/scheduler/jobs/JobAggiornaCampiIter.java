@@ -9,14 +9,9 @@ import it.bologna.ausl.entities.gipi.Servizio;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
-import it.bologna.ausl.gipi.config.scheduler.ScheduledTasks;
+import it.bologna.ausl.gipi.config.scheduler.ServiceKey;
 import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -57,14 +52,15 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 
     @Override
     public void run() {
-        Servizio service = serviceManager.getService(getJobName());
+        ServiceKey serviceKey = new ServiceKey(getJobName(), null);
+        Servizio service = serviceManager.getService(serviceKey);
 
         String s = "-";
         String delimiter = IntStream.range(0, 30).mapToObj(i -> s).collect(Collectors.joining(""));
 
         if (service != null && service.getActive()) {
             log.info(delimiter + "START: " + getJobName() + delimiter);
-            serviceManager.setDataInizioRun(getJobName());
+            serviceManager.setDataInizioRun(serviceKey);
 
             QIter qIter = QIter.iter;
 
@@ -117,7 +113,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 //            }
             iterRepository.save(iters);
             log.info(getJobName() + strPostElaborazione + "salvataggio degli iter modificati andara a buon fine");
-            serviceManager.setDataFineRun(getJobName());
+            serviceManager.setDataFineRun(serviceKey);
             log.info(delimiter + "STOP: " + getJobName() + delimiter);
         } else {
             log.info(getJobName() + ": servizio non attivo");

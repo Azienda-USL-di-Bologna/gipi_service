@@ -25,15 +25,15 @@ public class ScheduleController {
     @Autowired
     ServiceManager serviceManager;
 
-    @RequestMapping(value = {"start/{name}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = {"start/{name}", "start/{name}/{idazienda}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> start(
             @PathVariable(required = true) String name,
+            @PathVariable(required = false) Integer idazienda,
             HttpServletRequest request) {
-
         String res = String.format("servizio %s ", name);
 
         try {
-            serviceManager.startService(name);
+            serviceManager.startService(new ServiceKey(name, idazienda));
             res += "avviato";
         } catch (Exception ex) {
             res += "non presente: " + ex;
@@ -42,15 +42,16 @@ public class ScheduleController {
         return ResponseEntity.ok(res);
     }
 
-    @RequestMapping(value = {"stop/{name}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = {"stop/{name}", "stop/{name}/{idazienda}"}, method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> stop(
             @PathVariable(required = true) String name,
+            @PathVariable(required = false) Integer idazienda,
             HttpServletRequest request) {
 
         String res = String.format("servizio %s ", name);
 
         try {
-            serviceManager.stopService(name);
+            serviceManager.stopService(new ServiceKey(name, idazienda));
             res += "fermato";
         } catch (Exception ex) {
             res += "non presente: " + ex;

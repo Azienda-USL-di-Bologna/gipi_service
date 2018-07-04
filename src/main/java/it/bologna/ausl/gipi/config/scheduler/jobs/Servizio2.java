@@ -2,6 +2,7 @@ package it.bologna.ausl.gipi.config.scheduler.jobs;
 
 import it.bologna.ausl.entities.gipi.Servizio;
 import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
+import it.bologna.ausl.gipi.config.scheduler.ServiceKey;
 import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ public class Servizio2 implements BaseScheduledJob {
 
     @Override
     public void run() {
-        Servizio service = serviceManager.getService(getJobName());
+        Servizio service = serviceManager.getService(new ServiceKey(getJobName(), null));
 
         if (service != null && service.getActive()) {
             System.out.println(getJobName() + " attivo!");
