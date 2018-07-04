@@ -14,10 +14,12 @@ import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.Servizio;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
+import it.bologna.ausl.gipi.config.scheduler.ServiceKey;
 import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
 import it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask;
 import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.JSON;
@@ -76,7 +78,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
 
     @Override
     public String getJobName() {
-        throw new UnsupportedOperationException("invia_notifiche_termini_sospensione_iter_scaduti"); //To change body of generated methods, choose Tools | Templates.
+        return "invia_notifiche_termini_sospensione_iter_scaduti";
     }
     
     public void callBabel(int idAzienda, JSONArray ja) throws ParseException {
@@ -195,40 +197,46 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
     public void run() {
         // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         String functionName = "notifyMain";
-        log.info(functionName + "--> sono entrato nel main del servizio di notifica per Iter Sospesi");        
-        List<Azienda> aziende = new ArrayList<>();
-        megaJsonArray = new JSONArray(); 
-        JPQLQuery<Iter> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
-        log.info(functionName +  " eseguo query per il recupero delle aziende");
-        aziende = query.select(this.qAzienda).from(this.qAzienda).fetch();
-        log.info(functionName +  " lista aziende: ");
-        aziende.forEach(item->log.info(functionName + "> " + item.getId() + "\t" + item.getDescrizione()));
-        
-        log.info(functionName +  " preparazione del megaJsonArray ");
-        // per ogni azienda mi prendo gli iter ed i loro dati per le notifiche mettendoli nel megaJsonArray
-        aziende.forEach(item->{
-            megaJsonArray.add(gimmeJsonAziendale(item.getId()));
-        });
-        
-        caricaGliIterSospesiAndPopolaIlMegaJson();
-        
-         // ORA DOVREI AVERE IL MEGAJSONARRAY POPOLATO: ciclare e chiamare Babel per ogni azienda
-        System.out.println("*****************************************************************");
-        System.out.println("*****************************************************************");
-        log.info(functionName + "--> ITER DA NOTIFICARE TROVATI:");
-        megaJsonArray.forEach(item->log.info(item.toString()));
-        System.out.println("*****************************************************************");
-        System.out.println("********************* LET'S CALL BABEL **************************");
-        megaJsonArray.forEach(item->{
-            JSONObject o = (JSONObject) item;
-            int idazienda = (int) o.get("idAzienda");
-            JSONArray ja = (JSONArray) o.get("datiDaMandare");
-            if (ja.size() > 0)
-                try {
-                    callBabel(idazienda, ja);
-            } catch (ParseException ex) {
-                java.util.logging.Logger.getLogger(JobInviaNotificheTerminiSospensioneIterScaduti.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        });
+        ServiceKey serviceKey = new ServiceKey(getJobName(), null);
+        Servizio service = serviceManager.getService(serviceKey);
+        if (service != null && service.getActive()) {
+            log.info(functionName + "--> sono entrato nel main del servizio di notifica per Iter Sospesi");        
+            List<Azienda> aziende = new ArrayList<>();
+            megaJsonArray = new JSONArray(); 
+            JPQLQuery<Iter> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+            log.info(functionName +  " eseguo query per il recupero delle aziende");
+            aziende = query.select(this.qAzienda).from(this.qAzienda).fetch();
+            log.info(functionName +  " lista aziende: ");
+            aziende.forEach(item->log.info(functionName + "> " + item.getId() + "\t" + item.getDescrizione()));
+
+            log.info(functionName +  " preparazione del megaJsonArray ");
+            // per ogni azienda mi prendo gli iter ed i loro dati per le notifiche mettendoli nel megaJsonArray
+            aziende.forEach(item->{
+                megaJsonArray.add(gimmeJsonAziendale(item.getId()));
+            });
+
+            caricaGliIterSospesiAndPopolaIlMegaJson();
+
+             // ORA DOVREI AVERE IL MEGAJSONARRAY POPOLATO: ciclare e chiamare Babel per ogni azienda
+            System.out.println("*****************************************************************");
+            System.out.println("*****************************************************************");
+            log.info(functionName + "--> ITER DA NOTIFICARE TROVATI:");
+            megaJsonArray.forEach(item->log.info(item.toString()));
+            System.out.println("*****************************************************************");
+            System.out.println("********************* LET'S CALL BABEL **************************");
+            megaJsonArray.forEach(item->{
+                JSONObject o = (JSONObject) item;
+                int idazienda = (int) o.get("idAzienda");
+                JSONArray ja = (JSONArray) o.get("datiDaMandare");
+                if (ja.size() > 0)
+                    try {
+                        callBabel(idazienda, ja);
+                } catch (ParseException ex) {
+                    java.util.logging.Logger.getLogger(JobInviaNotificheTerminiSospensioneIterScaduti.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            });
+        }else{
+            log.info(getJobName() + ": servizio non attivo");
+        }
     } // fine del run
 }// fine classe
