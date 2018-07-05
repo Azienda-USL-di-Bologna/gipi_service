@@ -132,15 +132,15 @@ public class JobNotificheChiusuraIter implements BaseScheduledJob {
                     utentiSet.add(i.getProcedimentoCache().getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
                     utentiSet.add(i.getProcedimentoCache().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
                     obj.put("idIter", i.getId());
-                    obj.put("descrizioneNotifica", "notificaChiusura");
+                    obj.put("descrizioneNotifica", "Scadenza");
                     if (giorniTrascorsi > giorniPrevisti) {   // L'iter ha superato i giorni previsti per la chiusura
                         log.debug("Iter n° " + i.getNumero() + " scaduto. Notifica da inviare.");
                         utentiSet.add(i.getProcedimentoCache().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
                         utentiList.addAll(utentiSet);
                         obj.put("cfUtenti", utentiList);
-                        obj.put("messaggio", "L'iter " +
-                            i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() +
-                            " ha esaurito i tempi previsti per la sua esecuzione.");
+                        obj.put("messaggio", "Iter " +
+                            i.getNumero() + "/" + i.getAnno() + ": " + i.getProcedimentoCache().getNomeTipoProcedimento() +
+                            " - ha esaurito i tempi previsti per la sua esecuzione.");
                         tempAzienda = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
                         tempAzienda.add(obj);
                     } else {        // Iter non è ancora scaduto, calcolo se inviare la notifica in base ai giorni restanti
@@ -152,9 +152,9 @@ public class JobNotificheChiusuraIter implements BaseScheduledJob {
                                 log.debug("Iter n° " + i.getNumero() + " in scadenza. Mancano "+ (giorniPrevisti - giorniTrascorsi) + " giorni. Notifica da inviare.");
                                 utentiList.addAll(utentiSet);
                                 obj.put("cfUtenti", utentiList);
-                                obj.put("messaggio", "Mancano " + 
-                                    (giorniPrevisti - giorniTrascorsi) + " giorni alla chiusura dell'iter " +
-                                    i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() + ".");
+                                obj.put("messaggio", "Iter " + i.getNumero() + "/" + i.getAnno() + ": " +
+                                    i.getProcedimentoCache().getNomeTipoProcedimento() + " - mancano " +
+                                    (giorniPrevisti - giorniTrascorsi) + " giorni alla chiusura dell'iter.");
                                 tempAzienda = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
                                 tempAzienda.add(obj);
                             }
