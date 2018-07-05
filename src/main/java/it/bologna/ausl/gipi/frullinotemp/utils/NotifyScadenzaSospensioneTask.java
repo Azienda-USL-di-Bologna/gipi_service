@@ -69,7 +69,7 @@ public class NotifyScadenzaSospensioneTask {
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     private static final Logger log = LoggerFactory.getLogger(NotifyScadenzaSospensioneTask.class);
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    public static final String MESSAGGIO = "L'iter %s - %s, in stato Sospeso, ha esaurito i tempi previsti per la sua sospensione."; // Mesasggio fisso agli utenti a cui vanno aggiunte le stringhe: numero-anno dell'iter, nome_del_procedimento
+    public static final String MESSAGGIO = "Iter %s: %s - in stato Sospeso, ha esaurito i tempi previsti per la sua sospensione."; // Mesasggio fisso agli utenti a cui vanno aggiunte le stringhe: numero-anno dell'iter, nome_del_procedimento
     private static final String logContextName = "NotifyScadenzaSospensioneTask.";
     private JSONArray megaJsonArray = new JSONArray(); // questo è il super JSONArray che contiene JSONArray
     

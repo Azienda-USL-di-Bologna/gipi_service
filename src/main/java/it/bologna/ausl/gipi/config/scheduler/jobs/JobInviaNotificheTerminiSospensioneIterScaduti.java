@@ -21,9 +21,6 @@ import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
 import it.bologna.ausl.gipi.config.scheduler.ServiceKey;
 import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
-import it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask;
-import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.JSON;
-import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.MESSAGGIO;
 import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +28,7 @@ import java.util.List;
 import java.util.logging.Level;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -76,6 +74,9 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
     QIter qIter = QIter.iter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
 
+    public static final String MESSAGGIO = "Iter %s: %s - in stato Sospeso, ha esaurito i tempi previsti per la sua sospensione."; // Mesasggio fisso agli utenti a cui vanno aggiunte le stringhe: numero-anno dell'iter, nome_del_procedimento
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    
     @Override
     public String getJobName() {
         return "invia_notifiche_termini_sospensione_iter_scaduti";
@@ -114,7 +115,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
                 log.info(functionName + " risposta -> " + risultato);
                 System.out.println(risultato);
             } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(NotifyScadenzaSospensioneTask.class.getName()).log(Level.SEVERE, null, ex);
+                java.util.logging.Logger.getLogger(JobInviaNotificheTerminiSospensioneIterScaduti.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -144,7 +145,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
         o.put("cfUtenti", utenti);
         o.put("messaggio", String.format(MESSAGGIO, iter.getNumero() + "/" + iter.getAnno().toString(), iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome()));
         o.put("idIter", iter.getId());
-        o.put("descrizioneNotifica", "EsaurimentoTempiSospensione");
+        o.put("descrizioneNotifica", "Scadenza");
         return o;
     }
     
