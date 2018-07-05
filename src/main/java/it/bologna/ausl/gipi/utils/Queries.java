@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
 @Component
-public class QueryPronte {
+public class Queries {
     
     @Autowired
     EntityManager em;
@@ -39,10 +39,10 @@ public class QueryPronte {
         return query.from(qAzienda).fetch();
     }
     
-    public List<Iter> getIterInCorso() {
+    public List<Iter> getIterByStatus(Stato.CodiciStato stato) {
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         return queryIter.from(qIter)
-            .where(qIter.idStato.codice.eq(Stato.CodiciStato.IN_CORSO.toString()))
+            .where(qIter.idStato.codice.eq(stato.toString()))
             .fetch();
     }
     

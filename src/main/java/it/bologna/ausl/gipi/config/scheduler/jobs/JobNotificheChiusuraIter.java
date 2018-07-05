@@ -9,10 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.Servizio;
+import it.bologna.ausl.entities.gipi.Stato;
+import it.bologna.ausl.gipi.config.scheduler.BaseScheduledJob;
+import it.bologna.ausl.gipi.config.scheduler.ServiceKey;
+import it.bologna.ausl.gipi.config.scheduler.ServiceManager;
 import it.bologna.ausl.gipi.utils.GetBaseUrls;
-import it.bologna.ausl.gipi.utils.QueryPronte;
+import it.bologna.ausl.gipi.utils.Queries;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import okhttp3.MediaType;
@@ -44,8 +52,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
  */
 
 @Component
-@RequestMapping(value = "${custom.mapping.url.root}" + "/notifiche")
-public class JobNotificheChiusuraIter {
+public class JobNotificheChiusuraIter implements BaseScheduledJob {
     
     @PersistenceContext
     EntityManager em;
@@ -54,7 +61,10 @@ public class JobNotificheChiusuraIter {
     ObjectMapper objectMapper;
     
     @Autowired
-    QueryPronte queryPronte;
+    Queries queryList;
+    
+    @Autowired
+    ServiceManager serviceManager;
     
     long diffInMillies;
     long giorniTrascorsi;
@@ -62,108 +72,138 @@ public class JobNotificheChiusuraIter {
     private static final Logger log = LoggerFactory.getLogger(JobNotificheChiusuraIter.class);
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     
-    @RequestMapping(value = "notifyChiusure", method = RequestMethod.GET)
-    public ResponseEntity notifyChiusure() throws IOException {
+    @Override
+    public String getJobName() {
+        return "notifiche_chiusura_iter";
+    }
+    
+    @Override
+    public void run() {
+        ServiceKey serviceKey = new ServiceKey(getJobName(), null);
+        Servizio service = serviceManager.getService(serviceKey);
         
-        log.info("-= Notify Chiusura Iter =-");
-        log.info("Carico la lista delle aziende...");
-        List<Azienda> aziende = queryPronte.getListaAziende();
+        String s = "-";
+        String delimiter = IntStream.range(0, 30).mapToObj(i -> s).collect(Collectors.joining(""));
+
+        if (service != null && service.getActive()) {
+            log.info(delimiter + "START: " + getJobName() + delimiter);
+            serviceManager.setDataInizioRun(serviceKey);
         
-        log.info("Carico la lista degli iter...");
-        List<Iter> iters = queryPronte.getIterInCorso();
-        
-        HashMap<String, JSONArray> mappaAziende = new HashMap<String, JSONArray>();
-        for (Azienda az: aziende){
-            mappaAziende.put(az.getId().toString(), new JSONArray());
-        }
-        
-        JSONArray tempObj;
-        log.info("Inizio a ciclare gli iter...");        
-        Date dataOdierna = new Date(); 
-        for (Iter i: iters){
-            JSONObject obj = new JSONObject();
-            diffInMillies = Math.abs(dataOdierna.getTime() - i.getDataAvvio().getTime()); // - i.getGiorniSospensioneTrascorsi());
-            giorniTrascorsi = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
-            log.debug("Giorni trascorsi = " + giorniTrascorsi);
-            //Date chiusuraPrevista = i.getDataChiusuraPrevista();
-            Date chiusuraPrevista = new Date();
-            int durataMassimaProcedimento = i.getIdProcedimento().getIdAziendaTipoProcedimento().getDurataMassimaProcedimento(); // aggiungere giorni sospensione?
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(i.getDataAvvio());
-            cal.add(Calendar.DATE, durataMassimaProcedimento); // aggiungo la durata massima del procedimento.
-            chiusuraPrevista = cal.getTime();
-            diffInMillies = Math.abs(chiusuraPrevista.getTime() - i.getDataAvvio().getTime());
-            long daysExpected = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);    // giorni previsti 
-            EventoIter evIniz = queryPronte.getEventoInizialeIter(i.getId());
-            List<String> utentiList = new ArrayList<>();
-            Set<String> utentiSet = new HashSet<>();
-            utentiSet.add(evIniz.getAutore().getIdPersona().getCodiceFiscale());
-            utentiSet.add(i.getProcedimentoCache().getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-            utentiSet.add(i.getProcedimentoCache().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
-            obj.put("idIter", i.getId());
-            obj.put("descrizioneNotifica", "notificaChiusura");
-            if (giorniTrascorsi > daysExpected) {   // L'iter ha superato i giorni previsti per la chiusura
-                utentiSet.add(i.getProcedimentoCache().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
-                utentiList.addAll(utentiSet);
-                obj.put("cfUtenti", utentiList);
-                obj.put("messaggio", "L'iter " +
-                    i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() +
-                    " ha esaurito i tempi previsti per la sua esecuzione.");
-                tempObj = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
-                tempObj.add(obj);
-            } else {
-                int j = 1;
-                long temp = 0;
-                do {
-                    temp += Math.round((1 / Math.pow(2, j)) * daysExpected); 
-                    if (giorniTrascorsi == temp) {
+            log.info("-= Notify Chiusura Iter =-");
+            log.info("Carico la lista delle aziende...");
+            List<Azienda> aziende = queryList.getListaAziende();
+
+            log.info("Carico la lista degli iter...");
+            List<Iter> iters = queryList.getIterByStatus(Stato.CodiciStato.IN_CORSO);
+
+            log.info("Creo la mappa delle aziende...");
+            HashMap<String, JSONArray> mappaAziende = new HashMap<String, JSONArray>();
+            for (Azienda az: aziende){
+                mappaAziende.put(az.getId().toString(), new JSONArray());
+            }
+
+            JSONArray tempAzienda;  // Variabile per memorizzare un'azienda della mappa
+            log.info("Inizio a ciclare gli iter...");        
+            Date dataOdierna = new Date(); 
+            for (Iter i: iters){
+                try {
+                    JSONObject obj = new JSONObject();
+                    int giorniSospensioneTrascorsi = i.getGiorniSospensioneTrascorsi() == null ? 0 : i.getGiorniSospensioneTrascorsi();
+                    diffInMillies = Math.abs(dataOdierna.getTime() - i.getDataAvvio().getTime());
+                    giorniTrascorsi = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS) - giorniSospensioneTrascorsi;
+                    // log.debug("Giorni trascorsi = " + giorniTrascorsi);
+                    //Date chiusuraPrevista = i.getDataChiusuraPrevista();
+                    /* Questa parte va tolta quando il campo DataChiusuraPrevista sul DB sarà aggiornato automaticamente - START */
+                    Date chiusuraPrevista = new Date();
+                    int giorniDerogaIter = i.getDerogaDurata() == null ? 0 : i.getDerogaDurata();
+                    int durataMassimaProcedimento = i.getIdProcedimento().getIdAziendaTipoProcedimento().getDurataMassimaProcedimento() + giorniDerogaIter;
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(i.getDataAvvio());
+                    cal.add(Calendar.DATE, durataMassimaProcedimento); // aggiungo la durata massima del procedimento.
+                    chiusuraPrevista = cal.getTime();
+                    /* END  */
+                    diffInMillies = Math.abs(chiusuraPrevista.getTime() - i.getDataAvvio().getTime());
+                    long giorniPrevisti = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+                    EventoIter evIniz = queryList.getEventoInizialeIter(i.getId());
+                    List<String> utentiList = new ArrayList<>();
+                    Set<String> utentiSet = new HashSet<>();        // Utilizzo il set per evitare utenti duplicati nella lista
+                    /* Aggiungo gli utenti a cui inviare la notifica che saranno sempre presenti, sia per la notifica di scadenza che quelli già scaduti */
+                    utentiSet.add(evIniz.getAutore().getIdPersona().getCodiceFiscale());
+                    utentiSet.add(i.getProcedimentoCache().getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+                    utentiSet.add(i.getProcedimentoCache().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+                    obj.put("idIter", i.getId());
+                    obj.put("descrizioneNotifica", "notificaChiusura");
+                    if (giorniTrascorsi > giorniPrevisti) {   // L'iter ha superato i giorni previsti per la chiusura
+                        log.debug("Iter n° " + i.getNumero() + " scaduto. Notifica da inviare.");
+                        utentiSet.add(i.getProcedimentoCache().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
                         utentiList.addAll(utentiSet);
                         obj.put("cfUtenti", utentiList);
-                        obj.put("messaggio", "Mancano " + 
-                            (daysExpected - giorniTrascorsi) + " giorni alla chiusura dell'iter " +
-                            i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() + ".");
-                        tempObj = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
-                        tempObj.add(obj);
+                        obj.put("messaggio", "L'iter " +
+                            i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() +
+                            " ha esaurito i tempi previsti per la sua esecuzione.");
+                        tempAzienda = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
+                        tempAzienda.add(obj);
+                    } else {        // Iter non è ancora scaduto, calcolo se inviare la notifica in base ai giorni restanti
+                        int j = 1;
+                        long temp = 0;
+                        do {
+                            temp += Math.round((1 / Math.pow(2, j)) * giorniPrevisti); 
+                            if (giorniTrascorsi == temp) {
+                                log.debug("Iter n° " + i.getNumero() + " in scadenza. Mancano "+ (giorniPrevisti - giorniTrascorsi) + " giorni. Notifica da inviare.");
+                                utentiList.addAll(utentiSet);
+                                obj.put("cfUtenti", utentiList);
+                                obj.put("messaggio", "Mancano " + 
+                                    (giorniPrevisti - giorniTrascorsi) + " giorni alla chiusura dell'iter " +
+                                    i.getNumero() + "/" + i.getAnno() + " - " + i.getProcedimentoCache().getNomeTipoProcedimento() + ".");
+                                tempAzienda = mappaAziende.get(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId().toString());
+                                tempAzienda.add(obj);
+                            }
+                            j++;
+                        } while (temp < giorniPrevisti && temp < giorniTrascorsi);
                     }
-                    j++;
-                } while (temp < daysExpected && temp < giorniTrascorsi);
-            }
-        }
-        log.info("Iter elaborati. Effettuo le chiamate alle varie applicazioni...");
-        String urlChiamata;
-        JSONObject responseObj = new JSONObject();
-        Response responseg = null;
-        for (Map.Entry<String, JSONArray> entry : mappaAziende.entrySet()) {
-            String key = entry.getKey();
-            JSONArray ja = entry.getValue();
-            JSONObject o = new JSONObject();
-            o.put("ja", ja.toString());
-            try {
-                urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(Integer.parseInt(key), em, objectMapper);
-                urlChiamata += "/Babel/InviaNotificheIter";
-
-                okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
-                log.debug("Url Chiamata = " + urlChiamata );
-                Request requestg = new Request.Builder()
-                        .url(urlChiamata)
-                        .addHeader("X-HTTP-Method-Override", "inviaNotifiche")
-                        .post(body)
-                        .build();
-
-                OkHttpClient client = new OkHttpClient();
-                responseg = client.newCall(requestg).execute();
-                if (responseg.isSuccessful()) {
-                    responseObj.put(key, "Inviate N° " + ja.size() + " notifiche.");
-                } else {
-                    log.error("Non va la chiamata a Babel." );
+                } catch (NullPointerException ex) {
+                    log.error("Dato nullo = " + ex );
                 }
-            } catch (NullPointerException ex) {
-                log.error("Errore, l'azienda non ha parametri: " + ex);
-            } finally {
-                responseg.body().close();
             }
+            log.info("Iter elaborati. Effettuo le chiamate alle varie applicazioni...");
+            String urlChiamata;
+            ArrayList<String> resultListMessage = new ArrayList<>();
+            Response responseg = null;
+            for (Map.Entry<String, JSONArray> entry : mappaAziende.entrySet()) {
+                String key = entry.getKey();
+                JSONArray ja = entry.getValue();
+                JSONObject o = new JSONObject();
+                o.put("ja", ja.toString());
+                try {
+                    urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(Integer.parseInt(key), em, objectMapper);
+                    urlChiamata += "/Babel/InviaNotificheIter";
+
+                    okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+                    log.debug("Url Chiamata = " + urlChiamata );
+                    Request requestg = new Request.Builder()
+                            .url(urlChiamata)
+                            .addHeader("X-HTTP-Method-Override", "inviaNotifiche")
+                            .post(body)
+                            .build();
+
+                    OkHttpClient client = new OkHttpClient();
+                    responseg = client.newCall(requestg).execute();
+                    if (responseg.isSuccessful()) {
+                        resultListMessage.add("Azienda " + key + " inviate n° " + ja.size() + " notifiche.");
+                    } else {
+                        log.error("Non va la chiamata a Babel." );
+                    }
+                } catch (NullPointerException | IOException ex) {
+                    log.error("Errore -> " + ex);
+                } finally {
+                    responseg.body().close();
+                }
+            }
+            serviceManager.setDataFineRun(serviceKey);
+            resultListMessage.forEach((mess) -> {log.info(mess);});
+            log.info(delimiter + "STOP: " + getJobName() + delimiter);
+        } else {
+            log.info(getJobName() + ": servizio non attivo");
         }
-        log.info("Fine procedura.");
-        return new ResponseEntity(responseObj.toString(),HttpStatus.OK);
     }  
 }

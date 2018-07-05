@@ -2,6 +2,7 @@ package it.bologna.ausl.gipi.config.scheduler;
 
 import it.bologna.ausl.gipi.config.scheduler.jobs.JobAggiornaCampiIter;
 import it.bologna.ausl.gipi.config.scheduler.jobs.JobInviaNotificheTerminiSospensioneIterScaduti;
+import it.bologna.ausl.gipi.config.scheduler.jobs.JobNotificheChiusuraIter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class ScheduledTasks {
 
     @Autowired
     JobInviaNotificheTerminiSospensioneIterScaduti notificheSospensioneIter;
+    
+    @Autowired
+    JobNotificheChiusuraIter jobNotificheChiusuraIter;
 
 //    @Scheduled(fixedRate = 1000)
 //    public void esempioServizio1() throws InterruptedException {
@@ -70,7 +74,7 @@ public class ScheduledTasks {
     @Scheduled(cron = "${service.job-aggiorna-campi-iter}")
     public void jobAggiornaCampiIterAndInviaNotifiche() throws InterruptedException {
         jobAggiornaCampiIter.run();
-
+        jobNotificheChiusuraIter.run();
         notificheSospensioneIter.run();
     }
 }

@@ -15,7 +15,7 @@
         <file>${LOG_DIR}/gipi_service.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>
-                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n 
             </pattern>
         </encoder>
     
@@ -60,7 +60,7 @@
     </appender>
   
     <root level="info">
-        <!--<appender-ref ref="GIPI_SERVICE-FILE" />-->
+        <appender-ref ref="GIPI_SERVICE-FILE" />
         <appender-ref ref="STDOUT"/>
     </root>
   
