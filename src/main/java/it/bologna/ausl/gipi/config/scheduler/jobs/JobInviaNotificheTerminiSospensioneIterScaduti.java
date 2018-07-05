@@ -41,12 +41,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
  *
  * @author Salo
  */
 @Component
+@RequestMapping(value = "${custom.mapping.url.root}" + "/notify")
 public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseScheduledJob {
 
     private static final Logger log = LoggerFactory.getLogger(JobInviaNotificheTerminiSospensioneIterScaduti.class);
@@ -87,6 +90,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
         if (ja.size() > 0) {
             try {
                 String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(idAzienda, em, objectMapper) + inviaNotificheWebApiPath;
+                // urlChiamata = "http://localhost:8080"+inviaNotificheWebApiPath; // SOLO PER TEST
                 JSONObject jo = new JSONObject();
                 jo.put("ja", ja.toString());
                 okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, jo.toString().getBytes("UTF-8"));
@@ -197,6 +201,7 @@ public class JobInviaNotificheTerminiSospensioneIterScaduti implements BaseSched
     }
 
     @Override
+    @RequestMapping(value = "test", method = RequestMethod.GET)
     public void run() {
         // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         String functionName = "notifyMain";
