@@ -315,10 +315,12 @@ public class IterController extends ControllerHandledExceptions{
     @RequestMapping(value = "gestisciStatoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity gestisciStatoIter(@RequestBody GestioneStatiParams gestioneStatiParams) throws IOException, GipiPubblicazioneException {
+        log.info("Gestisci Stato Iter -> Operazione da svolgere: " + gestioneStatiParams.getAzione());
+        log.info("Parametri passati = " + gestioneStatiParams.toString());
         if (gestioneStatiParams.getNumeroDocumento().equals("")) {
             return gestisciStatoIterDaBozza(gestioneStatiParams);
         }
-
+        
         Utente u = GetEntityById.getUtenteFromPersonaByCodiceFiscaleAndIdAzineda(gestioneStatiParams.getCfAutore(), gestioneStatiParams.getIdAzienda(), em);
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
         //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStatoRichiesto().getCodice().toString(), em);
@@ -488,11 +490,12 @@ public class IterController extends ControllerHandledExceptions{
         // Tutto quello che mi serve lo si ricava da GestioneStatiParams o nell'iter (che si ricava da GestioneStatiParams)
 //        GestioneStatoIter gsi = new GestioneStatoIter();
 //        gsi.gestisciStatoIterDaBozza(gestioneStatiParams);
-
-        // Recupero l'iter
+        log.info("Il documento è una bozza.");
+        log.info("Recupero l'iter...");
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
 
         // Setto i datiAggiuntivi (sono quelli da usare alla numerazione del documento)
+        log.info("Setto i datiAggiuntivi e preparo l'oggetto da passare..."); // sono quelli da usare alla numerazione del documento
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("cfAutore", gestioneStatiParams.getCfAutore());
         datiAggiuntivi.addProperty("idAzienda", gestioneStatiParams.getIdAzienda());
@@ -516,7 +519,7 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
         o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
-        // Creo il documento iter parziale
+        log.info("Creo il documento iter parziale e salvo sul db di gipi...");
         DocumentoIter d = new DocumentoIter();
         d.setIdIter(i);
         d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
@@ -533,16 +536,18 @@ public class IterController extends ControllerHandledExceptions{
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
         
-        // Fascicolo il documento nel fascicolo dell'iter
+        log.info("Fascicolo il documento nel fascicolo dell'iter...");
         Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
         if (!fascicolato.isSuccessful()) {
             throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+        } else {
+            log.info("Fascicolazione effettuata con successo!");
         }
-        
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
+        log.info("Carico l'url della webApi ed effettuo la chiamata...");
         String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
         
         // localhost da commentare
@@ -559,8 +564,8 @@ public class IterController extends ControllerHandledExceptions{
         OkHttpClient client = new OkHttpClient();
         Response responseg = client.newCall(requestg).execute();
         String responseBodyString = responseg.body().string();
-        System.out.println("RISPOSTA: ");
-        System.out.println(responseg.toString() + " body: " + responseBodyString);
+        log.debug("RISPOSTA: ");
+        log.debug(responseg.toString() + " body: " + responseBodyString);
         JsonObject obj = new JsonObject();
         if (!responseg.isSuccessful()) {
             throw new HttpResponseException(responseg.code(), "La chiamata a Babel non è andata a buon fine. " + responseg);
@@ -568,9 +573,10 @@ public class IterController extends ControllerHandledExceptions{
             obj.addProperty("idIter", "-1");
         } else {
             // ritorno un oggetto di ok
+            log.info("Chiamata effettuata con successo!");
             obj.addProperty("idIter", i.getId().toString());
             obj.addProperty("object", responseg.toString());
-
+            
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
             Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
@@ -625,10 +631,10 @@ public class IterController extends ControllerHandledExceptions{
             throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
         }
 
-        System.out.println("OK!!!  " + responseg.toString());
-        System.out.println("responseg.message() --> " + responseg.message());
-        System.out.println("responseg.body() --> " + responseg.body());
-        System.out.println("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
+        log.debug("OK!!!  " + responseg.toString());
+        log.debug("responseg.message() --> " + responseg.message());
+        log.debug("responseg.body() --> " + responseg.body());
+        log.debug("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
         // System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
 
         JsonObject jo = new JsonObject();
