@@ -1,8 +1,5 @@
 package it.bologna.ausl.gipi.controllers;
 
-import it.bologna.ausl.entities.gipi.Iter;
-import java.util.Date;
-
 public class SteponParams {
 
     private int idIter;
@@ -13,6 +10,10 @@ public class SteponParams {
     private String notePassaggio;
     private String esito;
     private String motivazioneEsito;
+    private String oggettoDocumento;
+    private String idOggettoOrigine;
+    private String tipoOggettoOrigine;
+    private String descrizione;
 
     public int getIdIter() {
         return idIter;
@@ -78,4 +79,35 @@ public class SteponParams {
         this.motivazioneEsito = motivazioneEsito;
     }
 
+    public String getOggettoDocumento() {
+        return oggettoDocumento;
+    }
+
+    public void setOggettoDocumento(String oggettoDocumento) {
+        this.oggettoDocumento = oggettoDocumento;
+    }
+
+    public String getIdOggettoOrigine() {
+        return idOggettoOrigine;
+    }
+
+    public void setIdOggettoOrigine(String idOggettoOrigine) {
+        this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
+    }
+    
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
 }

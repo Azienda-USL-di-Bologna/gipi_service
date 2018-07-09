@@ -1,11 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.controllers;
 
-//import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +14,7 @@ import java.util.TimeZone;
 public class IterParams {
 //    @JsonProperty(value = "FK_id_responsabile_procedimento")
 //    private int FK_id_responsabile_procedimento;
-    
+
     private int idUtenteResponsabile;
     private int idUtenteLoggato;
     private int idProcedimento;
@@ -31,11 +25,26 @@ public class IterParams {
     private String codiceRegistroDocumento;
     private String numeroDocumento;
     private int annoDocumento;
+    private String oggettoDocumento;
     private String promotore;
+    private String idOggettoOrigine;
+    private String tipoOggettoOrigine;
+    private String descrizione;
+    private String idApplicazione;
+    private String glogParams;
+    private Date dataRegistrazioneDocumento;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
 //    private String nomeProcedimento;
+
+    public Date getDataRegistrazioneDocumento() {
+        return dataRegistrazioneDocumento;
+    }
+
+    public String getGlogParams() {
+        return glogParams;
+    }
 
     public int getIdUtenteResponsabile() {
         return idUtenteResponsabile;
@@ -117,6 +126,14 @@ public class IterParams {
         this.annoDocumento = annoDocumento;
     }
 
+    public String getOggettoDocumento() {
+        return oggettoDocumento;
+    }
+
+    public void setOggettoDocumento(String oggettoDocumento) {
+        this.oggettoDocumento = oggettoDocumento;
+    }
+
     public String getPromotore() {
         return promotore;
     }
@@ -125,6 +142,38 @@ public class IterParams {
         this.promotore = promotore;
     }
 
+    public String getIdOggettoOrigine() {
+        return idOggettoOrigine;
+    }
+
+    public void setIdOggettoOrigine(String idOggettoOrigine) {
+        this.idOggettoOrigine = idOggettoOrigine;
+    }
+
+    public String getTipoOggettoOrigine() {
+        return tipoOggettoOrigine;
+    }
+
+    public void setTipoOggettoOrigine(String tipoOggettoOrigine) {
+        this.tipoOggettoOrigine = tipoOggettoOrigine;
+    }
+
+    public String getDescrizione() {
+        return descrizione;
+    }
+
+    public void setDescrizione(String descrizione) {
+        this.descrizione = descrizione;
+    }
+
+    public String getIdApplicazione() {
+        return idApplicazione;
+    }
+
+    public void setIdApplicazione(String idApplicazione) {
+        this.idApplicazione = idApplicazione;
+    }
+    
 //    public int getIdIter() {
 //        return idIter;
 //    }
@@ -156,7 +205,6 @@ public class IterParams {
 //    public void setNomeProcedimento(String nomeProcedimento) {
 //        this.nomeProcedimento = nomeProcedimento;
 //    }
-      
     @JsonIgnore
     public String getJSONString() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();

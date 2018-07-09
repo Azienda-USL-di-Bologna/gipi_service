@@ -1,15 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.process;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.QUtente;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -21,13 +20,39 @@ import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.QStato;
+import it.bologna.ausl.entities.gipi.Stato;
+import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
+import it.bologna.ausl.entities.repository.AziendaRepository;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
+import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.utils.GetBaseUrls;
+import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
+import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
+import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
+import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
+import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.EntityManager;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -45,9 +70,34 @@ public class Process {
     QEvento qEvento = QEvento.evento;
     QUtente qUtente = QUtente.utente;
     QFase qFase = QFase.fase;
+    QStato qStato = QStato.stato;
+
+    @Autowired
+    private EntitiesCachableUtilities entitiesCachableUtilities;
+
+    @Value("${babelsuite.uri.localhost}")
+    private String localhostBaseUrl;
+
+    @Value("${updateGdDoc}")
+    private String updateGdDocPath;
+
+    @Value("${babelGestisciIter}")
+    private String babelGestisciIterPath;
 
     @Autowired
     EntityManager em;
+
+    @Autowired
+    ObjectMapper objectMapper;
+    
+    @Autowired
+    @Qualifier("GipiUtilityFunctions")
+    GipiUtilityFunctions utilityFunctions;
+    
+    @Autowired
+    AziendaRepository aziendaRepository;
+
+    private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
 
     public Fase getNextFase(Iter iter) {
 
@@ -113,13 +163,11 @@ public class Process {
     }
 
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public void stepOn(Iter iter, ProcessSteponParams processParams, String usernameLoggedUser) throws ParseException, GipiRequestParamsException {
-
-        System.out.println("CHE NON RIESCO A SENTIRTI");
-        System.out.println("iter" + iter);
-        System.out.println("Params");
+    public void stepOn(Iter iter, ProcessSteponParams processParams, boolean isLocalHost) throws ParseException, GipiRequestParamsException, IOException {
+        log.info("iter" + iter);
+        log.info("Params");
         processParams.getParams().forEach((key, value) -> {
-            System.out.println("Key : " + key + " Value : " + value);
+            log.info("Key : " + key + " Value : " + value);
         });
 
         // INSERIMENTO NUOVA FASE-ITER
@@ -148,19 +196,12 @@ public class Process {
 
         // AGGIORNA CAMPI SU ITER
         iter.setIdFaseCorrente(nextFase);
-        String esito = (String) processParams.readParam("esito");
-        String motivazioneEsito = (String) processParams.readParam("motivazioneEsito");
 
-        if(nextFase.getFaseDiChiusura())
-            iter.setStato("chiuso");
-            
-        if (!nextFase.getFaseDiChiusura() && (esito != null || motivazioneEsito != null)) {
-            System.out.println("Qui lancio l'eccezione perchè la fase non è di chiusura e gli arriva esito o motivazioneEsito");
-            throw new GipiRequestParamsException("i campi esito e motivazioneEsito sono previsti solo se la nextFase è di chiusura");
-            // THROW
+        if (nextFase.getFaseDiChiusura()) {
+            iter.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.CHIUSO));
+            iter.setEsito((String) processParams.readParam("esito"));
+            iter.setEsitoMotivazione((String) processParams.readParam("motivazioneEsito"));
         }
-        iter.setEsito(esito);
-        iter.setEsitoMotivazione(motivazioneEsito);
 
         em.persist(iter); // questo salva anche la dataFineFase sulla fase appena finita
 
@@ -170,16 +211,21 @@ public class Process {
         documentoIter.setAnno((Integer) processParams.readParam("annoDocumento"));
         documentoIter.setNumeroRegistro((String) processParams.readParam("numeroDocumento"));
         documentoIter.setIdIter(iter);
+        documentoIter.setOggetto((String) processParams.readParam("oggettoDocumento"));
+        documentoIter.setIdOggetto((String) processParams.readParam("idOggettoOrigine"));
+        documentoIter.setDescrizione((String) processParams.readParam("descrizione"));
+        documentoIter.setParziale(Boolean.FALSE);
         em.persist(documentoIter);
+
 //
         // INSERIMENTO EVENTO
         // mi recupero l'evento.
         JPQLQuery<Evento> queryEvento = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Evento evento = queryEvento
                 .from(qEvento)
-                .where(qEvento.codice.eq("passaggio_fase"))
+                .where(qEvento.codice.eq(nextFase.getFaseDiChiusura() ? "chiusura_iter" : "passaggio_fase"))
                 .fetchOne();
-        
+
         // Mi prendo l'idUtente loggato
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
@@ -200,6 +246,72 @@ public class Process {
         eventoIter.setNote((String) processParams.readParam("notePassaggio"));
         eventoIter.setDataOraEvento(dataPassaggio);
         em.persist(eventoIter);
-    }
 
+        // Fascicolo il documento 
+        String baseUrl;
+        if (isLocalHost) {
+            baseUrl = localhostBaseUrl;
+        } else {
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        }
+
+        // baseUrl = "http://localhost:8084/bds_tools/ioda/api/document/update";
+        String urlChiamata = urlChiamata = baseUrl + updateGdDocPath;
+        GdDoc g = new GdDoc(null, null, null, null, null, null, null, (String) processParams.readParam("codiceRegistroDocumento"), null, (String) processParams.readParam("numeroDocumento"), null, null, null, null, null, null, null, (Integer) processParams.readParam("annoDocumento"));
+        Fascicolazione fascicolazione = new Fascicolazione(iter.getIdFascicolo(), null, null, null, DateTime.now(), Document.DocumentOperationType.INSERT);
+        ArrayList a = new ArrayList();
+        a.add(fascicolazione);
+        g.setFascicolazioni(a);
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", g);
+        RequestBody body = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("request_descriptor", null, okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8")))
+                .build();
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        OkHttpClient client = new OkHttpClient();
+        Response responseg = client.newCall(requestg).execute();
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La fascicolazione non è andata a buon fine.");
+        }
+
+        // Comunico a Babel l'iter appena creato
+        baseUrl = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        urlChiamata = baseUrl + babelGestisciIterPath;
+
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", iter.getId());
+        o.addProperty("numeroIter", iter.getNumero());
+        o.addProperty("annoIter", iter.getAnno());
+        o.addProperty("cfResponsabileProcedimento", iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        o.addProperty("nomeProcedimento", iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
+        o.addProperty("codiceRegistroDocumento", (String) processParams.readParam("codiceRegistroDocumento"));
+        o.addProperty("numeroDocumento", (String) processParams.readParam("numeroDocumento"));
+        o.addProperty("annoDocumento", (Integer) processParams.readParam("annoDocumento"));
+
+        body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+
+        requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "associaDocumento")
+                .post(body)
+                .build();
+
+        client = new OkHttpClient();
+        responseg = client.newCall(requestg).execute();
+
+        if (!responseg.isSuccessful()) {
+            throw new IOException("La chiamata a Babel non è andata a buon fine.");
+        }
+        
+        // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        List<String> cfUtentiDaRefreshare = new ArrayList<>();
+        cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+        PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+        utilityFunctions.sendPrimusCommand(aziendaUtenteLoggato, cfUtentiDaRefreshare, command, (String) processParams.readParam("idApplicazione"));
+    }
 }

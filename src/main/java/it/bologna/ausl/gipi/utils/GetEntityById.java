@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.utils;
 
 import com.querydsl.jpa.EclipseLinkTemplates;
@@ -22,6 +17,8 @@ import it.bologna.ausl.entities.gipi.QFase;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QProcedimento;
+import it.bologna.ausl.entities.gipi.QStato;
+import it.bologna.ausl.entities.gipi.Stato;
 import javax.persistence.EntityManager;
 
 /**
@@ -37,6 +34,17 @@ public class GetEntityById {
         Utente u = query
                 .from(qUtente)
                 .where(qUtente.id.eq(idUtente))
+                .fetchOne();
+        return u;
+    }
+
+    public static Utente getUtenteFromPersonaByCodiceFiscaleAndIdAzineda(String codiceFiscale, int idAzienda, EntityManager em) {
+        QUtente qUtente = QUtente.utente;
+        JPQLQuery<Utente> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Utente u = query
+                .from(qUtente)
+                .where(qUtente.idPersona.codiceFiscale.eq(codiceFiscale)
+                        .and(qUtente.idAzienda.id.eq(idAzienda)))
                 .fetchOne();
         return u;
     }
@@ -61,8 +69,7 @@ public class GetEntityById {
                 .fetchFirst();
         return a;
     }
-    
-    
+
     public static Iter getIter(int idIter, EntityManager em) {
         QIter qIter = QIter.iter;
         JPQLQuery<Iter> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -72,7 +79,7 @@ public class GetEntityById {
                 .fetchFirst();
         return i;
     }
-    
+
     public static Fase getFase(int idFase, EntityManager em) {
         QFase qFase = QFase.fase;
         JPQLQuery<Fase> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -82,7 +89,7 @@ public class GetEntityById {
                 .fetchFirst();
         return f;
     }
-    
+
     public static FaseIter getFaseIter(int idFaseIter, EntityManager em) {
         QFaseIter qFaseIter = QFaseIter.faseIter;
         JPQLQuery<FaseIter> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -92,7 +99,7 @@ public class GetEntityById {
                 .fetchFirst();
         return fi;
     }
-    
+
     public static Evento getEventoByCodice(String codice, EntityManager em) {
         QEvento qEvento = QEvento.evento;
         JPQLQuery<Evento> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
@@ -101,5 +108,25 @@ public class GetEntityById {
                 .where(qEvento.codice.eq(codice))
                 .fetchOne();
         return e;
+    }
+
+    public static Stato getStatoByCodice(String codice, EntityManager em) {
+        QStato qStato = QStato.stato;
+        JPQLQuery<Stato> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Stato s = query
+                .from(qStato)
+                .where(qStato.codice.eq(codice))
+                .fetchOne();
+        return s;
+    }
+
+    public static Stato getStatoById(int id, EntityManager em) {
+        QStato qStato = QStato.stato;
+        JPQLQuery<Stato> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Stato s = query
+                .from(qStato)
+                .where(qStato.id.eq(id))
+                .fetchOne();
+        return s;
     }
 }
