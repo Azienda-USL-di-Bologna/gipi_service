@@ -308,7 +308,7 @@ public class Process {
         
         // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer)((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();

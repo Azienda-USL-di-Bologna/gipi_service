@@ -458,7 +458,7 @@ public class IterController extends ControllerHandledExceptions{
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
@@ -598,7 +598,7 @@ public class IterController extends ControllerHandledExceptions{
             obj.addProperty("object", responseg.toString());
             
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
-            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+            Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
             PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
@@ -678,7 +678,7 @@ public class IterController extends ControllerHandledExceptions{
     public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws  IOException {
         // Mi prendo l'occorrente
         Utente u = utilityFunctions.getUtenteLoggatto();
-        Iter i = iterRepository.findOne(params.getIdIter());
+        Iter i = iterRepository.findById(params.getIdIter()).get();
         FaseIter fi = getFaseIter(i);
         Evento e = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         Stato s = GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em);
