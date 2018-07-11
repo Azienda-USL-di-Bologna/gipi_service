@@ -437,6 +437,7 @@ public class IterController extends ControllerHandledExceptions{
             // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
             o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -542,6 +543,7 @@ public class IterController extends ControllerHandledExceptions{
             em.merge(d);
             o.addProperty("modificaAssociazioneParziale", -1);
         }else{
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
             log.info("No, non esiste ancora, allora faccio un'associazione ex novo");
             d = new DocumentoIter();
             d.setIdIter(i);
