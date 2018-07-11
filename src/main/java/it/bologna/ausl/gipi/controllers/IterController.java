@@ -55,6 +55,8 @@ import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.gipi.utils.IterUtilities;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
@@ -130,11 +132,14 @@ public class IterController extends ControllerHandledExceptions{
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
 
+    @Value("${getFascicoloConPermessi}")
+    private String getFascicoloConPermessi;
+    
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
-
-    public static enum GetFascicoliUtente {
-        TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE
+    
+    public static enum GetFascicoli {
+        TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
     }
     
     public static enum AzioneRichiesta {
@@ -687,6 +692,57 @@ public class IterController extends ControllerHandledExceptions{
         JsonObject o = new JsonObject();
         o.addProperty("tuttook", "ehsi");
         return new ResponseEntity(o.toString(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "getFascicoloConPermessi", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity getFascicoloConPermessi(@RequestBody String numerazioneGerarchica) throws IOException {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + getFascicoloConPermessi;
+        urlChiamata = "http://localhost:8084" + getFascicoloConPermessi;
+        Researcher r = new Researcher(null, numerazioneGerarchica, 0);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(GetFascicoli.SOLO_ITER.toString(), "true");
+        additionalData.put(GetFascicoli.ANCHE_CHIUSI.toString(), "true");
+
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+
+        OkHttpClient client = new OkHttpClient();
+
+        Response response = client.newCall(requestg).execute();
+
+        if (!response.isSuccessful()) {
+            throw new IOException("La chiamata a bds_tools non è andata a buon fine. " + response);
+        }
+
+//        log.debug("OK!!!  " + responseg.toString());
+//        log.debug("responseg.message() --> " + responseg.message());
+//        log.debug("responseg.body() --> " + responseg.body());
+//        log.debug("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
+        // System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
+
+        Fascicoli fs = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(response.body().string(), Fascicoli.class);
+        
+        // Mi aspetto che il fascicolo sia uno
+        if (fs.getSize() != 1) {
+            // Qui vorrei lanciare la 412 Precondition Failed
+        }
+        
+        Fascicolo f = fs.getFascicolo(0);
+        
+        return new ResponseEntity(f.toString(), HttpStatus.OK);
     }
     
     public String getWebApiPathByIdApplicazione(String application){

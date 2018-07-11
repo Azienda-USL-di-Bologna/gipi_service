@@ -94,9 +94,9 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
         
         Researcher r = new Researcher(null, null, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
-        additionalData.put(IterController.GetFascicoliUtente.TIPO_FASCICOLO.toString(), "2");
-        additionalData.put(IterController.GetFascicoliUtente.SOLO_ITER.toString(), "true");
-        additionalData.put(IterController.GetFascicoliUtente.CODICE_FISCALE.toString(), cf);
+        additionalData.put(IterController.GetFascicoli.TIPO_FASCICOLO.toString(), "2");
+        additionalData.put(IterController.GetFascicoli.SOLO_ITER.toString(), "true");
+        additionalData.put(IterController.GetFascicoli.CODICE_FISCALE.toString(), cf);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
 
         String baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + baseUrlBdsGetFascicoliUtente;
