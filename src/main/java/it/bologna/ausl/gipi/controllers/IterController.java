@@ -728,7 +728,7 @@ public class IterController extends ControllerHandledExceptions{
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
         String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + getFascicoliConPermessi;
-        urlChiamata = "http://localhost:8084" + getFascicoliConPermessi;
+        // urlChiamata = "http://localhost:8084" + getFascicoliConPermessi;
         Researcher r = new Researcher(null, numerazioneGerarchica, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(GetFascicoli.SOLO_ITER.toString(), "true");
