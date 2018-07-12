@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -160,7 +161,9 @@ public class CreaIter {
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
-        int us = iterParams.getIdUtenteStrutturaResponsabile();
+        
+        log.info("Carico utente_struttura del responsabile");
+        UtenteStruttura us = GetEntityById.getUtenteStruttura(iterParams.getIdUtenteStrutturaResponsabile(), em);
         
         log.info("Carico utente resp. adoz.");
         Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
@@ -286,7 +289,7 @@ public class CreaIter {
         pc.setIdResponsabileAdozioneAttoFinale(p.getIdResponsabileAdozioneAttoFinale());
         pc.setIdStrutturaResponsabileAdozioneAttoFinale(p.getIdStrutturaResponsabileAdozioneAttoFinale());
         pc.setIdResponsabileProcedimento(i.getIdResponsabileProcedimento());
-        pc.setIdStrutturaResponsabileProcedimento(new Struttura(iterParams.getIdUtenteResponsabile()));
+        pc.setIdStrutturaResponsabileProcedimento(new Struttura(us.getIdStruttura().getId()));
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
