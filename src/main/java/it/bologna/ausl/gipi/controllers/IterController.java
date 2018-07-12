@@ -132,8 +132,8 @@ public class IterController extends ControllerHandledExceptions{
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
 
-    @Value("${getFascicoloConPermessi}")
-    private String getFascicoloConPermessi;
+    @Value("${getFascicoliConPermessi}")
+    private String getFascicoliConPermessi;
     
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
@@ -697,15 +697,16 @@ public class IterController extends ControllerHandledExceptions{
     @RequestMapping(value = "getFascicoloConPermessi", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity getFascicoloConPermessi(@RequestBody String numerazioneGerarchica) throws IOException {
-
+        log.debug("Sono dentro la getFascicoloConPermessi");
+        
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        // String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
 
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + getFascicoloConPermessi;
-        urlChiamata = "http://localhost:8084" + getFascicoloConPermessi;
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + getFascicoliConPermessi;
+        urlChiamata = "http://localhost:8084" + getFascicoliConPermessi;
         Researcher r = new Researcher(null, numerazioneGerarchica, 0);
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(GetFascicoli.SOLO_ITER.toString(), "true");
@@ -727,22 +728,22 @@ public class IterController extends ControllerHandledExceptions{
             throw new IOException("La chiamata a bds_tools non è andata a buon fine. " + response);
         }
 
-//        log.debug("OK!!!  " + responseg.toString());
-//        log.debug("responseg.message() --> " + responseg.message());
-//        log.debug("responseg.body() --> " + responseg.body());
-//        log.debug("responseg.responseg.headers().toString() --> " + responseg.headers().toString());
-        // System.out.println("hasPermission??? ---> " + responseg.header("hasPermssion"));
+        log.debug("OK!!!  " + response.toString());
+        log.debug("responseg.message() --> " + response.message());
+        log.debug("responseg.body() --> " + response.body());
+        log.debug("responseg.responseg.headers().toString() --> " + response.headers().toString());
 
         Fascicoli fs = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(response.body().string(), Fascicoli.class);
         
         // Mi aspetto che il fascicolo sia uno
         if (fs.getSize() != 1) {
+            log.debug("Trovato o zero o più di un fascicolo. Questo non deve accadere");
             // Qui vorrei lanciare la 412 Precondition Failed
         }
         
         Fascicolo f = fs.getFascicolo(0);
         
-        return new ResponseEntity(f.toString(), HttpStatus.OK);
+        return new ResponseEntity(f.getJSONString(), HttpStatus.OK);
     }
     
     public String getWebApiPathByIdApplicazione(String application){
