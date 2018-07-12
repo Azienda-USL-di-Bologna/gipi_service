@@ -160,6 +160,8 @@ public class CreaIter {
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
+        int us = iterParams.getIdUtenteStrutturaResponsabile();
+        
         log.info("Carico utente resp. adoz.");
         Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
         log.info("Carico utente titolare pot. esec.");
@@ -284,7 +286,7 @@ public class CreaIter {
         pc.setIdResponsabileAdozioneAttoFinale(p.getIdResponsabileAdozioneAttoFinale());
         pc.setIdStrutturaResponsabileAdozioneAttoFinale(p.getIdStrutturaResponsabileAdozioneAttoFinale());
         pc.setIdResponsabileProcedimento(i.getIdResponsabileProcedimento());
-        pc.setIdStrutturaResponsabileProcedimento(new Struttura(userInfo.getIdStruttureAfferenzaDiretta().get(0)));
+        pc.setIdStrutturaResponsabileProcedimento(new Struttura(iterParams.getIdUtenteResponsabile()));
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
@@ -304,6 +306,7 @@ public class CreaIter {
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
+        datiAggiuntivi.addProperty("cfUtenteCreatore", uLoggato.getIdPersona().getCodiceFiscale());
         
         JsonObject acipParams = new JsonObject();
         acipParams.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
