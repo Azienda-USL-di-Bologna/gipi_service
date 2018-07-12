@@ -386,6 +386,7 @@ public class CreaIter {
         o.addProperty("idOggettoOrigine", iterParams.getIdOggettoOrigine());
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
         o.addProperty("glogParams", iterParams.getGlogParams());
+        o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale, sto creando sicuramente un'associazione nuova!
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 

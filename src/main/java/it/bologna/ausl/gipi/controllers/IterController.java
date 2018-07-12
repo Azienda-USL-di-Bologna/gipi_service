@@ -442,6 +442,7 @@ public class IterController extends ControllerHandledExceptions{
             // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
             o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -496,6 +497,10 @@ public class IterController extends ControllerHandledExceptions{
 //        GestioneStatoIter gsi = new GestioneStatoIter();
 //        gsi.gestisciStatoIterDaBozza(gestioneStatiParams);
         log.info("Il documento è una bozza.");
+        // Recupero il codice fiscale dall'utente cacheable
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
         log.info("Recupero l'iter...");
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
 
@@ -525,29 +530,46 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
         log.info("Creo il documento iter parziale e salvo sul db di gipi...");
-        DocumentoIter d = new DocumentoIter();
-        d.setIdIter(i);
-        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
-        d.setOggetto(gestioneStatiParams.getOggettoDocumento());
-        d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
-        d.setDescrizione(gestioneStatiParams.getDescrizione());
-        d.setParziale(Boolean.TRUE);
-        d.setDatiAggiuntivi(datiAggiuntivi.toString());
-        em.persist(d);
-        em.flush();
+        log.info("Ma non è che per caso l'ho già associato e devo cambiare?");
+        // DocumentoIter d = new DocumentoIter();
+        JPQLQuery<DocumentoIter> queryDocumentoIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+
+        log.info("Allora provo a caricare il DocumentoIter.");
+        DocumentoIter d = queryDocumentoIter
+                .from(qDocumentoIter)
+                .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
+                        .and(qDocumentoIter.idIter.eq(i)))
+                .fetchOne();
         
-        // Recupero il codice fiscale dall'utente cacheable
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        
-        log.info("Fascicolo il documento nel fascicolo dell'iter...");
-        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
-        if (!fascicolato.isSuccessful()) {
-            throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
-        } else {
-            log.info("Fascicolazione effettuata con successo!");
+        if(d != null){
+            log.info("Eh già, allora cambio i datiAggiuntivi --> " + datiAggiuntivi.toString());
+            log.info("Un controllo di sicurezza: l'associazione è parziale?  --> " + d.getParziale().toString());
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
+            em.merge(d);
+            o.addProperty("modificaAssociazioneParziale", -1);
+        }else{
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
+            log.info("No, non esiste ancora, allora faccio un'associazione ex novo");
+            d = new DocumentoIter();
+            d.setIdIter(i);
+            d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
+            d.setOggetto(gestioneStatiParams.getOggettoDocumento());
+            d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
+            d.setDescrizione(gestioneStatiParams.getDescrizione());
+            d.setParziale(Boolean.TRUE);
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
+            em.persist(d);
+            em.flush();
+            log.info("Fascicolo il documento nel fascicolo dell'iter...");
+            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
+            if (!fascicolato.isSuccessful()) {
+                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+            } else {
+                log.info("Fascicolazione effettuata con successo!");
+            }
         }
+        
+        
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
