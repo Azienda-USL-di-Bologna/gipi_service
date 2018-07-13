@@ -25,6 +25,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
+import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
@@ -32,6 +33,7 @@ import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.FaseIter;
+import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
@@ -137,6 +139,9 @@ public class IterController extends ControllerHandledExceptions{
     
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
+    
+    @Value("${updateFascicoloGediPath}")
+    private String updateFascicoloGediPath;
     
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
@@ -768,6 +773,51 @@ public class IterController extends ControllerHandledExceptions{
         return new ResponseEntity(f.getJSONString(), HttpStatus.OK);
     }
     
+    @RequestMapping(value = "cambiaResponsabileProcedimento", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity cambiaResponsabileProcedimento(@RequestBody String params) throws IOException, GipiPubblicazioneException {
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
+        //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
+
+        Fascicolo fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString());
+      
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        
+        Response responseg = client.newCall(requestg).execute();
+        /* Se la chiamata a Gedi è andata a buon fine aggiorno la procedimenti cache e loggo l'evento  */ 
+        if (responseg.isSuccessful()) { 
+            iterUtilities.aggiornaProcCacheEloggaEvento(dati.get("idIter").getAsInt(), 
+                dati.get("idUtenteResponsabile").getAsInt(), dati.get("idStrutturaResponsabile").getAsInt(),
+                utenteLoggato, entitiesCachableUtilities);
+        } else {
+            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
+        }
+        
+        return new ResponseEntity(params, HttpStatus.OK);
+    }
     public String getWebApiPathByIdApplicazione(String application){
         String path = "";
         switch(application){

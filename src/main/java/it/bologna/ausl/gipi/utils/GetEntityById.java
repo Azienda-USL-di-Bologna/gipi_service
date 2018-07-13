@@ -3,10 +3,12 @@ package it.bologna.ausl.gipi.utils;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
-import it.bologna.ausl.entities.baborg.QUtente;
-import it.bologna.ausl.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.entities.baborg.QUtente;
+import it.bologna.ausl.entities.baborg.QStruttura;
+import it.bologna.ausl.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.Fase;
@@ -59,6 +61,16 @@ public class GetEntityById {
                         .and(qUtente.idAzienda.id.eq(idAzienda)))
                 .fetchOne();
         return u;
+    }
+    
+    public static Struttura getStruttura(int idStruttura, EntityManager em) {
+        QStruttura qStruttura = QStruttura.struttura;
+        JPQLQuery<Struttura> query = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Struttura s = query
+                .from(qStruttura)
+                .where(qStruttura.id.eq(idStruttura))
+                .fetchOne();
+        return s;
     }
 
     /* SCHEMA GIPI */
