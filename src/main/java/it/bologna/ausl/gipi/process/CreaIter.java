@@ -192,6 +192,7 @@ public class CreaIter {
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
         i.setPromotore(iterParams.getPromotore());
+        i.setIdUtenteCreazione(uLoggato);
         em.persist(i);
         em.flush();
         log.info("Iter salvato");
