@@ -9,6 +9,7 @@ import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.entities.baborg.AfferenzaStruttura;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -159,6 +160,10 @@ public class CreaIter {
         
         log.info("Carico utente loggato");
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
+        log.info("Carico la struttura dell'utente loggato");
+        int idStrutturaUtenteLoggato;
+        
+        
         log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
         
@@ -193,6 +198,11 @@ public class CreaIter {
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
         i.setPromotore(iterParams.getPromotore());
         i.setIdUtenteCreazione(uLoggato);
+        uLoggato.getUtenteStrutturaList().forEach((UtenteStruttura item) ->{
+            if(item.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString()))
+                i.setIdStrutturaUtenteCreazione(item.getIdStruttura());
+            }
+        );
         em.persist(i);
         em.flush();
         log.info("Iter salvato");
