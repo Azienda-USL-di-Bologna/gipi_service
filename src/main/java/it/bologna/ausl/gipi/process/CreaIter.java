@@ -10,6 +10,8 @@ import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.baborg.UtenteStruttura;
 import it.bologna.ausl.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.entities.baborg.QStruttura;
+import it.bologna.ausl.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -72,6 +74,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public class CreaIter {
 
     QFase qFase = QFase.fase;
+    QStruttura qStruttura = QStruttura.struttura;
+    QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
     QEvento qEvento = QEvento.evento;
     QIter qIter = QIter.iter;
     QAzienda qAzienda = QAzienda.azienda;
@@ -160,8 +164,17 @@ public class CreaIter {
         
         log.info("Carico utente loggato");
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
-        log.info("Carico la struttura dell'utente loggato");
-        int idStrutturaUtenteLoggato;
+        log.info("Carico la struttura di afferenza diretta dell'utente loggato");
+        
+        JPQLQuery<UtenteStruttura> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        List<UtenteStruttura> utenteStrutturaDelCreatore = new ArrayList<>();
+        utenteStrutturaDelCreatore = query.select(this.qUtenteStruttura)
+                .from(this.qUtenteStruttura)
+                .where(this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
+                .and(this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())))
+                .fetch();
+        log.info("Quante strutture utente ho trovato con afferenza diretta per l'utente loggato? " + utenteStrutturaDelCreatore.size());
+        Struttura idStrutturaUtenteLoggato = utenteStrutturaDelCreatore.size() > 0 ? utenteStrutturaDelCreatore.get(0).getIdStruttura() : new Struttura();
         
         
         log.info("Carico utente responsabile");
@@ -169,7 +182,6 @@ public class CreaIter {
         
         log.info("Carico utente_struttura del responsabile");
         UtenteStruttura us = GetEntityById.getUtenteStruttura(iterParams.getIdUtenteStrutturaResponsabile(), em);
-        
         log.info("Carico utente resp. adoz.");
         Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
         log.info("Carico utente titolare pot. esec.");
@@ -198,11 +210,7 @@ public class CreaIter {
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
         i.setPromotore(iterParams.getPromotore());
         i.setIdUtenteCreazione(uLoggato);
-        uLoggato.getUtenteStrutturaList().forEach((UtenteStruttura item) ->{
-            if(item.getIdAfferenzaStruttura().getCodice().equals(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString()))
-                i.setIdStrutturaUtenteCreazione(item.getIdStruttura());
-            }
-        );
+        i.setIdStrutturaUtenteCreazione(idStrutturaUtenteLoggato);
         em.persist(i);
         em.flush();
         log.info("Iter salvato");
