@@ -129,7 +129,7 @@ public class JobNotificheChiusuraIter implements BaseScheduledJob {
                     Set<String> utentiSet = new HashSet<>();        // Utilizzo il set per evitare utenti duplicati nella lista
                     /* Aggiungo gli utenti a cui inviare la notifica che saranno sempre presenti, sia per la notifica di scadenza che quelli già scaduti */
                     utentiSet.add(evIniz.getAutore().getIdPersona().getCodiceFiscale());
-                    utentiSet.add(i.getProcedimentoCache().getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+                    utentiSet.add(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
                     utentiSet.add(i.getProcedimentoCache().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
                     obj.put("idIter", i.getId());
                     obj.put("descrizioneNotifica", "Scadenza");

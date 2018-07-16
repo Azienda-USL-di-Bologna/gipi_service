@@ -198,6 +198,7 @@ public class CreaIter {
         i.setIdFaseCorrente(f);
         i.setIdProcedimento(p);
         i.setIdResponsabileProcedimento(uResponsabile);
+        i.setIdStrutturaResponsabileProcedimento(new Struttura(us.getIdStruttura().getId()));
         i.setNumero(getNumeroIterMax() + 1);
         i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
         i.setOggetto(iterParams.getOggettoIter());
@@ -307,8 +308,6 @@ public class CreaIter {
         pc.setIdStrutturaTitolarePotereSostitutivo(p.getIdStrutturaTitolarePotereSostitutivo());
         pc.setIdResponsabileAdozioneAttoFinale(p.getIdResponsabileAdozioneAttoFinale());
         pc.setIdStrutturaResponsabileAdozioneAttoFinale(p.getIdStrutturaResponsabileAdozioneAttoFinale());
-        pc.setIdResponsabileProcedimento(i.getIdResponsabileProcedimento());
-        pc.setIdStrutturaResponsabileProcedimento(new Struttura(us.getIdStruttura().getId()));
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);

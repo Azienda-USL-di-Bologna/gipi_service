@@ -257,8 +257,8 @@ public class IterUtilities {
         FaseIter fi = getFaseIter(i);
         ei.setNote("L'utente " + utenteLoggato.getIdPersona().getDescrizione()
                 + " ha cambiato il responsabile del procedimento da "
-                + pc.getIdResponsabileProcedimento().getIdPersona().getDescrizione() + " ("
-                + pc.getIdStrutturaResponsabileProcedimento().getNome() + ")"
+                + i.getIdResponsabileProcedimento().getIdPersona().getDescrizione() + " ("
+                + i.getIdStrutturaResponsabileProcedimento().getNome() + ")"
                 + " a " + nuovoResponsabile.getIdPersona().getDescrizione() + " ("
                 + nuovaStrutturaResp.getNome() + ").");
         ei.setIdEvento(eventoModifica);
@@ -267,9 +267,9 @@ public class IterUtilities {
         ei.setDataOraEvento(new Date());
         ei.setIdFaseIter(fi);
         em.persist(ei);
-        pc.setIdResponsabileProcedimento(nuovoResponsabile);
-        pc.setIdStrutturaResponsabileProcedimento(nuovaStrutturaResp);
-        em.merge(pc);
+        i.setIdResponsabileProcedimento(nuovoResponsabile);
+        i.setIdStrutturaResponsabileProcedimento(nuovaStrutturaResp);
+        em.merge(i);
     }
 
     public FaseIter getFaseIter(Iter i) {
