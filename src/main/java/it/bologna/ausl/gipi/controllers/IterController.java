@@ -2,6 +2,8 @@ package it.bologna.ausl.gipi.controllers;
 
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -23,6 +25,7 @@ import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Struttura;
@@ -725,6 +728,7 @@ public class IterController extends ControllerHandledExceptions{
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity getFascicoloConPermessi(@RequestBody String numerazioneGerarchica) throws IOException {
         log.debug("Sono dentro la getFascicoloConPermessi");
+        log.debug("Numerazione gerarchica: " + numerazioneGerarchica);
         
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
@@ -818,6 +822,54 @@ public class IterController extends ControllerHandledExceptions{
         
         return new ResponseEntity(params, HttpStatus.OK);
     }
+    
+    @RequestMapping(value = "aggiornaVicariDelFascicolo", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity aggiornaVicariDelFascicolo(@RequestBody String params) throws IOException {
+        log.info("aggiornaVicariDelFascicolo");
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
+        //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
+
+        List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {}.getType());
+        Fascicolo fascicolo = new Fascicolo(dati.get("numerazioneGerarchica").getAsString(), null, vicari);
+      
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        
+        Response responseg = client.newCall(requestg).execute();
+        
+        if (!responseg.isSuccessful()) { 
+            throw new IOException("La chiamata a bds-tools non è andata a buon fine. " + responseg);
+        }
+        
+        // Mi faccio dare il fascicolo aggiornato
+        ResponseEntity re = getFascicoloConPermessi(dati.get("numerazioneGerarchica").getAsString());
+        
+        return re;
+    }
+    
     public String getWebApiPathByIdApplicazione(String application){
         String path = "";
         switch(application){
