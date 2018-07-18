@@ -212,6 +212,10 @@ public class CreaIter {
         i.setPromotore(iterParams.getPromotore());
         i.setIdUtenteCreazione(uLoggato);
         i.setIdStrutturaUtenteCreazione(idStrutturaUtenteLoggato);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(iterParams.getDataAvvioIter());
+        calendar.add(Calendar.DATE, p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
+        i.setDataChiusuraPrevista(calendar.getTime());
         em.persist(i);
         em.flush();
         log.info("Iter salvato");
