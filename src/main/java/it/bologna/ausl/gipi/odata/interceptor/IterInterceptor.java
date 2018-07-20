@@ -7,6 +7,7 @@ import it.bologna.ausl.entities.cache.cachableobject.RuoloCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.Iter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.gipi.utils.IterUtilities;
 import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
 import it.nextsw.olingo.interceptor.bean.BinaryGrantExpansionValue;
 import it.nextsw.olingo.interceptor.bean.OlingoQueryObject;
@@ -14,6 +15,7 @@ import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class IterInterceptor extends OlingoRequestInterceptorBase {
 
+    @Autowired
+    IterUtilities iterUtilities;
+    
     private UtenteCachable geUtenteConnesso () {
         Authentication authentication = super.getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
@@ -50,7 +55,13 @@ public class IterInterceptor extends OlingoRequestInterceptorBase {
 
     @Override
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
-            return object;
+        UtenteCachable utente = geUtenteConnesso();
+        Iter iterNew = (Iter) object;
+        Iter iterOld = iterUtilities.getIterById(iterNew.getId());
+        if (iterOld.getOggetto() == null ? iterNew.getOggetto() != null : !iterOld.getOggetto().equals(iterNew.getOggetto())) {
+            iterUtilities.eventoIterCambioOggetto(iterNew, iterOld, entityManager, utente);
+        }        
+        return object;
     }
 
     @Override

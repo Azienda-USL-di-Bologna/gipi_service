@@ -2,6 +2,8 @@ package it.bologna.ausl.gipi.controllers;
 
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -23,8 +25,10 @@ import javax.persistence.EntityManager;
 import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
+import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
@@ -32,6 +36,7 @@ import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.FaseIter;
+import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QEvento;
 import it.bologna.ausl.entities.gipi.QEventoIter;
@@ -55,6 +60,8 @@ import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
 import it.bologna.ausl.gipi.utils.IterUtilities;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
+import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
@@ -130,11 +137,17 @@ public class IterController extends ControllerHandledExceptions{
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
 
+    @Value("${getFascicoliConPermessi}")
+    private String getFascicoliConPermessi;
+    
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
-
-    public static enum GetFascicoliUtente {
-        TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE
+    
+    @Value("${updateFascicoloGediPath}")
+    private String updateFascicoloGediPath;
+    
+    public static enum GetFascicoli {
+        TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
     }
     
     public static enum AzioneRichiesta {
@@ -437,6 +450,7 @@ public class IterController extends ControllerHandledExceptions{
             // Tra i dati aggiuntivi metto cosa fa questo documento sull'iter
             o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
             o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
 
             okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
@@ -491,6 +505,10 @@ public class IterController extends ControllerHandledExceptions{
 //        GestioneStatoIter gsi = new GestioneStatoIter();
 //        gsi.gestisciStatoIterDaBozza(gestioneStatiParams);
         log.info("Il documento è una bozza.");
+        // Recupero il codice fiscale dall'utente cacheable
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
         log.info("Recupero l'iter...");
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
 
@@ -520,29 +538,46 @@ public class IterController extends ControllerHandledExceptions{
         o.addProperty("glogParams", gestioneStatiParams.getGlogParams());
 
         log.info("Creo il documento iter parziale e salvo sul db di gipi...");
-        DocumentoIter d = new DocumentoIter();
-        d.setIdIter(i);
-        d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
-        d.setOggetto(gestioneStatiParams.getOggettoDocumento());
-        d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
-        d.setDescrizione(gestioneStatiParams.getDescrizione());
-        d.setParziale(Boolean.TRUE);
-        d.setDatiAggiuntivi(datiAggiuntivi.toString());
-        em.persist(d);
-        em.flush();
+        log.info("Ma non è che per caso l'ho già associato e devo cambiare?");
+        // DocumentoIter d = new DocumentoIter();
+        JPQLQuery<DocumentoIter> queryDocumentoIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+
+        log.info("Allora provo a caricare il DocumentoIter.");
+        DocumentoIter d = queryDocumentoIter
+                .from(qDocumentoIter)
+                .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
+                        .and(qDocumentoIter.idIter.eq(i)))
+                .fetchOne();
         
-        // Recupero il codice fiscale dall'utente cacheable
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        
-        log.info("Fascicolo il documento nel fascicolo dell'iter...");
-        Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
-        if (!fascicolato.isSuccessful()) {
-            throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
-        } else {
-            log.info("Fascicolazione effettuata con successo!");
+        if(d != null){
+            log.info("Eh già, allora cambio i datiAggiuntivi --> " + datiAggiuntivi.toString());
+            log.info("Un controllo di sicurezza: l'associazione è parziale?  --> " + d.getParziale().toString());
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
+            em.merge(d);
+            o.addProperty("modificaAssociazioneParziale", -1);
+        }else{
+            o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
+            log.info("No, non esiste ancora, allora faccio un'associazione ex novo");
+            d = new DocumentoIter();
+            d.setIdIter(i);
+            d.setRegistro(gestioneStatiParams.getCodiceRegistroDocumento());
+            d.setOggetto(gestioneStatiParams.getOggettoDocumento());
+            d.setIdOggetto(gestioneStatiParams.getIdOggettoOrigine());
+            d.setDescrizione(gestioneStatiParams.getDescrizione());
+            d.setParziale(Boolean.TRUE);
+            d.setDatiAggiuntivi(datiAggiuntivi.toString());
+            em.persist(d);
+            em.flush();
+            log.info("Fascicolo il documento nel fascicolo dell'iter...");
+            Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
+            if (!fascicolato.isSuccessful()) {
+                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+            } else {
+                log.info("Fascicolazione effettuata con successo!");
+            }
         }
+        
+        
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
@@ -687,6 +722,152 @@ public class IterController extends ControllerHandledExceptions{
         JsonObject o = new JsonObject();
         o.addProperty("tuttook", "ehsi");
         return new ResponseEntity(o.toString(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "getFascicoloConPermessi", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity getFascicoloConPermessi(@RequestBody String numerazioneGerarchica) throws IOException {
+        log.debug("Sono dentro la getFascicoloConPermessi");
+        log.debug("Numerazione gerarchica: " + numerazioneGerarchica);
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        // String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + getFascicoliConPermessi;
+        // urlChiamata = "http://localhost:8084" + getFascicoliConPermessi;
+        Researcher r = new Researcher(null, numerazioneGerarchica, 0);
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(GetFascicoli.SOLO_ITER.toString(), "true");
+        additionalData.put(GetFascicoli.ANCHE_CHIUSI.toString(), "true");
+
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", r, additionalData);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+
+        OkHttpClient client = new OkHttpClient();
+
+        Response response = client.newCall(requestg).execute();
+
+        if (!response.isSuccessful()) {
+            throw new IOException("La chiamata a bds_tools non è andata a buon fine. " + response);
+        }
+
+        log.debug("OK!!!  " + response.toString());
+        log.debug("responseg.message() --> " + response.message());
+        log.debug("responseg.body() --> " + response.body());
+        log.debug("responseg.responseg.headers().toString() --> " + response.headers().toString());
+
+        Fascicoli fs = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(response.body().string(), Fascicoli.class);
+        
+        // Mi aspetto che il fascicolo sia uno
+        if (fs.getSize() != 1) {
+            log.debug("Trovato o zero o più di un fascicolo. Questo non deve accadere");
+            // Qui vorrei lanciare la 412 Precondition Failed
+        }
+        
+        Fascicolo f = fs.getFascicolo(0);
+        
+        return new ResponseEntity(f.getJSONString(), HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "cambiaResponsabileProcedimento", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity cambiaResponsabileProcedimento(@RequestBody String params) throws IOException, GipiPubblicazioneException {
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
+        //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
+
+        Fascicolo fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString());
+      
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        
+        Response responseg = client.newCall(requestg).execute();
+        /* Se la chiamata a Gedi è andata a buon fine aggiorno la procedimenti cache e loggo l'evento  */ 
+        if (responseg.isSuccessful()) { 
+            iterUtilities.aggiornaProcCacheEloggaEvento(dati.get("idIter").getAsInt(), 
+                dati.get("idUtenteResponsabile").getAsInt(), dati.get("idStrutturaResponsabile").getAsInt(),
+                utenteLoggato, entitiesCachableUtilities);
+        } else {
+            throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
+        }
+        
+        return new ResponseEntity(params, HttpStatus.OK);
+    }
+    
+    @RequestMapping(value = "aggiornaVicariDelFascicolo", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity aggiornaVicariDelFascicolo(@RequestBody String params) throws IOException {
+        log.info("aggiornaVicariDelFascicolo");
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        
+        AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
+        int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
+        
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
+        //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
+
+        List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {}.getType());
+        Fascicolo fascicolo = new Fascicolo(dati.get("numerazioneGerarchica").getAsString(), null, vicari);
+      
+        IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        
+        Response responseg = client.newCall(requestg).execute();
+        
+        if (!responseg.isSuccessful()) { 
+            throw new IOException("La chiamata a bds-tools non è andata a buon fine. " + responseg);
+        }
+        
+        // Mi faccio dare il fascicolo aggiornato
+        ResponseEntity re = getFascicoloConPermessi(dati.get("numerazioneGerarchica").getAsString());
+        
+        return re;
     }
     
     public String getWebApiPathByIdApplicazione(String application){

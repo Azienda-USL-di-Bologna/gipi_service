@@ -40,4 +40,15 @@ public class CacheableFunctions {
                 
         return listaId;
     }
+    
+    @Cacheable(value = "functionImportCacheableDataGetStruttureFiglieEcugine", key = "{#idStruttura}")
+    public List<Integer> getStruttureFiglieEcugine(Integer idStruttura) {
+        /* Restituisce tutte le strutture figlie e cugine della struttura con tutti i loro figli */ 
+        String hcQuery = "select * from organigramma.get_strutture_figlie_e_cugine(?)";
+        Query query = em.createNativeQuery(hcQuery);
+        query.setParameter(1, idStruttura);
+        List<Integer> listaId = query.getResultList();
+                
+        return listaId;
+    }
 }

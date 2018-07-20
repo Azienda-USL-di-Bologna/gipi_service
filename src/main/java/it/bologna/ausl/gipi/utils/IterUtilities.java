@@ -11,14 +11,23 @@ import com.google.gson.JsonObject;
 import com.querydsl.jpa.EclipseLinkTemplates;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
+import it.bologna.ausl.entities.baborg.Struttura;
+import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
+import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
+import it.bologna.ausl.entities.gipi.FaseIter;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QEventoIter;
+import it.bologna.ausl.entities.gipi.QFaseIter;
+import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.Registro;
 import it.bologna.ausl.entities.gipi.RegistroIter;
 import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.jwt.utils.TokenGenerator;
 import it.bologna.ausl.gipi.utils.classes.GestioneStatiParams;
@@ -45,6 +54,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import it.bologna.ausl.gipi.pubblicazioni.Marshaller;
+import java.util.Date;
 import java.util.EnumMap;
 
 /**
@@ -59,6 +69,12 @@ public class IterUtilities {
 
     @Autowired
     ObjectMapper objectMapper;
+    
+    @Autowired
+    IterUtilities iterUtilities;
+    
+    @Autowired
+    private EntitiesCachableUtilities entitiesCachableUtilities;
 
     @Autowired
     TokenGenerator tokenGenerator;
@@ -228,5 +244,75 @@ public class IterUtilities {
 
         return iterAlbo;
     }
+    
+    public void aggiornaProcCacheEloggaEvento(int idIter, 
+        int idUtenteResponsabile, int idStrutturaResponsabile, 
+        Utente utenteLoggato, EntitiesCachableUtilities entitiesCachableUtilities) {
+        Iter i = GetEntityById.getIter(idIter, em);
+        ProcedimentoCache pc = i.getProcedimentoCache();
+        Utente nuovoResponsabile = GetEntityById.getUtente(idUtenteResponsabile, em);
+        Struttura nuovaStrutturaResp = GetEntityById.getStruttura(idStrutturaResponsabile, em);
+        Evento eventoModifica = entitiesCachableUtilities.loadEventoByCodice("modifica_iter");
+        EventoIter ei = new EventoIter();
+        FaseIter fi = getFaseIter(i);
+        ei.setNote("L'utente " + utenteLoggato.getIdPersona().getDescrizione()
+                + " ha cambiato il responsabile del procedimento da "
+                + i.getIdResponsabileProcedimento().getIdPersona().getDescrizione() + " ("
+                + i.getIdStrutturaResponsabileProcedimento().getNome() + ")"
+                + " a " + nuovoResponsabile.getIdPersona().getDescrizione() + " ("
+                + nuovaStrutturaResp.getNome() + ").");
+        ei.setIdEvento(eventoModifica);
+        ei.setIdIter(i);
+        ei.setAutore(utenteLoggato);
+        ei.setDataOraEvento(new Date());
+        ei.setIdFaseIter(fi);
+        em.persist(ei);
+        i.setIdResponsabileProcedimento(nuovoResponsabile);
+        i.setIdStrutturaResponsabileProcedimento(nuovaStrutturaResp);
+        em.merge(i);
+    }
 
+    public FaseIter getFaseIter(Iter i) {
+        QFaseIter qFaseIter = QFaseIter.faseIter;
+        JPQLQuery<FaseIter> q = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        System.out.println("Funzione getFaseIter(Iter i)");
+        System.out.println("Iter i: " + i.toString());
+        System.out.println("Carico la FaseIter");
+        FaseIter fi = q
+                .from(qFaseIter)
+                .where(qFaseIter.idIter.id.eq(i.getId())
+                        .and(qFaseIter.idFase.id.eq(i.getIdFaseCorrente().getId())))
+                .orderBy(qFaseIter.dataInizioFase.desc())
+                .fetchFirst();
+        System.out.println("Ritorno la FaseIter " + fi.toString());
+        return fi;
+    }
+    
+    public Iter getIterById(int idIter) {
+        JPQLQuery<Iter> queryIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Iter iter = queryIter
+                .from(QIter.iter)
+                .where(QIter.iter.id.eq(idIter))
+                .fetchOne();
+        return iter;
+    }
+    
+    public void eventoIterCambioOggetto(Iter iNew, Iter iOld, EntityManager entityManager, UtenteCachable utente) {
+        Utente autore = GetEntityById.getUtente((int) utente.get(UtenteCachable.KEYS.ID), em);
+        
+        //JPQLQuery<Iter> queryIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        //Iter iterOld = getIterById(iNew.getId());
+        EventoIter ei = new EventoIter();
+        ei.setIdFaseIter(iterUtilities.getFaseIter(iNew));
+        Evento e = entitiesCachableUtilities.loadEventoByCodice("modifica_iter");
+        ei.setIdEvento(e);
+        ei.setIdIter(iNew);
+        ei.setDataOraEvento(new Date());
+        ei.setAutore(autore);
+        ei.setNote("L'utente " + autore.getIdPersona().getDescrizione()
+                + " ha cambiato l'oggetto dell'iter da:\n\""
+                + iOld.getOggetto() + "\" a:\n\""
+                + iNew.getOggetto() + "\".");
+        entityManager.persist(ei);
+    }
 }
