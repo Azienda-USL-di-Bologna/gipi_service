@@ -21,9 +21,6 @@
     
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_DIR}/archived/gipi_service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>3MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
         </rollingPolicy>
     </appender>
   
@@ -37,9 +34,6 @@
     
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_DIR}/archived/scheduler.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>3MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
         </rollingPolicy>
     </appender>
   
@@ -53,13 +47,13 @@
       
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_DIR}/archived/other.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+<!--            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>3MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            </timeBasedFileNamingAndTriggeringPolicy>-->
         </rollingPolicy>
     </appender>
   
-    <root level="info">
+    <root level="debug">
         <appender-ref ref="GIPI_SERVICE-FILE" />
         <appender-ref ref="STDOUT"/>
     </root>
