@@ -42,7 +42,8 @@
             </timeBasedFileNamingAndTriggeringPolicy>
         </rollingPolicy>
     </appender>
-  
+    
+        
     <appender name="OTHER-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/other.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
