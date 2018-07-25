@@ -19,6 +19,7 @@ import java.util.Map;
 import javax.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
@@ -62,13 +63,6 @@ public class IterInterceptor extends OlingoRequestInterceptorBase {
     public Object onChangeInterceptor(OlingoInterceptorOperation olingoInterceptorOperation, Object object, EntityManager entityManager, Map<String, Object> contextAdditionalData) throws OlingoRequestRollbackException {
         
         switch (olingoInterceptorOperation) {
-            case UPDATE: 
-                Iter iterNew = (Iter) object;
-                Iter iterOld = iterUtilities.getIterById(iterNew.getId());
-                if (iterOld.getOggetto() == null ? iterNew.getOggetto() != null : !iterOld.getOggetto().equals(iterNew.getOggetto())) {
-                    iterUtilities.eventoIterCambioOggetto(iterNew, iterOld, entityManager, utente);
-                }
-                break;
             case CREATE:
                 Iter i = (Iter) object;
                 Integer year = LocalDate.now().getYear();
