@@ -28,9 +28,11 @@ import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.gipi.controllers.IterController;
 import it.bologna.ausl.gipi.controllers.IterParams;
+import it.bologna.ausl.gipi.odata.interceptor.IterInterceptor;
 import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
+import it.bologna.ausl.gipi.utils.IterUtilities;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Document;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolazione;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicolo;
@@ -38,6 +40,8 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.GdDoc;
 import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
 import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
+import it.nextsw.olingo.interceptor.OlingoInterceptorOperation;
+import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -84,6 +88,9 @@ public class CreaIter {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
+    
+    @Autowired
+    IterInterceptor interceptor;
 
     public static enum InsertFascicolo {
         TRADUCI_VICARI
@@ -115,7 +122,7 @@ public class CreaIter {
 
     @Autowired
     ObjectMapper objectMapper;
-    
+       
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
@@ -151,7 +158,7 @@ public class CreaIter {
         return i;
     }
 
-    public Iter creaIter(IterParams iterParams, boolean isLocalHost) throws IOException {
+    public Iter creaIter(IterParams iterParams, boolean isLocalHost) throws IOException, OlingoRequestRollbackException {
 
         // Mi prendo l'idUtente loggato
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -199,8 +206,6 @@ public class CreaIter {
         i.setIdProcedimento(p);
         i.setIdResponsabileProcedimento(uResponsabile);
         i.setIdStrutturaResponsabileProcedimento(new Struttura(us.getIdStruttura().getId()));
-        i.setNumero(getNumeroIterMax() + 1);
-        i.setAnno(Calendar.getInstance().get(Calendar.YEAR));
         i.setOggetto(iterParams.getOggettoIter());
         i.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.IN_CORSO));
         i.setDataCreazione(iterParams.getDataCreazioneIter());
@@ -216,6 +221,9 @@ public class CreaIter {
         calendar.setTime(iterParams.getDataAvvioIter());
         calendar.add(Calendar.DATE, p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         i.setDataChiusuraPrevista(calendar.getTime());
+        // Genero il numero dell'iter in base all'azienda
+        Object iNew = interceptor.onChangeInterceptor(OlingoInterceptorOperation.CREATE, i, em, null);
+        i = (Iter) iNew;
         em.persist(i);
         em.flush();
         log.info("Iter salvato");
