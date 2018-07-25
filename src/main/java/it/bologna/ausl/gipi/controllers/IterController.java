@@ -59,6 +59,7 @@ import it.bologna.ausl.ioda.iodaobjectlibrary.IodaRequestDescriptor;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Researcher;
 import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
 import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
+import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -179,7 +180,7 @@ public class IterController extends ControllerHandledExceptions{
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data, HttpServletRequest request)
-            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException {
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException, OlingoRequestRollbackException {
 
         Iter i = creaIter.creaIter(data, request.getServerName().equalsIgnoreCase("localhost"));
 
