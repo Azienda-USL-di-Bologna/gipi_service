@@ -111,7 +111,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 //            for (Iter iter : iters) {
 //                log.info(getJobName() + ": id_ter: " + iter.getId() + " data_chiusura_prevista: " + iter.getDataChiusuraPrevista() + " giorni_sospensione_trascorsi: " + iter.getGiorniSospensioneTrascorsi());
 //            }
-            iterRepository.save(iters);
+            iterRepository.saveAll(iters);
             log.info(getJobName() + strPostElaborazione + "salvataggio degli iter modificati andara a buon fine");
             serviceManager.setDataFineRun(serviceKey);
             log.info(delimiter + "STOP: " + getJobName() + delimiter);
