@@ -8,6 +8,10 @@ import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.baborg.QAzienda;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
+import it.bologna.ausl.entities.baborg.UtenteStruttura;
+import it.bologna.ausl.entities.baborg.AfferenzaStruttura;
+import it.bologna.ausl.entities.baborg.QStruttura;
+import it.bologna.ausl.entities.baborg.QUtenteStruttura;
 import it.bologna.ausl.entities.cache.cachableobject.UtenteCachable;
 import it.bologna.ausl.entities.gipi.DocumentoIter;
 import it.bologna.ausl.entities.gipi.Evento;
@@ -74,6 +78,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public class CreaIter {
 
     QFase qFase = QFase.fase;
+    QStruttura qStruttura = QStruttura.struttura;
+    QUtenteStruttura qUtenteStruttura = QUtenteStruttura.utenteStruttura;
     QEvento qEvento = QEvento.evento;
     QIter qIter = QIter.iter;
     QAzienda qAzienda = QAzienda.azienda;
@@ -165,8 +171,24 @@ public class CreaIter {
         
         log.info("Carico utente loggato");
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
+        log.info("Carico la struttura di afferenza diretta dell'utente loggato");
+        
+        JPQLQuery<UtenteStruttura> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        List<UtenteStruttura> utenteStrutturaDelCreatore = new ArrayList<>();
+        utenteStrutturaDelCreatore = query.select(this.qUtenteStruttura)
+                .from(this.qUtenteStruttura)
+                .where(this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
+                .and(this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())))
+                .fetch();
+        log.info("Quante strutture utente ho trovato con afferenza diretta per l'utente loggato? " + utenteStrutturaDelCreatore.size());
+        Struttura idStrutturaUtenteLoggato = utenteStrutturaDelCreatore.size() > 0 ? utenteStrutturaDelCreatore.get(0).getIdStruttura() : new Struttura();
+        
+        
         log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
+        
+        log.info("Carico utente_struttura del responsabile");
+        UtenteStruttura us = GetEntityById.getUtenteStruttura(iterParams.getIdUtenteStrutturaResponsabile(), em);
         log.info("Carico utente resp. adoz.");
         Utente uResponsabileAdozione = GetEntityById.getUtente(p.getIdResponsabileAdozioneAttoFinale().getId(), em);
         log.info("Carico utente titolare pot. esec.");
@@ -183,6 +205,7 @@ public class CreaIter {
         i.setIdFaseCorrente(f);
         i.setIdProcedimento(p);
         i.setIdResponsabileProcedimento(uResponsabile);
+        i.setIdStrutturaResponsabileProcedimento(new Struttura(us.getIdStruttura().getId()));
         i.setOggetto(iterParams.getOggettoIter());
         i.setIdStato(entitiesCachableUtilities.loadStatoByCodice(Stato.CodiciStato.IN_CORSO));
         i.setDataCreazione(iterParams.getDataCreazioneIter());
@@ -192,6 +215,12 @@ public class CreaIter {
         i.setIdTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo());
         i.setNomeTitolo(p.getIdAziendaTipoProcedimento().getIdTitolo().getNome());
         i.setPromotore(iterParams.getPromotore());
+        i.setIdUtenteCreazione(uLoggato);
+        i.setIdStrutturaUtenteCreazione(idStrutturaUtenteLoggato);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(iterParams.getDataAvvioIter());
+        calendar.add(Calendar.DATE, p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
+        i.setDataChiusuraPrevista(calendar.getTime());
         // Genero il numero dell'iter in base all'azienda
         Object iNew = interceptor.onChangeInterceptor(OlingoInterceptorOperation.CREATE, i, em, null);
         i = (Iter) iNew;
@@ -291,8 +320,6 @@ public class CreaIter {
         pc.setIdStrutturaTitolarePotereSostitutivo(p.getIdStrutturaTitolarePotereSostitutivo());
         pc.setIdResponsabileAdozioneAttoFinale(p.getIdResponsabileAdozioneAttoFinale());
         pc.setIdStrutturaResponsabileAdozioneAttoFinale(p.getIdStrutturaResponsabileAdozioneAttoFinale());
-        pc.setIdResponsabileProcedimento(i.getIdResponsabileProcedimento());
-        pc.setIdStrutturaResponsabileProcedimento(new Struttura(userInfo.getIdStruttureAfferenzaDiretta().get(0)));
         pc.setDurataMassimaProcedimento(p.getIdAziendaTipoProcedimento().getDurataMassimaProcedimento());
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
@@ -394,6 +421,7 @@ public class CreaIter {
         o.addProperty("idOggettoOrigine", iterParams.getIdOggettoOrigine());
         o.addProperty("datiAggiuntivi", datiAggiuntivi.toString());
         o.addProperty("glogParams", iterParams.getGlogParams());
+        o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale, sto creando sicuramente un'associazione nuova!
 
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 

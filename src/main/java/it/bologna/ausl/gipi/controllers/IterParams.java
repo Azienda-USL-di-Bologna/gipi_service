@@ -16,6 +16,7 @@ public class IterParams {
 //    private int FK_id_responsabile_procedimento;
 
     private int idUtenteResponsabile;
+    private int idUtenteStrutturaResponsabile;
     private int idUtenteLoggato;
     private int idProcedimento;
     private int idAzienda;
@@ -40,6 +41,10 @@ public class IterParams {
 
     public Date getDataRegistrazioneDocumento() {
         return dataRegistrazioneDocumento;
+    }
+    
+    public int getIdUtenteStrutturaResponsabile() {
+        return idUtenteStrutturaResponsabile;
     }
 
     public String getGlogParams() {

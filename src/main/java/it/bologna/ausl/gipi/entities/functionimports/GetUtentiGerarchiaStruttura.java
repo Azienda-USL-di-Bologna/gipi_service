@@ -57,16 +57,22 @@ public class GetUtentiGerarchiaStruttura extends EdmFunctionImportClassBase {
             httpMethod = EdmFunctionImport.HttpMethod.GET
     )
     public JPAQueryInfo getUtentiGerarchiaStruttura(
-            @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = true)) final String searchString
+            @EdmFunctionImportParameter(name = "searchString", facets = @EdmFacets(nullable = true)) final String searchString,
+            @EdmFunctionImportParameter(name = "idStruttura", facets = @EdmFacets(nullable = true)) final Integer idStruttura
     ) throws IOException {
         
         log.info("Chiamata della function import getUtentiGerarchiaStruttura");
         log.info("Stringa di ricerca: " + searchString);
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        int idUtente = (int) userInfo.get(UtenteCachable.KEYS.ID);
-        List<Integer> lista = ca.getMieStruttureEcugine(idUtente);
-
+        log.info("Stringa di ricerca: " + idStruttura);
+        List<Integer> lista;
+        if (idStruttura == null) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+            int idUtente = (int) userInfo.get(UtenteCachable.KEYS.ID);
+            lista = ca.getMieStruttureEcugine(idUtente);
+        } else {
+            lista = ca.getStruttureFiglieEcugine(idStruttura);
+        }
         // Ora creo la query che recupera gli utenti in base alla lista di strutture appena creata
         JPAQuery queryDSL = new JPAQuery(em);
         queryDSL.select(QUtenteStruttura.utenteStruttura)
