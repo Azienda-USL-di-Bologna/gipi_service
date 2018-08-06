@@ -233,7 +233,7 @@ public class IterUtilities {
         iterAlbo.setAnnoRegistroIniziativa(evIniz.getIdDocumentoIter().getAnno());
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
-        iterAlbo.setControinteressati(i.getNoteControinteressati());
+        iterAlbo.setControinteressati(i.getPresenzaControinteressati());
         iterAlbo.setEsito(esitiMap.get(Esiti.valueOf(i.getEsito())));
         iterAlbo.setCodiceRegistroChiusura(doc.getRegistro());
         iterAlbo.setRegistroChiusura(doc.getRegistro());
