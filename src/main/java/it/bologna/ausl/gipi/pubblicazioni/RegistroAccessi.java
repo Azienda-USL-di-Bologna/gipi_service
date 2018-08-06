@@ -39,7 +39,7 @@ public class RegistroAccessi implements Marshaller{
     private String numeroRegistroChiusura;
     private int annoRegistroChiusura;
     private String dataChiusura;
-    private boolean controinteressati;
+    private Boolean controinteressati;
     private String esito;
     private String sintesiMotivazioneRifuto;
     private LocalDateTime dataInserimentoRiga;
@@ -49,7 +49,7 @@ public class RegistroAccessi implements Marshaller{
     public RegistroAccessi() {
     }
 
-    public RegistroAccessi(Integer id, String oggetto, Integer annoPubblicazione, Integer numeroPubblicazione, String tipoProcedimento, String modalitaCollegamento, String uoProcedente, String responsabileProcedimento, String codiceRegistroIniziativa, String registroIniziativa, String numeroRegistroIniziativa, int annoRegistroIniziativa, String dataIniziativa, String codiceRegistroChiusura, String registroChiusura, String numeroRegistroChiusura, int annoRegistroChiusura, String dataChiusura, boolean controinteressati, String esito, String sintesiMotivazioneRifuto, LocalDateTime dataInserimentoRiga, LocalDateTime dataUltimaModificaRiga, Azienda idAzienda) {
+    public RegistroAccessi(Integer id, String oggetto, Integer annoPubblicazione, Integer numeroPubblicazione, String tipoProcedimento, String modalitaCollegamento, String uoProcedente, String responsabileProcedimento, String codiceRegistroIniziativa, String registroIniziativa, String numeroRegistroIniziativa, int annoRegistroIniziativa, String dataIniziativa, String codiceRegistroChiusura, String registroChiusura, String numeroRegistroChiusura, int annoRegistroChiusura, String dataChiusura, Boolean controinteressati, String esito, String sintesiMotivazioneRifuto, LocalDateTime dataInserimentoRiga, LocalDateTime dataUltimaModificaRiga, Azienda idAzienda) {
         this.id = id;
         this.oggetto = oggetto;
         this.annoPubblicazione = annoPubblicazione;
@@ -220,11 +220,11 @@ public class RegistroAccessi implements Marshaller{
         this.dataChiusura = dataChiusura;
     }
 
-    public boolean getControinteressati() {
+    public Boolean getControinteressati() {
         return controinteressati;
     }
 
-    public void setControinteressati(boolean controinteressati) {
+    public void setControinteressati(Boolean controinteressati) {
         this.controinteressati = controinteressati;
     }
 
