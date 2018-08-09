@@ -214,7 +214,7 @@ public class IterUtilities {
 //                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
 //                .fetchOne();
 
-        EnumMap<Esiti, String> esitiMap = new EnumMap<Esiti, String>(Esiti.class);
+        EnumMap<Esiti, String> esitiMap = new EnumMap(Esiti.class);
         esitiMap.put(Esiti.ACCOLTO, "Accolto");
         esitiMap.put(Esiti.RIFIUTO_TOTALE, "Rifiuto totale");
         esitiMap.put(Esiti.RIFIUTO_PARZIALE, "Rifiuto parziale");
@@ -233,7 +233,8 @@ public class IterUtilities {
         iterAlbo.setAnnoRegistroIniziativa(evIniz.getIdDocumentoIter().getAnno());
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
-        iterAlbo.setControinteressati(i.getPresenzaControinteressati());
+        Boolean presenzaControinteressati = i.getPresenzaControinteressati();
+        iterAlbo.setControinteressati(presenzaControinteressati == null? false: presenzaControinteressati);
         iterAlbo.setEsito(esitiMap.get(Esiti.valueOf(i.getEsito())));
         iterAlbo.setCodiceRegistroChiusura(doc.getRegistro());
         iterAlbo.setRegistroChiusura(doc.getRegistro());
