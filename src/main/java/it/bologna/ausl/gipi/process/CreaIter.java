@@ -235,6 +235,7 @@ public class CreaIter {
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
                 p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
         fascicolo.setIdTipoFascicolo(2);
+        fascicolo.setVisibile(iterParams.getVisibile());
         // Aggiungo l'elenco dei codicifiscali dei vicari
         Set<String> set = new HashSet<String>();
         if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
