@@ -80,6 +80,6 @@ public class GipiUtilityFunctions {
     public Utente getUtenteLoggatto() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 	UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
-        return utenteRepository.findOne((Integer) userInfo.get(UtenteCachable.KEYS.ID));
+        return utenteRepository.findById((Integer) userInfo.get(UtenteCachable.KEYS.ID)).get();
     }
 }

@@ -5,7 +5,6 @@
  */
 package it.bologna.ausl.gipi;
 
-import it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import okhttp3.MediaType;
@@ -109,8 +108,8 @@ public class WebApiBabelTest {
     public static void main(String[] args) throws IOException, ParseException  {
         // testaLaWebApi();
         
-        NotifyScadenzaSospensioneTask nsst= new NotifyScadenzaSospensioneTask();
-        nsst.notifyMain();
+//        NotifyScadenzaSospensioneTask nsst= new NotifyScadenzaSospensioneTask();
+//        nsst.notifyMain();
           
         
         //unTest();

@@ -473,7 +473,7 @@ public class IterController extends ControllerHandledExceptions{
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+        Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
@@ -614,7 +614,7 @@ public class IterController extends ControllerHandledExceptions{
             obj.addProperty("object", responseg.toString());
             
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
-            Azienda aziendaUtenteLoggato = aziendaRepository.findOne((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID));
+            Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
             PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
@@ -694,7 +694,7 @@ public class IterController extends ControllerHandledExceptions{
     public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws  IOException {
         // Mi prendo l'occorrente
         Utente u = utilityFunctions.getUtenteLoggatto();
-        Iter i = iterRepository.findOne(params.getIdIter());
+        Iter i = iterRepository.findById(params.getIdIter()).get();
         FaseIter fi = getFaseIter(i);
         Evento e = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         Stato s = GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em);
@@ -784,7 +784,7 @@ public class IterController extends ControllerHandledExceptions{
         log.info("PARAMS = " + params);
         JsonParser parser = new JsonParser();
         JsonObject dati = (JsonObject) parser.parse(params);
-        
+                
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -795,8 +795,16 @@ public class IterController extends ControllerHandledExceptions{
         String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
         //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
 
-        Fascicolo fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString());
-      
+        Fascicolo fascicolo;
+        // Se ho passato anche i vicari, allora, vuol dire che l'utente non c'era tra di loro e vanno aggiornati
+        if(dati.has("vicari")) {
+            List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {}.getType());
+            fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString(), vicari);
+        }
+        else{
+            fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString());
+        }
+             
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
 
