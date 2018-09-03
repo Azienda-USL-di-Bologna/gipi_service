@@ -340,6 +340,7 @@ public class CreaIter {
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
+        datiAggiuntivi.addProperty("sendAcipByEmail", iterParams.getSendAcipByEmail());
         
         JsonObject acipParams = new JsonObject();
         acipParams.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
