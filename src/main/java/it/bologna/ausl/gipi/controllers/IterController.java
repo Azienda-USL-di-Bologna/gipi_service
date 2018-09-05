@@ -1024,10 +1024,7 @@ public class IterController extends ControllerHandledExceptions{
             // Ho codice registro PG ? procton :altrimenti ho codice registro DETE ? dete :altrimenti  deli.
             String applicazione = di.getRegistro().equals(CodiceRegistro.PG.toString()) ? Applicazione.PROCTON.toString() : di.getRegistro().equals(CodiceRegistro.DETE.toString()) ? Applicazione.DETE.toString() : Applicazione.DELI.toString();
             
-            
-            int idAzienda = i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId();
-                        
-            eliminato = this.eliminaDocumentoIterSuPDD(idIterDelDocumentoIterDaEliminare, idOggettoOrigine, applicazione, idAzienda);
+            eliminato = this.eliminaDocumentoIterSuPDD(idIterDelDocumentoIterDaEliminare, idOggettoOrigine, applicazione, i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda());
             
             // se non sono riuscito a eliminare allora è inutile che continuo la cancellazione, anzi, meglio che lasciamo la roba così com'è di modo che poi sistemiamo
             if(!eliminato){
@@ -1062,16 +1059,16 @@ public class IterController extends ControllerHandledExceptions{
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
     
-    public boolean eliminaDocumentoIterSuPDD(int idIter, String idOggettoOrigine, String applicazione, int idAzienda) throws UnsupportedEncodingException, IOException{
+    public boolean eliminaDocumentoIterSuPDD(int idIter, String idOggettoOrigine, String applicazione, Azienda azienda) throws UnsupportedEncodingException, IOException{
         log.info("Mi piglio il cf dell'utente loggato...");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
         log.info("... " + codiceFiscaleUtenteLoggato);      
         
-//        String urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
+        // String urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
         
-        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(idAzienda, em, objectMapper) + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(azienda.getId(), em, objectMapper) + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
         
         log.info("Ora chiamo la Web Api -> " + urlChiamata);
 
@@ -1097,6 +1094,17 @@ public class IterController extends ControllerHandledExceptions{
         Response responseg = client.newCall(requestg).execute();  
         
         log.info("response " + responseg.toString());
+        if(responseg.isSuccessful()){
+            List<String> cfUtentiDaRefreshare = new ArrayList<>();
+            cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
+            PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
+            log.info("aggiorno l'interfaccia con primus..." + "azienda " + azienda.toString() + "cfUtentiDaRefreshare " + cfUtentiDaRefreshare.toString() + 
+                    "command " + command + "applicazione " + applicazione);
+            utilityFunctions.sendPrimusCommand(azienda, cfUtentiDaRefreshare, command, applicazione);
+        }
+        
+        
+        
         return responseg.isSuccessful();
     }
     
