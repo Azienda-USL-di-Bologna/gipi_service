@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
 import it.bologna.ausl.entities.baborg.Struttura;
@@ -68,8 +69,11 @@ import it.bologna.ausl.primuscommanderclient.PrimusCommandParams;
 import it.bologna.ausl.primuscommanderclient.RefreshBoxDatiDiArchivioCommandParams;
 import it.nextsw.olingo.interceptor.exception.OlingoRequestRollbackException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -79,6 +83,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
+import org.joda.time.Days;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -134,6 +139,15 @@ public class IterController extends ControllerHandledExceptions{
     
     @Value("${deliGestisciIter}")
     private String deliGestisciIterPath;
+    
+    @Value("${proctonDeleteDocumentoIter}")
+    private String proctonDeleteDocumentoIterPath;
+    
+    @Value("${deteDeleteDocumentoIter}")
+    private String deteDeleteDocumentoIterPath;
+    
+    @Value("${deliDeleteDocumentoIter}")
+    private String deliDeleteDocumentoIterPath;
 
     @Value("${updateGdDoc}")
     private String updateGdDocPath;
@@ -149,6 +163,11 @@ public class IterController extends ControllerHandledExceptions{
     
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
+    }
+    
+    public static enum WebApi {
+        GESTISCI_STATO_ITER,
+        CANCELLA_DOCUMENTO_ITER
     }
     
     public static enum AzioneRichiesta {
@@ -176,6 +195,61 @@ public class IterController extends ControllerHandledExceptions{
         }
     }
 
+    public static enum CodiceEvento {
+        AVVIO_ITER("avvio_iter"),
+        CHIUSURA_ITER("chiusura_iter"),
+        AGGIUNTA_DOCUMENTO("aggiunta_documento"),
+        APERTURA_SOSPENSIONE("apertura_sospensione"),
+        CHIUSURA_SOSPENSIONE("chiusura_sospensione"),
+        ITER_IN_CORSO("iter_in_corso"),
+        MODIFICA_ITER("modifica_iter");
+
+        private final String text;
+        
+        CodiceEvento(final String text){
+            this.text = text;
+        }
+        
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+    
+    public static enum CodiceRegistro {
+        PG("PG"),
+        DELI("DELI"),
+        DETE("DETE");
+        
+        private final String text;
+        
+        CodiceRegistro(final String text){
+            this.text = text;
+        }
+        
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+
+    public static enum Applicazione {
+        PROCTON("procton"),
+        DELI("deli"),
+        DETE("dete");
+        
+        private final String text;
+        
+        Applicazione(final String text){
+            this.text = text;
+        }
+        
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+    
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
 
@@ -429,10 +503,10 @@ public class IterController extends ControllerHandledExceptions{
             }
 
             // Comunico a Babel l'associazione documento/iter appena avvenuta
-            String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+            String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
             
             // localhost da commentare
-            // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+            // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
@@ -584,10 +658,10 @@ public class IterController extends ControllerHandledExceptions{
 
         // Chiamata alla web api GestisciIter.associaDocumento
         log.info("Carico l'url della webApi ed effettuo la chiamata...");
-        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
         
         // localhost da commentare
-        // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione());
+        // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
         
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
@@ -879,22 +953,231 @@ public class IterController extends ControllerHandledExceptions{
         return re;
     }
     
-    public String getWebApiPathByIdApplicazione(String application){
+    public String getWebApiPathByIdApplicazione(String application, WebApi webApi){
         String path = "";
         switch(application){
             
             case "procton":
-                path = proctonGestisciIterPath;
+                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                    path = proctonGestisciIterPath;
+                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                    path = proctonDeleteDocumentoIterPath;
             break;
             
             case "dete":
-                path = deteGestisciIterPath;
+                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                    path = deteGestisciIterPath;
+                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                    path = deteDeleteDocumentoIterPath;
             break;
             
             case "deli":
-                path = deliGestisciIterPath;
+                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                    path = deliGestisciIterPath;
+                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                    path = deliDeleteDocumentoIterPath;
             break;
         }
         return path;
+    }
+    
+    @RequestMapping(value = "rollbackEventoIterById", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity rollbackEventoIterById(@RequestBody int idEventoIter) throws IOException {
+        log.info("ITER CONTROLLER");
+        log.info("Chiamata alla funzione eliminaEventoIter -> idEventoIter = " + idEventoIter);       
+        
+        // CARICARE LE ENTITA'
+        log.info("Carico l'EventoIter");
+        JPQLQuery<EventoIter> q = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        EventoIter ei = (EventoIter) q
+                .from(qEventoIter)
+                .where(qEventoIter.id.eq(idEventoIter))
+                .fetchOne();
+        log.info("EventoIter trovato: " + ei.toString());
+        log.info("Iter dell'EventoIter trovato: " + ei.getIdIter().toString());
+        log.info("Evento dell'EventoIter trovato: " + ei.getIdEvento().toString());
+                            
+        // ripristino stato e aggiorno i giorni sospensione dell'iter
+        Iter i = rollbackEventoIter(ei);
+        boolean eliminato = false;   
+        DocumentoIter di = null;
+        
+        // se ho un documento iter, lego tutto all'eliminazione del documento
+        if(ei.getIdDocumentoIter()!= null){
+                                 
+            log.info("documento_iter dell'evento trovato: " + ei.getIdDocumentoIter().toString());
+
+            //Carico il DocumentoIter da eliminare
+            JPQLQuery<DocumentoIter> queryDocumentoIter = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+
+            di = queryDocumentoIter
+                    .from(qDocumentoIter)
+                    .where(qDocumentoIter.id.eq(ei.getIdDocumentoIter().getId()))
+                    .fetchOne();
+            
+            log.info("idIter: " + di.getIdIter().getId() + " oggetto: '"+ di.getOggetto() + "', guid_oggetto: '" + di.getIdOggetto() +  "' dati_aggiuntivi: '" +  di.getDatiAggiuntivi() + "'");
+            
+            // ora mi recupero di dati che mi servono per la chiamata alla WebApi: idDocumentoIter, applicazione
+            int idIterDelDocumentoIterDaEliminare = di.getIdIter().getId();
+            String idOggettoOrigine = di.getIdOggetto();
+            // Ho codice registro PG ? procton :altrimenti ho codice registro DETE ? dete :altrimenti  deli.
+            String applicazione = di.getRegistro().equals(CodiceRegistro.PG.toString()) ? Applicazione.PROCTON.toString() : di.getRegistro().equals(CodiceRegistro.DETE.toString()) ? Applicazione.DETE.toString() : Applicazione.DELI.toString();
+            
+            
+            int idAzienda = i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId();
+                        
+            eliminato = this.eliminaDocumentoIterSuPDD(idIterDelDocumentoIterDaEliminare, idOggettoOrigine, applicazione, idAzienda);
+            
+            // se non sono riuscito a eliminare allora è inutile che continuo la cancellazione, anzi, meglio che lasciamo la roba così com'è di modo che poi sistemiamo
+            if(!eliminato){
+                log.error("C'è stato un'errore nella cancellazione del documento iter da argo: controllare il log.");
+                throw new IOException("La chiamata a PDD per eliminazione del documento iter non è andata a buon fine.");
+            }                  
+            log.info("Ho eliminato il documento iter da gipi");
+            log.info("l'associazione documento_iter e la fascicolazione sono state cancellate da argo.");
+            
+            
+        }
+        else{
+            log.info("non c'è un documento associato all'evento_iter");
+        }
+        
+        log.info("Procedo al salvataggio dei dati.");
+        log.info("Eliminazione EventoIter --> id: " + ei.getId()+ " " + ei.getIdEvento().getCodice() + " " + ei.getDataOraEvento());
+        em.remove(ei);
+        log.info("EventoIter eliminato");
+        if(eliminato == true && di != null){
+            log.info("Eliminazione DocumentoIter --> id: " + di.toString() + " idOggetto: " + di.getIdOggetto() + " idIter: " + di.getIdIter());
+            em.remove(di);
+            log.info("DocumentoIter eliminato");
+        }
+        log.info("Salvataggio aggiornamenti iter");
+        em.merge(i);
+        log.info("Iter aggiornato");
+        
+        // altri casi non sono stati previsti
+        JsonObject o = new JsonObject();
+        o.addProperty("tuttook", "ehsi");
+        return new ResponseEntity(o.toString(), HttpStatus.OK);
+    }
+    
+    public boolean eliminaDocumentoIterSuPDD(int idIter, String idOggettoOrigine, String applicazione, int idAzienda) throws UnsupportedEncodingException, IOException{
+        log.info("Mi piglio il cf dell'utente loggato...");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
+        log.info("... " + codiceFiscaleUtenteLoggato);      
+        
+//        String urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
+        
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(idAzienda, em, objectMapper) + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
+        
+        log.info("Ora chiamo la Web Api -> " + urlChiamata);
+
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", idIter);
+        o.addProperty("idOggettoOrigine", idOggettoOrigine);
+        o.addProperty("cfUtente", codiceFiscaleUtenteLoggato);
+
+        log.info("Dati passati: " + o.toString());
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "deleteDocumentiIter")
+                .post(body)
+                .build();
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        Response responseg = client.newCall(requestg).execute();  
+        
+        log.info("response " + responseg.toString());
+        return responseg.isSuccessful();
+    }
+    
+    
+    /**Prende come parametro un EventoIter, e ne restituisce l'iter coinvolto, ripulito di tutte le affezioni:
+     ripristina lo stato, aggiorna i giorni di sospensione come se l'evento passato come parametro non ci fosse mai stato.
+     NB: la funzione non cancella l'evento iter: questo deve essere cancellato fuori! */
+    public Iter rollbackEventoIter(EventoIter ei){
+        log.info("Entrato in rollbackEventoIter");
+        log.info("Codice dell'evento " +  ei.getIdEvento().getCodice());
+        log.info("Carico l'iter...");
+        JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        Iter i = queryIter
+                .from(qIter)
+                .where(qIter.id.eq((ei.getIdIter().getId())))
+                .fetchOne();
+        log.info("iter caricato");
+        
+        /* Cosa deve succere ora? 
+           - devono essere ciclati gli eventi perché vanno ricalcolati i giorni di sospensione DAL PRIMO EVENTO!
+           - si rimette l'iter nello stato precedente
+           - si restituisce l'iter
+        */ 
+        
+        JPQLQuery<EventoIter> queryEventiIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
+        List<EventoIter> eventi = queryEventiIter.from(qEventoIter).where(qEventoIter.idIter.id.eq(i.getId())).orderBy(qEventoIter.dataOraEvento.asc()).fetch();
+        log.info("Ciclo gli eventi dell'iter...");
+        boolean inCorso = true; // il primo evento sarà sempre quello di avvio, quindi è in corso.
+        Date dataInizio = null;
+        Date dataFine = null;
+        int giorniSospensione = 0;
+        
+        // questo serve solo per ricalcolare i giorni di sospensione: se trovo incongruenze, esco
+        for(EventoIter ev : eventi){
+            log.info(ev.getDataOraEvento() + " -> " + ev.getIdEvento().getCodice());
+            // se becco l'evento allora finisco
+            if(ev.getId().equals(ei.getId())){
+                if(!inCorso){ // se sto ad esempio eliminando un'associazione al documento di un iter sospeso, l'iter deve restare sospeso
+                    long diff = TimeUnit.DAYS.convert(Math.abs(new Date().getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
+                    giorniSospensione += diff;
+                }
+                log.info("l'iter risulta aver " + giorniSospensione + " giorni di sospensione");
+                i.setGiorniSospensioneTrascorsi(giorniSospensione);
+                break;
+            }
+            
+            if(ev.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString())){
+                if(inCorso){
+                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
+                    dataInizio = ev.getDataOraEvento();
+                    inCorso = false;
+                }
+                else{
+                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra sospeso ma dovrebbe venire rispospeso dall'evento!");
+                    break;
+                }
+            }
+            else if(ev.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ev.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())){
+                if(!inCorso && dataInizio != null){
+                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
+                    dataFine = ev.getDataOraEvento();
+                    long diff = TimeUnit.DAYS.convert(Math.abs(dataFine.getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
+                    giorniSospensione += diff;
+                    inCorso = true;
+                }
+                else{
+                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra in corso ma dovrebbe venire de-sospeso dall'evento!");
+                    break;
+                }
+            }
+            // nel caso di un'aggiunta documento non ho bisogno di modificare i giorni di sospensione.
+        }
+          
+        log.info("Ripristino lo stato dell'iter alla condizione precedente");
+        // se l'evento che devo cancellare è di chiusura sospensione, allora rimetto l'iter in corso
+        if(ei.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString()))
+            i.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em));
+        else if(ei.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ei.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())) // per ogni altro tipo di evento possibile lo rimetto in sospeso
+            i.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.SOSPESO.toString(), em));
+        
+        log.info("Lo stato dell'iter è -> " + i.getIdStato().toString());
+        return i;
     }
 }
