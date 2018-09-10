@@ -104,7 +104,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
                 }
 
                 iter.setGiorniSospensioneTrascorsi(giorniSospensioneTrascorsi + 1);
-                log.info(getJobName() + strElaborazione + "id_ter: " + iter.getId() + " SET giorni_sospensione_trascorsi: " + giorniSospensioneTrascorsi + 1);
+                log.info(getJobName() + strElaborazione + "id_ter: " + iter.getId() + " SET giorni_sospensione_trascorsi: " + iter.getGiorniSospensioneTrascorsi());
             }
 
 //            log.info("-----------------------------------------------------------------------------------------");
@@ -112,7 +112,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
 //                log.info(getJobName() + ": id_ter: " + iter.getId() + " data_chiusura_prevista: " + iter.getDataChiusuraPrevista() + " giorni_sospensione_trascorsi: " + iter.getGiorniSospensioneTrascorsi());
 //            }
             iterRepository.saveAll(iters);
-            log.info(getJobName() + strPostElaborazione + "salvataggio degli iter modificati andara a buon fine");
+            log.info(getJobName() + strPostElaborazione + "salvataggio degli iter modificati andata a buon fine");
             serviceManager.setDataFineRun(serviceKey);
             log.info(delimiter + "STOP: " + getJobName() + delimiter);
         } else {
