@@ -2,6 +2,7 @@ package it.bologna.ausl.gipi.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.bologna.ausl.entities.gipi.AziendaTipoProcedimento;
+import it.bologna.ausl.gipi.config.scheduler.jobs.JobAggiornaCampiIter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
@@ -28,6 +29,9 @@ public class UtilityController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    JobAggiornaCampiIter jobAggiornaCampiIter;
+
     @RequestMapping(value = "version", method = RequestMethod.GET)
     public ResponseEntity<String> getVersion() {
         return new ResponseEntity<>(revision + "\n" + modificationTime, HttpStatus.OK);
@@ -45,6 +49,11 @@ public class UtilityController {
 
 //        AziendaTipoProcedimento aziendaTipoProcedimento = objectMapper.convertValue(entity, AziendaTipoProcedimento.class);
         System.out.println("aziendaTipoProcedimento: " + entity);
+    }
+
+    @RequestMapping(value = "test", method = RequestMethod.GET)
+    public void getTest() {
+        jobAggiornaCampiIter.run();
     }
 
 }

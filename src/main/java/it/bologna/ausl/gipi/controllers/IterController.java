@@ -52,6 +52,7 @@ import it.bologna.ausl.entities.repository.IterRepository;
 import it.bologna.ausl.entities.utilities.response.controller.ControllerHandledExceptions;
 import it.bologna.ausl.entities.utilities.response.exceptions.ForbiddenResponseException;
 import it.bologna.ausl.entities.utilities.response.exceptions.InternalServerErrorResponseException;
+import it.bologna.ausl.gipi.config.scheduler.jobs.JobAggiornaCampiIter;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
@@ -99,10 +100,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @RestController
 @RequestMapping(value = "${custom.mapping.url.root}" + "/iter")
 @PropertySource("classpath:query.properties")
-public class IterController extends ControllerHandledExceptions{
+public class IterController extends ControllerHandledExceptions {
 
     private final Integer FASCICOLAZIONE_ERROR = 0;
-    
+
     @Autowired
     Process process;
 
@@ -114,13 +115,16 @@ public class IterController extends ControllerHandledExceptions{
 
     @Autowired
     ObjectMapper objectMapper;
-    
+
     @Autowired
     IterUtilities iterUtilities;
-    
+
     @Autowired
     IterRepository iterRepository;
-    
+
+    @Autowired
+    JobAggiornaCampiIter aggiornaCampiIter;
+
     @Autowired
     @Qualifier("GipiUtilityFunctions")
     GipiUtilityFunctions utilityFunctions;
@@ -130,22 +134,22 @@ public class IterController extends ControllerHandledExceptions{
 
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
-    
+
     @Value("${proctonGestisciIter}")
     private String proctonGestisciIterPath;
-    
+
     @Value("${deteGestisciIter}")
     private String deteGestisciIterPath;
-    
+
     @Value("${deliGestisciIter}")
     private String deliGestisciIterPath;
-    
+
     @Value("${proctonDeleteDocumentoIter}")
     private String proctonDeleteDocumentoIterPath;
-    
+
     @Value("${deteDeleteDocumentoIter}")
     private String deteDeleteDocumentoIterPath;
-    
+
     @Value("${deliDeleteDocumentoIter}")
     private String deliDeleteDocumentoIterPath;
 
@@ -154,29 +158,29 @@ public class IterController extends ControllerHandledExceptions{
 
     @Value("${getFascicoliConPermessi}")
     private String getFascicoliConPermessi;
-    
+
     @Value("${hasUserAnyPermissionOnFascicolo}")
     private String hasUserAnyPermissionOnFascicoloPath;
-    
+
     @Value("${updateFascicoloGediPath}")
     private String updateFascicoloGediPath;
-    
+
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
     }
-    
+
     public static enum WebApi {
         GESTISCI_STATO_ITER,
         CANCELLA_DOCUMENTO_ITER
     }
-    
+
     public static enum AzioneRichiesta {
         CAMBIO_DI_STATO("cambio_di_stato"),
-        CAMBIO_DI_STATO_DIFFERITO("cambio_di_stato_differito"), 
-        ASSOCIAZIONE("associazione"), 
+        CAMBIO_DI_STATO_DIFFERITO("cambio_di_stato_differito"),
+        ASSOCIAZIONE("associazione"),
         ASSOCIAZIONE_DIFFERITA("associazione_differita"),
         CREAZIONE("creazione");
-        
+
         private final String text;
 
         /**
@@ -205,28 +209,28 @@ public class IterController extends ControllerHandledExceptions{
         MODIFICA_ITER("modifica_iter");
 
         private final String text;
-        
-        CodiceEvento(final String text){
+
+        CodiceEvento(final String text) {
             this.text = text;
         }
-        
+
         @Override
         public String toString() {
             return text;
         }
     }
-    
+
     public static enum CodiceRegistro {
         PG("PG"),
         DELI("DELI"),
         DETE("DETE");
-        
+
         private final String text;
-        
-        CodiceRegistro(final String text){
+
+        CodiceRegistro(final String text) {
             this.text = text;
         }
-        
+
         @Override
         public String toString() {
             return text;
@@ -237,19 +241,19 @@ public class IterController extends ControllerHandledExceptions{
         PROCTON("procton"),
         DELI("deli"),
         DETE("dete");
-        
+
         private final String text;
-        
-        Applicazione(final String text){
+
+        Applicazione(final String text) {
             this.text = text;
         }
-        
+
         @Override
         public String toString() {
             return text;
         }
     }
-    
+
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
 
@@ -261,7 +265,7 @@ public class IterController extends ControllerHandledExceptions{
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
     QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
-    
+
     private static final Logger log = LoggerFactory.getLogger(IterController.class);
 
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
@@ -408,7 +412,7 @@ public class IterController extends ControllerHandledExceptions{
         if (gestioneStatiParams.getNumeroDocumento().equals("")) {
             return gestisciStatoIterDaBozza(gestioneStatiParams);
         }
-        
+
         Utente u = GetEntityById.getUtenteFromPersonaByCodiceFiscaleAndIdAzineda(gestioneStatiParams.getCfAutore(), gestioneStatiParams.getIdAzienda(), em);
         Iter i = GetEntityById.getIter(gestioneStatiParams.idIter, em);
         //Evento e = GetEntityById.getEventoByCodice(gestioneStatiParams.getStatoRichiesto().getCodice().toString(), em);
@@ -416,12 +420,12 @@ public class IterController extends ControllerHandledExceptions{
         FaseIter fi = getFaseIter(i);
 
         Boolean isChiusura = false;
-        
+
 //        Stato s = GetEntityById.getStatoById(gestioneStatiParams.getStato(), em);
-        if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE_DIFFERITA.toString()) ) // qui siamo se stiamo solo aggiungendo un documento
+        if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.ASSOCIAZIONE_DIFFERITA.toString())) // qui siamo se stiamo solo aggiungendo un documento
         {
             eventoDiCambioStato = this.entitiesCachableUtilities.loadEventoByCodice("aggiunta_documento");
-        } else if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO_DIFFERITO.toString()) ) {
+        } else if (gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO.toString()) || gestioneStatiParams.getAzione().equals(AzioneRichiesta.CAMBIO_DI_STATO_DIFFERITO.toString())) {
             Stato s = GetEntityById.getStatoByCodice(gestioneStatiParams.getStatoRichiesto(), em);
             // Questa non è una cosa bellissima e bisognerebbe fare un refactoring anche di questo
             // Infatti non abbiamo un modo automatico per determinare l'Evento in base allo Stato, nè abbiamo un enum sugli eventi
@@ -444,10 +448,10 @@ public class IterController extends ControllerHandledExceptions{
         em.persist(i);
 
         Boolean isDifferito = gestioneStatiParams.isDifferito();
-        
+
         // Lo definisco qui fuori perché mi può servire due volte
         JsonObject datiAggiuntivi = new JsonObject();
-                
+
         DocumentoIter d;
         if (!isDifferito) {
             // Creo il documento iter
@@ -491,27 +495,26 @@ public class IterController extends ControllerHandledExceptions{
         ei.setDataOraEvento(isDifferito ? new Date() : gestioneStatiParams.getDataEvento());
         ei.setIdFaseIter(fi);
         em.persist(ei);
-                    
+
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
         if (!isDifferito) {
             // Fascicolo il documento se non è differito in quanto viene già fascicolato
-            
+
             Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, u.getIdPersona().getCodiceFiscale());
             if (!fascicolato.isSuccessful()) {
-                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string() : null);
             }
 
             // Comunico a Babel l'associazione documento/iter appena avvenuta
             String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
-            
+
             // localhost da commentare
             // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
             //String baseUrl = "http://gdml:8080" + baseUrlBabelGestisciIter;
             //        gestioneStatiParams.setCfResponsabileProcedimento(i.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
             //        gestioneStatiParams.setAnnoIter(i.getAnno());
             //        gestioneStatiParams.setNomeProcedimento(i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome());
-
             JsonObject o = new JsonObject();
             o.addProperty("idIter", i.getId());
             o.addProperty("numeroIter", i.getNumero());
@@ -555,21 +558,21 @@ public class IterController extends ControllerHandledExceptions{
 
         JsonObject obj = new JsonObject();
         obj.addProperty("idIter", i.getId().toString());
-        
+
         if (isChiusura) {
             JPQLQuery<RegistroTipoProcedimento> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
             /* Controllo se l'iter deve essere pubblicato - Avrò un elemento
              * nella lista per ogni registro in cui dovrà essere pubblicato */
             log.info("Check pubblicazione iter...");
             List<RegistroTipoProcedimento> registriTipoProc = query
-                .from(qRegistroTipoProcedimento)
-                .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
-                    .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
-                .fetch();
-            if (!registriTipoProc.isEmpty()){
+                    .from(qRegistroTipoProcedimento)
+                    .where(qRegistroTipoProcedimento.idTipoProcedimento.id.eq(i.getIdProcedimento()
+                            .getIdAziendaTipoProcedimento().getIdTipoProcedimento().getId()))
+                    .fetch();
+            if (!registriTipoProc.isEmpty()) {
                 JsonObject pubblicazioni = iterUtilities.pubblicaIter(i, d, registriTipoProc);
                 log.info("Stato pubblicazioni: " + pubblicazioni.toString());
-            }        
+            }
         }
 
         return new ResponseEntity(obj.toString(), HttpStatus.OK);
@@ -623,14 +626,14 @@ public class IterController extends ControllerHandledExceptions{
                 .where(qDocumentoIter.idOggetto.eq(gestioneStatiParams.getIdOggettoOrigine())
                         .and(qDocumentoIter.idIter.eq(i)))
                 .fetchOne();
-        
-        if(d != null){
+
+        if (d != null) {
             log.info("Eh già, allora cambio i datiAggiuntivi --> " + datiAggiuntivi.toString());
             log.info("Un controllo di sicurezza: l'associazione è parziale?  --> " + d.getParziale().toString());
             d.setDatiAggiuntivi(datiAggiuntivi.toString());
             em.merge(d);
             o.addProperty("modificaAssociazioneParziale", -1);
-        }else{
+        } else {
             o.addProperty("modificaAssociazioneParziale", 0); // non sto modificando un'associazione parziale
             log.info("No, non esiste ancora, allora faccio un'associazione ex novo");
             d = new DocumentoIter();
@@ -646,23 +649,21 @@ public class IterController extends ControllerHandledExceptions{
             log.info("Fascicolo il documento nel fascicolo dell'iter...");
             Response fascicolato = iterUtilities.inserisciFascicolazione(i, gestioneStatiParams, codiceFiscaleUtenteLoggato);
             if (!fascicolato.isSuccessful()) {
-                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string(): null);
+                throw new InternalServerErrorResponseException(FASCICOLAZIONE_ERROR, "La fascicolazione non è andata a buon fine.", fascicolato.body() != null ? fascicolato.body().string() : null);
             } else {
                 log.info("Fascicolazione effettuata con successo!");
             }
         }
-        
-        
+
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
         System.out.println(o.toString());
 
         // Chiamata alla web api GestisciIter.associaDocumento
         log.info("Carico l'url della webApi ed effettuo la chiamata...");
         String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(gestioneStatiParams.getIdAzienda(), em, objectMapper) + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
-        
+
         // localhost da commentare
         // urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(gestioneStatiParams.getIdApplicazione(), WebApi.GESTISCI_STATO_ITER);
-        
         System.out.println(urlChiamata);
         Request requestg = new Request.Builder()
                 .url(urlChiamata)
@@ -686,7 +687,7 @@ public class IterController extends ControllerHandledExceptions{
             log.info("Chiamata effettuata con successo!");
             obj.addProperty("idIter", i.getId().toString());
             obj.addProperty("object", responseg.toString());
-            
+
             // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
             Azienda aziendaUtenteLoggato = aziendaRepository.findById((Integer) ((AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN)).get(AziendaCachable.KEYS.ID)).get();
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
@@ -762,28 +763,28 @@ public class IterController extends ControllerHandledExceptions{
 
         return new ResponseEntity(CurrentStato, HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "riattivaIterSenzaDocumento", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws  IOException {
+    public ResponseEntity RiattivaIterSenzaDocumento(@RequestBody GestioneStatiParams params) throws IOException {
         // Mi prendo l'occorrente
         Utente u = utilityFunctions.getUtenteLoggatto();
         Iter i = iterRepository.findById(params.getIdIter()).get();
         FaseIter fi = getFaseIter(i);
         Evento e = this.entitiesCachableUtilities.loadEventoByCodice("chiusura_sospensione");
         Stato s = GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em);
-        
+
         // Mi assicuro che l'utente abbia il permesso sull'iter
         ResponseEntity re = hasPermissionOnFascicolo(i.getIdFascicolo());
         JsonObject obj = new JsonParser().parse(re.getBody().toString()).getAsJsonObject();
         if (!obj.get("hasPermission").getAsBoolean()) {
             throw new ForbiddenResponseException(0, "Attenzione, non sei abilitato all'utilizzo di questa funzione.", "");
         }
-        
+
         // Aggiorno l'iter
         i.setIdStato(s);
         em.persist(i);
-        
+
         // Creo l'evento
         EventoIter ei = new EventoIter();
         ei.setNote(params.getNote());
@@ -793,18 +794,18 @@ public class IterController extends ControllerHandledExceptions{
         ei.setDataOraEvento(new Date());
         ei.setIdFaseIter(fi);
         em.persist(ei);
-        
+
         JsonObject o = new JsonObject();
         o.addProperty("tuttook", "ehsi");
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "getFascicoloConPermessi", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity getFascicoloConPermessi(@RequestBody String numerazioneGerarchica) throws IOException {
         log.debug("Sono dentro la getFascicoloConPermessi");
         log.debug("Numerazione gerarchica: " + numerazioneGerarchica);
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         // String codiceFiscale = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
@@ -840,45 +841,45 @@ public class IterController extends ControllerHandledExceptions{
         log.debug("responseg.responseg.headers().toString() --> " + response.headers().toString());
 
         Fascicoli fs = (Fascicoli) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(response.body().string(), Fascicoli.class);
-        
+
         // Mi aspetto che il fascicolo sia uno
         if (fs.getSize() != 1) {
             log.debug("Trovato o zero o più di un fascicolo. Questo non deve accadere");
             // Qui vorrei lanciare la 412 Precondition Failed
         }
-        
+
         Fascicolo f = fs.getFascicolo(0);
-        
+
         return new ResponseEntity(f.getJSONString(), HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "cambiaResponsabileProcedimento", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity cambiaResponsabileProcedimento(@RequestBody String params) throws IOException, GipiPubblicazioneException {
         log.info("PARAMS = " + params);
         JsonParser parser = new JsonParser();
         JsonObject dati = (JsonObject) parser.parse(params);
-                
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
-        
+
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        
+
         String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
         //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
 
         Fascicolo fascicolo;
         // Se ho passato anche i vicari, allora, vuol dire che l'utente non c'era tra di loro e vanno aggiornati
-        if(dati.has("vicari")) {
-            List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {}.getType());
+        if (dati.has("vicari")) {
+            List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {
+            }.getType());
             fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString(), vicari);
-        }
-        else{
+        } else {
             fascicolo = new Fascicolo(dati.get("idFascicolo").getAsString(), dati.get("cfResponsabile").getAsString());
         }
-             
+
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
 
@@ -886,26 +887,26 @@ public class IterController extends ControllerHandledExceptions{
                 .url(urlChiamata)
                 .post(body)
                 .build();
-        
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
-        
+
         Response responseg = client.newCall(requestg).execute();
-        /* Se la chiamata a Gedi è andata a buon fine aggiorno la procedimenti cache e loggo l'evento  */ 
-        if (responseg.isSuccessful()) { 
-            iterUtilities.aggiornaProcCacheEloggaEvento(dati.get("idIter").getAsInt(), 
-                dati.get("idUtenteResponsabile").getAsInt(), dati.get("idStrutturaResponsabile").getAsInt(),
-                utenteLoggato, entitiesCachableUtilities);
+        /* Se la chiamata a Gedi è andata a buon fine aggiorno la procedimenti cache e loggo l'evento  */
+        if (responseg.isSuccessful()) {
+            iterUtilities.aggiornaProcCacheEloggaEvento(dati.get("idIter").getAsInt(),
+                    dati.get("idUtenteResponsabile").getAsInt(), dati.get("idStrutturaResponsabile").getAsInt(),
+                    utenteLoggato, entitiesCachableUtilities);
         } else {
             throw new IOException("La chiamata a Babel non è andata a buon fine. " + responseg);
         }
-        
+
         return new ResponseEntity(params, HttpStatus.OK);
     }
-    
+
     @RequestMapping(value = "aggiornaVicariDelFascicolo", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity aggiornaVicariDelFascicolo(@RequestBody String params) throws IOException {
@@ -913,20 +914,21 @@ public class IterController extends ControllerHandledExceptions{
         log.info("PARAMS = " + params);
         JsonParser parser = new JsonParser();
         JsonObject dati = (JsonObject) parser.parse(params);
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente utenteLoggato = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
-        
+
         AziendaCachable aziendaInfo = (AziendaCachable) userInfo.get(UtenteCachable.KEYS.AZIENDA_LOGIN);
         int idAzienda = (int) aziendaInfo.get(AziendaCachable.KEYS.ID);
-        
+
         String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(idAzienda, em, objectMapper) + updateFascicoloGediPath;
         //String urlChiamata = "http://localhost:8083/bds_tools/ioda/api/fascicolo/UpdateFascicolo";
 
-        List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {}.getType());
+        List<String> vicari = new Gson().fromJson(dati.get("vicari").getAsJsonArray(), new TypeToken<List<String>>() {
+        }.getType());
         Fascicolo fascicolo = new Fascicolo(dati.get("numerazioneGerarchica").getAsString(), null, vicari);
-      
+
         IodaRequestDescriptor irdg = new IodaRequestDescriptor("gipi", "gipi", fascicolo);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, irdg.getJSONString().getBytes("UTF-8"));
 
@@ -934,59 +936,62 @@ public class IterController extends ControllerHandledExceptions{
                 .url(urlChiamata)
                 .post(body)
                 .build();
-        
+
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
-        
+
         Response responseg = client.newCall(requestg).execute();
-        
-        if (!responseg.isSuccessful()) { 
+
+        if (!responseg.isSuccessful()) {
             throw new IOException("La chiamata a bds-tools non è andata a buon fine. " + responseg);
         }
-        
+
         // Mi faccio dare il fascicolo aggiornato
         ResponseEntity re = getFascicoloConPermessi(dati.get("numerazioneGerarchica").getAsString());
-        
+
         return re;
     }
-    
-    public String getWebApiPathByIdApplicazione(String application, WebApi webApi){
+
+    public String getWebApiPathByIdApplicazione(String application, WebApi webApi) {
         String path = "";
-        switch(application){
-            
+        switch (application) {
+
             case "procton":
-                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                if (webApi == WebApi.GESTISCI_STATO_ITER) {
                     path = proctonGestisciIterPath;
-                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                } else if (webApi == WebApi.CANCELLA_DOCUMENTO_ITER) {
                     path = proctonDeleteDocumentoIterPath;
-            break;
-            
+                }
+                break;
+
             case "dete":
-                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                if (webApi == WebApi.GESTISCI_STATO_ITER) {
                     path = deteGestisciIterPath;
-                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                } else if (webApi == WebApi.CANCELLA_DOCUMENTO_ITER) {
                     path = deteDeleteDocumentoIterPath;
-            break;
-            
+                }
+                break;
+
             case "deli":
-                if(webApi == WebApi.GESTISCI_STATO_ITER)
+                if (webApi == WebApi.GESTISCI_STATO_ITER) {
                     path = deliGestisciIterPath;
-                else if(webApi == WebApi.CANCELLA_DOCUMENTO_ITER)
+                } else if (webApi == WebApi.CANCELLA_DOCUMENTO_ITER) {
                     path = deliDeleteDocumentoIterPath;
-            break;
+                }
+                break;
         }
         return path;
     }
-    
+
     @RequestMapping(value = "rollbackEventoIterById", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity rollbackEventoIterById(@RequestBody int idEventoIter) throws IOException {
         log.info("ITER CONTROLLER");
-        log.info("Chiamata alla funzione eliminaEventoIter -> idEventoIter = " + idEventoIter);       
-        
+        log.info("Chiamata alla funzione eliminaEventoIter -> idEventoIter = " + idEventoIter);
+
         // CARICARE LE ENTITA'
         log.info("Carico l'EventoIter");
         JPQLQuery<EventoIter> q = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -997,15 +1002,15 @@ public class IterController extends ControllerHandledExceptions{
         log.info("EventoIter trovato: " + ei.toString());
         log.info("Iter dell'EventoIter trovato: " + ei.getIdIter().toString());
         log.info("Evento dell'EventoIter trovato: " + ei.getIdEvento().toString());
-                            
+
         // ripristino stato e aggiorno i giorni sospensione dell'iter
         Iter i = rollbackEventoIter(ei);
-        boolean eliminato = false;   
+        boolean eliminato = false;
         DocumentoIter di = null;
-        
+
         // se ho un documento iter, lego tutto all'eliminazione del documento
-        if(ei.getIdDocumentoIter()!= null){
-                                 
+        if (ei.getIdDocumentoIter() != null) {
+
             log.info("documento_iter dell'evento trovato: " + ei.getIdDocumentoIter().toString());
 
             //Carico il DocumentoIter da eliminare
@@ -1015,36 +1020,34 @@ public class IterController extends ControllerHandledExceptions{
                     .from(qDocumentoIter)
                     .where(qDocumentoIter.id.eq(ei.getIdDocumentoIter().getId()))
                     .fetchOne();
-            
-            log.info("idIter: " + di.getIdIter().getId() + " oggetto: '"+ di.getOggetto() + "', guid_oggetto: '" + di.getIdOggetto() +  "' dati_aggiuntivi: '" +  di.getDatiAggiuntivi() + "'");
-            
+
+            log.info("idIter: " + di.getIdIter().getId() + " oggetto: '" + di.getOggetto() + "', guid_oggetto: '" + di.getIdOggetto() + "' dati_aggiuntivi: '" + di.getDatiAggiuntivi() + "'");
+
             // ora mi recupero di dati che mi servono per la chiamata alla WebApi: idDocumentoIter, applicazione
             int idIterDelDocumentoIterDaEliminare = di.getIdIter().getId();
             String idOggettoOrigine = di.getIdOggetto();
             // Ho codice registro PG ? procton :altrimenti ho codice registro DETE ? dete :altrimenti  deli.
             String applicazione = di.getRegistro().equals(CodiceRegistro.PG.toString()) ? Applicazione.PROCTON.toString() : di.getRegistro().equals(CodiceRegistro.DETE.toString()) ? Applicazione.DETE.toString() : Applicazione.DELI.toString();
-            
+
             eliminato = this.eliminaDocumentoIterSuPDD(idIterDelDocumentoIterDaEliminare, idOggettoOrigine, applicazione, i.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda());
-            
+
             // se non sono riuscito a eliminare allora è inutile che continuo la cancellazione, anzi, meglio che lasciamo la roba così com'è di modo che poi sistemiamo
-            if(!eliminato){
+            if (!eliminato) {
                 log.error("C'è stato un'errore nella cancellazione del documento iter da argo: controllare il log.");
                 throw new IOException("La chiamata a PDD per eliminazione del documento iter non è andata a buon fine.");
-            }                  
+            }
             log.info("Ho eliminato il documento iter da gipi");
             log.info("l'associazione documento_iter e la fascicolazione sono state cancellate da argo.");
-            
-            
-        }
-        else{
+
+        } else {
             log.info("non c'è un documento associato all'evento_iter");
         }
-        
+
         log.info("Procedo al salvataggio dei dati.");
-        log.info("Eliminazione EventoIter --> id: " + ei.getId()+ " " + ei.getIdEvento().getCodice() + " " + ei.getDataOraEvento());
+        log.info("Eliminazione EventoIter --> id: " + ei.getId() + " " + ei.getIdEvento().getCodice() + " " + ei.getDataOraEvento());
         em.remove(ei);
         log.info("EventoIter eliminato");
-        if(eliminato == true && di != null){
+        if (eliminato == true && di != null) {
             log.info("Eliminazione DocumentoIter --> id: " + di.toString() + " idOggetto: " + di.getIdOggetto() + " idIter: " + di.getIdIter());
             em.remove(di);
             log.info("DocumentoIter eliminato");
@@ -1052,24 +1055,23 @@ public class IterController extends ControllerHandledExceptions{
         log.info("Salvataggio aggiornamenti iter");
         em.merge(i);
         log.info("Iter aggiornato");
-        
+
         // altri casi non sono stati previsti
         JsonObject o = new JsonObject();
         o.addProperty("tuttook", "ehsi");
         return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
-    
-    public boolean eliminaDocumentoIterSuPDD(int idIter, String idOggettoOrigine, String applicazione, Azienda azienda) throws UnsupportedEncodingException, IOException{
+
+    public boolean eliminaDocumentoIterSuPDD(int idIter, String idOggettoOrigine, String applicazione, Azienda azienda) throws UnsupportedEncodingException, IOException {
         log.info("Mi piglio il cf dell'utente loggato...");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         String codiceFiscaleUtenteLoggato = (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE);
-        log.info("... " + codiceFiscaleUtenteLoggato);      
-        
+        log.info("... " + codiceFiscaleUtenteLoggato);
+
         // String urlChiamata = "http://localhost:8080" + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
-        
         String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(azienda.getId(), em, objectMapper) + getWebApiPathByIdApplicazione(applicazione, WebApi.CANCELLA_DOCUMENTO_ITER);
-        
+
         log.info("Ora chiamo la Web Api -> " + urlChiamata);
 
         JsonObject o = new JsonObject();
@@ -1091,30 +1093,31 @@ public class IterController extends ControllerHandledExceptions{
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
-        Response responseg = client.newCall(requestg).execute();  
-        
+        Response responseg = client.newCall(requestg).execute();
+
         log.info("response " + responseg.toString());
-        if(responseg.isSuccessful()){
+        if (responseg.isSuccessful()) {
             List<String> cfUtentiDaRefreshare = new ArrayList<>();
             cfUtentiDaRefreshare.add(codiceFiscaleUtenteLoggato);
             PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
-            log.info("aggiorno l'interfaccia con primus..." + "azienda " + azienda.toString() + "cfUtentiDaRefreshare " + cfUtentiDaRefreshare.toString() + 
-                    "command " + command + "applicazione " + applicazione);
+            log.info("aggiorno l'interfaccia con primus..." + "azienda " + azienda.toString() + "cfUtentiDaRefreshare " + cfUtentiDaRefreshare.toString()
+                    + "command " + command + "applicazione " + applicazione);
             utilityFunctions.sendPrimusCommand(azienda, cfUtentiDaRefreshare, command, applicazione);
         }
-        
-        
-        
+
         return responseg.isSuccessful();
     }
-    
-    
-    /**Prende come parametro un EventoIter, e ne restituisce l'iter coinvolto, ripulito di tutte le affezioni:
-     ripristina lo stato, aggiorna i giorni di sospensione come se l'evento passato come parametro non ci fosse mai stato.
-     NB: la funzione non cancella l'evento iter: questo deve essere cancellato fuori! */
-    public Iter rollbackEventoIter(EventoIter ei){
+
+    /**
+     * Prende come parametro un EventoIter, e ne restituisce l'iter coinvolto,
+     * ripulito di tutte le affezioni: ripristina lo stato, aggiorna i giorni di
+     * sospensione come se l'evento passato come parametro non ci fosse mai
+     * stato. NB: la funzione non cancella l'evento iter: questo deve essere
+     * cancellato fuori!
+     */
+    public Iter rollbackEventoIter(EventoIter ei) {
         log.info("Entrato in rollbackEventoIter");
-        log.info("Codice dell'evento " +  ei.getIdEvento().getCodice());
+        log.info("Codice dell'evento " + ei.getIdEvento().getCodice());
         log.info("Carico l'iter...");
         JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         Iter i = queryIter
@@ -1122,69 +1125,61 @@ public class IterController extends ControllerHandledExceptions{
                 .where(qIter.id.eq((ei.getIdIter().getId())))
                 .fetchOne();
         log.info("iter caricato");
-        
-        /* Cosa deve succere ora? 
+
+        /* Cosa deve succere ora?
            - devono essere ciclati gli eventi perché vanno ricalcolati i giorni di sospensione DAL PRIMO EVENTO!
            - si rimette l'iter nello stato precedente
            - si restituisce l'iter
-        */ 
-        
-        JPQLQuery<EventoIter> queryEventiIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
-        List<EventoIter> eventi = queryEventiIter.from(qEventoIter).where(qEventoIter.idIter.id.eq(i.getId())).orderBy(qEventoIter.dataOraEvento.asc()).fetch();
-        log.info("Ciclo gli eventi dell'iter...");
-        boolean inCorso = true; // il primo evento sarà sempre quello di avvio, quindi è in corso.
-        Date dataInizio = null;
-        Date dataFine = null;
-        int giorniSospensione = 0;
-        
-        // questo serve solo per ricalcolare i giorni di sospensione: se trovo incongruenze, esco
-        for(EventoIter ev : eventi){
-            log.info(ev.getDataOraEvento() + " -> " + ev.getIdEvento().getCodice());
-            // se becco l'evento allora finisco
-            if(ev.getId().equals(ei.getId())){
-                if(!inCorso){ // se sto ad esempio eliminando un'associazione al documento di un iter sospeso, l'iter deve restare sospeso
-                    long diff = TimeUnit.DAYS.convert(Math.abs(new Date().getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
-                    giorniSospensione += diff;
-                }
-                log.info("l'iter risulta aver " + giorniSospensione + " giorni di sospensione");
-                i.setGiorniSospensioneTrascorsi(giorniSospensione);
-                break;
-            }
-            
-            if(ev.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString())){
-                if(inCorso){
-                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
-                    dataInizio = ev.getDataOraEvento();
-                    inCorso = false;
-                }
-                else{
-                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra sospeso ma dovrebbe venire rispospeso dall'evento!");
-                    break;
-                }
-            }
-            else if(ev.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ev.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())){
-                if(!inCorso && dataInizio != null){
-                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
-                    dataFine = ev.getDataOraEvento();
-                    long diff = TimeUnit.DAYS.convert(Math.abs(dataFine.getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
-                    giorniSospensione += diff;
-                    inCorso = true;
-                }
-                else{
-                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra in corso ma dovrebbe venire de-sospeso dall'evento!");
-                    break;
-                }
-            }
-            // nel caso di un'aggiunta documento non ho bisogno di modificare i giorni di sospensione.
-        }
-          
+         */
+        // calcolo giorni di sospensione usando il metodo usato anche dal servizio schedulato
+        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
+
+        // PARTE DI SAL questo serve solo per ricalcolare i giorni di sospensione: se trovo incongruenze, esco
+//        for (EventoIter ev : eventi) {
+//            log.info(ev.getDataOraEvento() + " -> " + ev.getIdEvento().getCodice());
+//            // se becco l'evento allora finisco
+//            if (ev.getId().equals(ei.getId())) {
+//                if (!inCorso) { // se sto ad esempio eliminando un'associazione al documento di un iter sospeso, l'iter deve restare sospeso
+//                    long diff = TimeUnit.DAYS.convert(Math.abs(new Date().getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
+//                    giorniSospensione += diff;
+//                }
+//                log.info("l'iter risulta aver " + giorniSospensione + " giorni di sospensione");
+//                i.setGiorniSospensioneTrascorsi(giorniSospensione);
+//                break;
+//            }
+//
+//            if (ev.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString())) {
+//                if (inCorso) {
+//                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
+//                    dataInizio = ev.getDataOraEvento();
+//                    inCorso = false;
+//                } else {
+//                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra sospeso ma dovrebbe venire rispospeso dall'evento!");
+//                    break;
+//                }
+//            } else if (ev.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ev.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())) {
+//                if (!inCorso && dataInizio != null) {
+//                    log.info("aggiorno i giorni di sospensione per " + ev.getIdEvento().getCodice().toString());
+//                    dataFine = ev.getDataOraEvento();
+//                    long diff = TimeUnit.DAYS.convert(Math.abs(dataFine.getTime() - dataInizio.getTime()), TimeUnit.MILLISECONDS);
+//                    giorniSospensione += diff;
+//                    inCorso = true;
+//                } else {
+//                    log.info("ho riscontrato un'incongruenza negli eventi: l'iter sembra in corso ma dovrebbe venire de-sospeso dall'evento!");
+//                    break;
+//                }
+//            }
+//            // nel caso di un'aggiunta documento non ho bisogno di modificare i giorni di sospensione.
+//        }
         log.info("Ripristino lo stato dell'iter alla condizione precedente");
         // se l'evento che devo cancellare è di chiusura sospensione, allora rimetto l'iter in corso
-        if(ei.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString()))
+        if (ei.getIdEvento().getCodice().equals(CodiceEvento.APERTURA_SOSPENSIONE.toString())) {
             i.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.IN_CORSO.toString(), em));
-        else if(ei.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ei.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())) // per ogni altro tipo di evento possibile lo rimetto in sospeso
+        } else if (ei.getIdEvento().getCodice().equals(CodiceEvento.CHIUSURA_SOSPENSIONE.toString()) || ei.getIdEvento().getCodice().equals(CodiceEvento.ITER_IN_CORSO.toString())) // per ogni altro tipo di evento possibile lo rimetto in sospeso
+        {
             i.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.SOSPESO.toString(), em));
-        
+        }
+
         log.info("Lo stato dell'iter è -> " + i.getIdStato().toString());
         return i;
     }
