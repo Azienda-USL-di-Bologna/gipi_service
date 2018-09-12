@@ -74,6 +74,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
             JPQLQuery<Iter> queryIter = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
             List<Iter> iters = queryIter.from(qIter)
                     .where(qIter.idStato.codice.eq(Stato.CodiciStato.SOSPESO.toString()))
+                    //.where(qIter.numero.eq(565))
                     .fetch();
 
             for (Iter iter : iters) {
@@ -109,7 +110,7 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
     }
 
     public int calcolaGiorniSospensioneTrascorsi(Iter iter) {
-
+        log.info(getJobName() + " Calcolo giorni di sospensione");
         int giorniSospensioneTrascorsi = 0;
         Date startDate = null;
         Date stopDate = null;
@@ -120,37 +121,45 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
         List<EventoIter> eventiIter = queryEventiIter.from(qEventoIter).where(qEventoIter.idIter.id.eq(iter.getId()).and(qEventoIter.idEvento.codice.in(Evento.CodiciEvento.apertura_sospensione.toString(), Evento.CodiciEvento.chiusura_sospensione.toString()))).orderBy(qEventoIter.id.asc()).fetch();
         Calendar cal = Calendar.getInstance();
 
-        for (EventoIter eventoIter : eventiIter) {
+        if (eventiIter.size() > 0) {
+            for (EventoIter eventoIter : eventiIter) {
 
-            if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.apertura_sospensione.toString())) {
-                cal.setTime(eventoIter.getDataOraEvento());
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                startDate = cal.getTime();
-                ancoraSospeso = true;
+                if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.apertura_sospensione.toString())) {
+
+                    cal.setTime(eventoIter.getDataOraEvento());
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+                    startDate = cal.getTime();
+                    log.info(getJobName() + " start: " + startDate.toString());
+                    ancoraSospeso = true;
+                }
+
+                if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.chiusura_sospensione.toString())) {
+                    cal.setTime(eventoIter.getDataOraEvento());
+                    cal.set(Calendar.HOUR_OF_DAY, 0);
+                    cal.set(Calendar.MINUTE, 0);
+                    cal.set(Calendar.SECOND, 0);
+                    cal.set(Calendar.MILLISECOND, 0);
+                    stopDate = cal.getTime();
+                    long diff = TimeUnit.DAYS.convert(Math.abs(stopDate.getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
+                    giorniSospensioneTrascorsi += diff;
+                    log.info(getJobName() + " stop: " + stopDate.toString());
+                    log.info(getJobName() + " giorni_calcolati: " + diff);
+                    ancoraSospeso = false;
+                }
             }
 
-            if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.chiusura_sospensione.toString())) {
-                cal.setTime(eventoIter.getDataOraEvento());
-                cal.set(Calendar.HOUR_OF_DAY, 0);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                stopDate = cal.getTime();
-                long diff = TimeUnit.DAYS.convert(Math.abs(stopDate.getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
+            if (ancoraSospeso) {
+                long diff = TimeUnit.DAYS.convert(Math.abs(new Date().getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
                 giorniSospensioneTrascorsi += diff;
-                ancoraSospeso = false;
+                log.info(getJobName() + "ANCORA SOSPESO, giorni_calcolati: " + diff);
             }
-        }
-
-        if (ancoraSospeso) {
-            long diff = TimeUnit.DAYS.convert(Math.abs(new Date().getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
-            giorniSospensioneTrascorsi += diff;
         }
 
         //log.info("giorni " + giorniSospensioneTrascorsi);
+        log.info(getJobName() + "ritorno giorni: " + (int) (long) giorniSospensioneTrascorsi);
         return (int) (long) giorniSospensioneTrascorsi;
     }
 }

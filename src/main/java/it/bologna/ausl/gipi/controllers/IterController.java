@@ -1005,6 +1005,7 @@ public class IterController extends ControllerHandledExceptions {
 
         // ripristino stato e aggiorno i giorni sospensione dell'iter
         Iter i = rollbackEventoIter(ei);
+
         boolean eliminato = false;
         DocumentoIter di = null;
 
@@ -1053,6 +1054,9 @@ public class IterController extends ControllerHandledExceptions {
             log.info("DocumentoIter eliminato");
         }
         log.info("Salvataggio aggiornamenti iter");
+
+        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
+        log.info("setto giorni di sospensione prima di aggiornare iter -> id_iter: " + i.getId() + "; numero_giorni_sospensione: " + i.getGiorniSospensioneTrascorsi());
         em.merge(i);
         log.info("Iter aggiornato");
 
@@ -1132,8 +1136,6 @@ public class IterController extends ControllerHandledExceptions {
            - si restituisce l'iter
          */
         // calcolo giorni di sospensione usando il metodo usato anche dal servizio schedulato
-        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
-
         // PARTE DI SAL questo serve solo per ricalcolare i giorni di sospensione: se trovo incongruenze, esco
 //        for (EventoIter ev : eventi) {
 //            log.info(ev.getDataOraEvento() + " -> " + ev.getIdEvento().getCodice());
@@ -1180,6 +1182,7 @@ public class IterController extends ControllerHandledExceptions {
             i.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.SOSPESO.toString(), em));
         }
 
+//        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
         log.info("Lo stato dell'iter è -> " + i.getIdStato().toString());
         return i;
     }
