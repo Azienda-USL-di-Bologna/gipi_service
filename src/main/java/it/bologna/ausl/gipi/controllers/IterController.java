@@ -496,6 +496,12 @@ public class IterController extends ControllerHandledExceptions {
         ei.setIdFaseIter(fi);
         em.persist(ei);
 
+        log.info("PRIMA: " + i.getGiorniSospensioneTrascorsi());
+        log.info("FUNZIONE: " + aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
+        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
+        log.info("POST: " + i.getGiorniSospensioneTrascorsi());
+        em.persist(i);
+
         // Chiamo la web api solo se l'azione non è "cambio_di_stato_differito"
         // (perché il lavoro parte Babel lo esegue già il mestiere che chiama questa)
         if (!isDifferito) {
