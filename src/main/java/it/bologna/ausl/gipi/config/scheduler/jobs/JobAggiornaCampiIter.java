@@ -124,30 +124,33 @@ public class JobAggiornaCampiIter implements BaseScheduledJob {
         if (eventiIter.size() > 0) {
             for (EventoIter eventoIter : eventiIter) {
 
-                if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.apertura_sospensione.toString())) {
+                if (eventoIter.getDataOraEvento() != null) {
 
-                    cal.setTime(eventoIter.getDataOraEvento());
-                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                    cal.set(Calendar.MINUTE, 0);
-                    cal.set(Calendar.SECOND, 0);
-                    cal.set(Calendar.MILLISECOND, 0);
-                    startDate = cal.getTime();
-                    log.info(getJobName() + " start: " + startDate.toString());
-                    ancoraSospeso = true;
-                }
+                    if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.apertura_sospensione.toString())) {
 
-                if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.chiusura_sospensione.toString())) {
-                    cal.setTime(eventoIter.getDataOraEvento());
-                    cal.set(Calendar.HOUR_OF_DAY, 0);
-                    cal.set(Calendar.MINUTE, 0);
-                    cal.set(Calendar.SECOND, 0);
-                    cal.set(Calendar.MILLISECOND, 0);
-                    stopDate = cal.getTime();
-                    long diff = TimeUnit.DAYS.convert(Math.abs(stopDate.getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
-                    giorniSospensioneTrascorsi += diff;
-                    log.info(getJobName() + " stop: " + stopDate.toString());
-                    log.info(getJobName() + " giorni_calcolati: " + diff);
-                    ancoraSospeso = false;
+                        cal.setTime(eventoIter.getDataOraEvento());
+                        cal.set(Calendar.HOUR_OF_DAY, 0);
+                        cal.set(Calendar.MINUTE, 0);
+                        cal.set(Calendar.SECOND, 0);
+                        cal.set(Calendar.MILLISECOND, 0);
+                        startDate = cal.getTime();
+                        log.info(getJobName() + " start: " + startDate.toString());
+                        ancoraSospeso = true;
+                    }
+
+                    if (eventoIter.getIdEvento().getCodice().equals(Evento.CodiciEvento.chiusura_sospensione.toString())) {
+                        cal.setTime(eventoIter.getDataOraEvento());
+                        cal.set(Calendar.HOUR_OF_DAY, 0);
+                        cal.set(Calendar.MINUTE, 0);
+                        cal.set(Calendar.SECOND, 0);
+                        cal.set(Calendar.MILLISECOND, 0);
+                        stopDate = cal.getTime();
+                        long diff = TimeUnit.DAYS.convert(Math.abs(stopDate.getTime() - startDate.getTime()), TimeUnit.MILLISECONDS);
+                        giorniSospensioneTrascorsi += diff;
+                        log.info(getJobName() + " stop: " + stopDate.toString());
+                        log.info(getJobName() + " giorni_calcolati: " + diff);
+                        ancoraSospeso = false;
+                    }
                 }
             }
 
