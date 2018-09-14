@@ -34,7 +34,7 @@ public class ScheduledTasks {
 
     @Autowired
     JobInviaNotificheTerminiSospensioneIterScaduti notificheSospensioneIter;
-    
+
     @Autowired
     JobNotificheChiusuraIter jobNotificheChiusuraIter;
 
