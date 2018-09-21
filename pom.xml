@@ -24,7 +24,7 @@
         <spring.boot.version>1.5.8.RELEASE</spring.boot.version>
         <olingo.version>4.3.0</olingo.version>
         <olingo.odata2.version>2.0.10-NEXT-SNAPSHOT</olingo.odata2.version>
-        <eclipse.link.version>2.7.1</eclipse.link.version>
+        <eclipse.link.version>2.7.3</eclipse.link.version>
     </properties>
 
     <profiles>
@@ -247,7 +247,7 @@
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
             <artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
-            <version>2.7.1</version>
+            <version>${eclipse.link.version}</version>
             <scope>provided</scope>
         </dependency>
         
