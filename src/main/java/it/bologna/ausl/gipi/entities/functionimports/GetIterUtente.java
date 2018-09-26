@@ -131,17 +131,20 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
 
         if(dataRegistrazione != null && !dataRegistrazione.equals("")){
             // raffinare la lista iter
-            listaIter.sort(null);
-            System.out.println("**********LISTA**********" + listaIter.toString());
-            System.out.println("**********TOTALE LISTA**********" + listaIter.size());
+            log.info("***LISTA --> " + listaIter.toString());
+            log.info("***TOTALE LISTA -->" + listaIter.size());
             List<Integer> iterDaEscludere = new ArrayList<>(); 
             try (Connection con = sql2o.open()) {
                 iterDaEscludere = con.createQuery(incredibleQuery + "("+ listaIter.toString().substring(1, listaIter.toString().length()-1) + ")")
                         .addParameter("data_ora_evento", dataRegistrazione)
                         .executeAndFetch(Integer.class);
             }
+            log.info("***LISTA da escludere --> " + iterDaEscludere.toString());
+            log.info("***TOTALE LISTA da esclidere-->" + iterDaEscludere.size());
             iterDaEscludere.sort(null);
             listaIter.removeAll(iterDaEscludere);
+            log.info("***LISTA raffinata --> " + listaIter.toString());
+            log.info("***TOTALE LISTA raffinata -->" + listaIter.size());
         }
         
         if (idOggettoOrigine != null && !idOggettoOrigine.equals("")) {
