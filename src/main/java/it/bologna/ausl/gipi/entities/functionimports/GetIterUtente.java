@@ -93,7 +93,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
             @EdmFunctionImportParameter(name = "dataAvvio", facets = @EdmFacets(nullable = true)) final String dataAvvio,
             @EdmFunctionImportParameter(name = "idStato_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneStato,
             @EdmFunctionImportParameter(name = "idResponsabileProcedimento_sep_idPersona_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneRespProc,
-            @EdmFunctionImportParameter(name = "dataRegistrazione", facets = @EdmFacets(nullable = true)) final String dataRegistrazione,
+            // @EdmFunctionImportParameter(name = "dataRegistrazione", facets = @EdmFacets(nullable = true)) final String dataRegistrazione,
             // sort
             @EdmFunctionImportParameter(name = "sort", facets = @EdmFacets(nullable = true)) final String sort
     ) throws IOException {
@@ -129,7 +129,8 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
 
         JPAQuery queryDSL = new JPAQuery(em);
 
-        if(dataRegistrazione != null && !dataRegistrazione.equals("")){
+        /* QUESTA NON E' PIU' UTILIZZATA */
+        /*if(dataRegistrazione != null && !dataRegistrazione.equals("")){
             // raffinare la lista iter
             log.info("***LISTA --> " + listaIter.toString());
             log.info("***TOTALE LISTA -->" + listaIter.size());
@@ -145,7 +146,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
             listaIter.removeAll(iterDaEscludere);
             log.info("***LISTA raffinata --> " + listaIter.toString());
             log.info("***TOTALE LISTA raffinata -->" + listaIter.size());
-        }
+        }*/
         
         if (idOggettoOrigine != null && !idOggettoOrigine.equals("")) {
             queryDSL
