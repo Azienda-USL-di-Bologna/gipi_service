@@ -395,7 +395,7 @@ public class CreaIter {
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setIdFaseIter(fi);
-        ei.setDataOraEvento(iterParams.getDataCreazioneIter());
+        ei.setDataOraEvento(iterParams.getDataAvvioIter());
         ei.setIdDocumentoIter(di);
         ei.setAutore(uLoggato);
         em.persist(ei);
