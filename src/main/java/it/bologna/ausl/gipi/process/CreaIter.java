@@ -233,7 +233,7 @@ public class CreaIter {
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
-                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
+                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId(), us.getIdStruttura().getId());
         fascicolo.setIdTipoFascicolo(2);
         fascicolo.setVisibile(iterParams.getVisibile());
         // Aggiungo l'elenco dei codicifiscali dei vicari
