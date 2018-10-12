@@ -17,7 +17,7 @@ public class CacheableFunctions {
     @PersistenceContext
     private EntityManager em;
 
-    @Cacheable(value = "functionImportCacheableDataGetGerarchiaStruttura", key = "{#idStruttura}")
+    @Cacheable(value = "functionImportCacheableDataGetGerarchiaStruttura__ribaltorg__", key = "{#idStruttura}")
     public List<Integer> getGerarchiaStruttura(Integer idStruttura) {
         // Recupero la lista delle strutture figlie/nipoti etc della mia struttura
         String query = "select * from baborg.get_strutture_figlie(?);";
@@ -29,7 +29,7 @@ public class CacheableFunctions {
         return lista;
     }
     
-    @Cacheable(value = "functionImportCacheableDataGetMieStruttureEcugine", key = "{#idUtente}")
+    @Cacheable(value = "functionImportCacheableDataGetMieStruttureEcugine__ribaltorg__", key = "{#idUtente}")
     public List<Integer> getMieStruttureEcugine(Integer idUtente) {
         /* Restituisce tutte le strutture di afferenza dell'utente e le cugine, 
          * con tutti i loro figli */ 
@@ -41,7 +41,7 @@ public class CacheableFunctions {
         return listaId;
     }
     
-    @Cacheable(value = "functionImportCacheableDataGetStruttureFiglieEcugine", key = "{#idStruttura}")
+    @Cacheable(value = "functionImportCacheableDataGetStruttureFiglieEcugine__ribaltorg__", key = "{#idStruttura}")
     public List<Integer> getStruttureFiglieEcugine(Integer idStruttura) {
         /* Restituisce tutte le strutture figlie e cugine della struttura con tutti i loro figli */ 
         String hcQuery = "select * from baborg.get_strutture_figlie_e_cugine(?)";
