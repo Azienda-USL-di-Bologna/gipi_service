@@ -93,7 +93,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
             @EdmFunctionImportParameter(name = "dataAvvio", facets = @EdmFacets(nullable = true)) final String dataAvvio,
             @EdmFunctionImportParameter(name = "idStato_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneStato,
             @EdmFunctionImportParameter(name = "idResponsabileProcedimento_sep_idPersona_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneRespProc,
-            // @EdmFunctionImportParameter(name = "dataRegistrazione", facets = @EdmFacets(nullable = true)) final String dataRegistrazione,
+            @EdmFunctionImportParameter(name = "dataRegistrazione", facets = @EdmFacets(nullable = true)) final String dataRegistrazione,
             // sort
             @EdmFunctionImportParameter(name = "sort", facets = @EdmFacets(nullable = true)) final String sort
     ) throws IOException {
@@ -130,23 +130,26 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
         JPAQuery queryDSL = new JPAQuery(em);
 
         /* QUESTA NON E' PIU' UTILIZZATA */
-        /*if(dataRegistrazione != null && !dataRegistrazione.equals("")){
+        if (StringUtils.hasText(dataRegistrazione)) {
             // raffinare la lista iter
             log.info("***LISTA --> " + listaIter.toString());
             log.info("***TOTALE LISTA -->" + listaIter.size());
-            List<Integer> iterDaEscludere = new ArrayList<>(); 
+            List<Integer> iterDaEscludere = new ArrayList<>();
+            
             try (Connection con = sql2o.open()) {
-                iterDaEscludere = con.createQuery(incredibleQuery + "("+ listaIter.toString().substring(1, listaIter.toString().length()-1) + ")")
+                iterDaEscludere = con.createQuery(incredibleQuery)
                         .addParameter("data_ora_evento", dataRegistrazione)
+                        .addParameter("lista_iter", listaIter)
+                        //.withParams(paramValues)addParameter("lista_iter", java.util.List.class<Integer>, listaIter)
                         .executeAndFetch(Integer.class);
             }
             log.info("***LISTA da escludere --> " + iterDaEscludere.toString());
             log.info("***TOTALE LISTA da esclidere-->" + iterDaEscludere.size());
-            iterDaEscludere.sort(null);
+//            iterDaEscludere.sort(null);
             listaIter.removeAll(iterDaEscludere);
             log.info("***LISTA raffinata --> " + listaIter.toString());
             log.info("***TOTALE LISTA raffinata -->" + listaIter.size());
-        }*/
+        }
         
         if (idOggettoOrigine != null && !idOggettoOrigine.equals("")) {
             queryDSL
@@ -187,8 +190,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
         
         if (sort != null && !sort.isEmpty()) {
             addSorting(queryDSL, sort, Iter.class);
-        }
-        else {
+        } else {
             queryDSL.orderBy(QIter.iter.numero.desc());
         }
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);
