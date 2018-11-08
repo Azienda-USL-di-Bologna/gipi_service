@@ -1214,6 +1214,10 @@ public class IterController extends ControllerHandledExceptions {
     @RequestMapping(value = "setPrecedente", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity setPrecedente(@RequestBody String params) throws IOException {
+        log.info("********  ENTRATO IN SET PRECEDENTE   ********");
+        log.info("params ---> " + params);
+        log.info("***********************");
+        String noteDellEvento = ""; // queste note verranno mostrate in interfaccia
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -1224,49 +1228,62 @@ public class IterController extends ControllerHandledExceptions {
         EventoIter ei = new EventoIter();
         Iter iter = iterUtilities.getIterById(dati.get("idIter").getAsInt());
         
+        log.info("carico l'evento");
+        String codiceDellEvento = dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString()) ? "aggiunta_precedente" : "cancellazione_precedente";
+        e = entitiesCachableUtilities.loadEventoByCodice(codiceDellEvento);
+        log.info("Evento --> " + e.getNome());
+        
+        log.info("..iter caricato");
         // cosa faccio? aggiungo o cancello?
         if(dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString())){
             log.info("Sto aggiungendo un precedente");
-            // sto aggiungendo un precedente
-            log.info("carico l'evento");
-            e = entitiesCachableUtilities.loadEventoByCodice("aggiunta_precedente");
             
             // prendo i dati e li setto
             log.info("carico e setto l'iter precedente");
             Iter iterPrecedente = iterUtilities.getIterById(dati.get("idIterPrecedente").getAsInt());
-            //iter.setIdIterPrecedente(iterPrecedente);     // questo lo fa il setIdCatenaAndPrecedenza
             
             log.info("carico e setto il motivo precedente");
             MotivoPrecedente mp = iterUtilities.getMotivoPrecedenteByCodice(dati.get("codiceMotivo").getAsString());
+            log.info("MOTIVO --> " + mp.getDescrizione());
             iter.setIdMotivoPrecedente(mp);
             
             log.info("setto le note motivo precedente");
-            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente").getAsString());
+            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente").getAsString() != null ? dati.get("noteMotivoPrecedente").getAsString() : "");
             
-            // iter.setIdCatena(iterPrecedente.getIdCatena()); // questo lo fa il setIdCatenaAndPrecedenza
-            
-            // bene: ora chiamo la funzione su postgres
-            String risultatoDellUpdateCatena = iterUtilities.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
+            boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
             log.info("risultato: ", risultatoDellUpdateCatena);
+            
+            noteDellEvento = "Collegamento all'iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
         }
         else { // sto cancellando l'associazione al precedente
             log.info("Sto camncellando il precedente all'iter");
-            e = entitiesCachableUtilities.loadEventoByCodice("cancellazione_precedente");
-            // idCatena e idIterPrecedente li fa la funzione sotto
+            log.info("Prima però lo carico per recuperarmi le sue informazioni");
+            Iter iterPrecedente = iterUtilities.getIterById(iter.getIdIterPrecedente().getId());
+            log.info("Iter Precedente: id ",iterPrecedente.getId(), "numero", iterPrecedente.getNumero(), "anno", iterPrecedente.getAnno());
             iter.setIdMotivoPrecedente(null);
             iter.setNoteMotivoPrecedente(null);
             
-            String risultatoDellUpdateCatena = iterUtilities.setIdCatenaAndPrecedenza(iter.getId(), null, null);
+            boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
             log.info("risultato: ", risultatoDellUpdateCatena);
+            
+            noteDellEvento = "Cancellazione collegamento ad Iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
         }
         
         // setto l'evento iter
+        log.info("setto l'evento iter");
         ei.setAutore(u);
         ei.setDataOraEvento(new Date());
         ei.setIdIter(iter);
         ei.setIdEvento(e);
+        ei.setNote(noteDellEvento);
+        ei.setIdFaseIter(getFaseIter(iter));
         
+        log.info("salvo l'evento iter");
         em.persist(ei);
+        log.info("FATTO");
+        
+        log.info("Salvo l'iter (persist)");
+        
         em.persist(iter);
         
         o.addProperty("risultato", "tutto ok");

@@ -337,7 +337,10 @@ public class IterUtilities {
         query.setParameter(2, catena);
         query.setParameter(3, precedente);
         log.info("Query che lancio", query.toString());
-        JSONObject jo = new JSONObject();
-        return jo.put("risultato", query.getSingleResult()).toString();
+        log.info("LANCIO....");
+//        query.getSingleResult();
+//        JSONObject jo = new JSONObject();
+//        jo.put("risultato", "OK");
+        return query.getSingleResult().toString();
     }
 }
