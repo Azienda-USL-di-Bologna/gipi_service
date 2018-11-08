@@ -45,6 +45,7 @@ public class IterInterceptor extends OlingoRequestInterceptorBase {
         return userInfo;
     }
     
+    
     @Override
     public Predicate onQueryInterceptor(OlingoQueryObject olingoQueryObject) {
         Predicate p = Expressions.FALSE;
@@ -73,7 +74,7 @@ public class IterInterceptor extends OlingoRequestInterceptorBase {
                 Iter iterOld = iterUtilities.getIterById(iterNew.getId());
                 if (iterOld.getOggetto() == null ? iterNew.getOggetto() != null : !iterOld.getOggetto().equals(iterNew.getOggetto())) {
                     iterUtilities.eventoIterCambioOggetto(iterNew, iterOld, entityManager, utente);
-                }
+                }      
                 break;
             case CREATE:
                 Iter i = (Iter) object;

@@ -9,7 +9,7 @@ import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQuery;
 import it.bologna.ausl.entities.gipi.Fase;
 import it.bologna.ausl.entities.gipi.Iter;
-
+import it.bologna.ausl.entities.gipi.MotivoPrecedente;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -206,7 +206,9 @@ public class IterController extends ControllerHandledExceptions {
         APERTURA_SOSPENSIONE("apertura_sospensione"),
         CHIUSURA_SOSPENSIONE("chiusura_sospensione"),
         ITER_IN_CORSO("iter_in_corso"),
-        MODIFICA_ITER("modifica_iter");
+        MODIFICA_ITER("modifica_iter"),
+        AGGIUNTA_PRECEDENTE("aggiunta_precedente"),
+        CANCELLAZIONE_PRECEDENTE("cancellazione_precedente");
 
         private final String text;
 
@@ -248,6 +250,22 @@ public class IterController extends ControllerHandledExceptions {
             this.text = text;
         }
 
+        @Override
+        public String toString() {
+            return text;
+        }
+    }
+    
+    public static enum AzioneSuiPrecedenti{
+        ADD("ADD"),
+        DEL("DEL");
+        
+        private final String text;
+        
+        AzioneSuiPrecedenti(final String text) {
+            this.text = text;
+        }
+        
         @Override
         public String toString() {
             return text;
@@ -1191,5 +1209,67 @@ public class IterController extends ControllerHandledExceptions {
 //        i.setGiorniSospensioneTrascorsi(aggiornaCampiIter.calcolaGiorniSospensioneTrascorsi(i));
         log.info("Lo stato dell'iter è -> " + i.getIdStato().toString());
         return i;
+    }
+    
+    @RequestMapping(value = "setPrecedente", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity setPrecedente(@RequestBody String params) throws IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        JsonObject o = new JsonObject();
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        Evento e = new Evento();
+        EventoIter ei = new EventoIter();
+        Iter iter = iterUtilities.getIterById(dati.get("idIter").getAsInt());
+        
+        // cosa faccio? aggiungo o cancello?
+        if(dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString())){
+            log.info("Sto aggiungendo un precedente");
+            // sto aggiungendo un precedente
+            log.info("carico l'evento");
+            e = entitiesCachableUtilities.loadEventoByCodice("aggiunta_precedente");
+            
+            // prendo i dati e li setto
+            log.info("carico e setto l'iter precedente");
+            Iter iterPrecedente = iterUtilities.getIterById(dati.get("idIterPrecedente").getAsInt());
+            //iter.setIdIterPrecedente(iterPrecedente);     // questo lo fa il setIdCatenaAndPrecedenza
+            
+            log.info("carico e setto il motivo precedente");
+            MotivoPrecedente mp = iterUtilities.getMotivoPrecedenteByCodice(dati.get("codiceMotivo").getAsString());
+            iter.setIdMotivoPrecedente(mp);
+            
+            log.info("setto le note motivo precedente");
+            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente").getAsString());
+            
+            // iter.setIdCatena(iterPrecedente.getIdCatena()); // questo lo fa il setIdCatenaAndPrecedenza
+            
+            // bene: ora chiamo la funzione su postgres
+            String risultatoDellUpdateCatena = iterUtilities.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
+            log.info("risultato: ", risultatoDellUpdateCatena);
+        }
+        else { // sto cancellando l'associazione al precedente
+            log.info("Sto camncellando il precedente all'iter");
+            e = entitiesCachableUtilities.loadEventoByCodice("cancellazione_precedente");
+            // idCatena e idIterPrecedente li fa la funzione sotto
+            iter.setIdMotivoPrecedente(null);
+            iter.setNoteMotivoPrecedente(null);
+            
+            String risultatoDellUpdateCatena = iterUtilities.setIdCatenaAndPrecedenza(iter.getId(), null, null);
+            log.info("risultato: ", risultatoDellUpdateCatena);
+        }
+        
+        // setto l'evento iter
+        ei.setAutore(u);
+        ei.setDataOraEvento(new Date());
+        ei.setIdIter(iter);
+        ei.setIdEvento(e);
+        
+        em.persist(ei);
+        em.persist(iter);
+        
+        o.addProperty("risultato", "tutto ok");
+        return new ResponseEntity(o.toString(), HttpStatus.OK);
     }
 }
