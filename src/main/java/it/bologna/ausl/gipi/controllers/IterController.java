@@ -58,6 +58,7 @@ import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
+import it.bologna.ausl.gipi.process.CreaIter.OperazioniFascicolo;
 import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.gipi.utils.GetEntityById;
 import it.bologna.ausl.gipi.utils.GipiUtilityFunctions;
@@ -164,6 +165,12 @@ public class IterController extends ControllerHandledExceptions {
 
     @Value("${updateFascicoloGediPath}")
     private String updateFascicoloGediPath;
+    
+    @Value("${babelsuite.uri.localhost}")
+    private String localhostBaseUrl;
+    
+    @Value("${updateFascicolo}")
+    private String updateFascicoloPath;
 
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
@@ -1213,11 +1220,16 @@ public class IterController extends ControllerHandledExceptions {
     
     @RequestMapping(value = "setPrecedente", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity setPrecedente(@RequestBody String params) throws IOException {
+    public ResponseEntity setPrecedente(@RequestBody String params, HttpServletRequest request) throws IOException {
+        
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(OperazioniFascicolo.PROVENIENZA_GIPI.toString(), true);
         log.info("********  ENTRATO IN SET PRECEDENTE   ********");
         log.info("params ---> " + params);
         log.info("***********************");
+
         String noteDellEvento = ""; // queste note verranno mostrate in interfaccia
+        
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -1228,9 +1240,15 @@ public class IterController extends ControllerHandledExceptions {
         EventoIter ei = new EventoIter();
         Iter iter = iterUtilities.getIterById(dati.get("idIter").getAsInt());
         
-        log.info("carico l'evento");
+        Fascicolo fascicolo = new Fascicolo();
+        fascicolo.setIdIter(iter.getId());
+        
         String codiceDellEvento = dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString()) ? "aggiunta_precedente" : "cancellazione_precedente";
         e = entitiesCachableUtilities.loadEventoByCodice(codiceDellEvento);
+        log.info("Evento --> " + e.getNome());
+        
+        log.info("..iter caricato");
+        
         log.info("Evento --> " + e.getNome());
         
         log.info("..iter caricato");
@@ -1253,6 +1271,7 @@ public class IterController extends ControllerHandledExceptions {
             boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
             log.info("risultato: ", risultatoDellUpdateCatena);
             
+            additionalData.put(OperazioniFascicolo.ID_ITER_PRECEDENTE.toString(), iterPrecedente.getId());
             noteDellEvento = "Collegamento all'iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
         }
         else { // sto cancellando l'associazione al precedente
@@ -1266,6 +1285,7 @@ public class IterController extends ControllerHandledExceptions {
             boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
             log.info("risultato: ", risultatoDellUpdateCatena);
             
+            additionalData.put(OperazioniFascicolo.DELETE_ITER_PRECEDENTE.toString(), true);
             noteDellEvento = "Cancellazione collegamento ad Iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
         }
         
@@ -1279,14 +1299,43 @@ public class IterController extends ControllerHandledExceptions {
         ei.setIdFaseIter(getFaseIter(iter));
         
         log.info("salvo l'evento iter");
-        em.persist(ei);
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
+        String baseUrl;
+        if ( request.getServerName().equalsIgnoreCase("localhost")) {
+            baseUrl = localhostBaseUrl;
+        } else {
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        }
+        
+        String urlChiamata = baseUrl + updateFascicoloPath;
+        log.info("Url chiamata chiamata = " + urlChiamata);
+        OkHttpClient client = new OkHttpClient();
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        log.info("Preparo la request");
+        Request req = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        log.info("faccio la chimata...");
+        Response response = client.newCall(req).execute();
+        String resString = null;
+        log.info("response --> " + response.toString());
+        if (response != null && response.body() != null) {
+            resString = response.body().string();
+        }
+        
+        if (response.isSuccessful()){
+            em.persist(ei);
         log.info("FATTO");
         
         log.info("Salvo l'iter (persist)");
         
-        em.persist(iter);
-        
-        o.addProperty("risultato", "tutto ok");
-        return new ResponseEntity(o.toString(), HttpStatus.OK);
+            em.persist(iter);
+            o.addProperty("risultato", "tutto ok");
+            return new ResponseEntity(o.toString(), HttpStatus.OK);
+        } else {
+            o.addProperty("risultato", "errore nell'associazione cin con il padre della catena fascicolare");
+            return new ResponseEntity(o.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
