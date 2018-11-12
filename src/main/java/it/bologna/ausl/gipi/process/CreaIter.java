@@ -92,8 +92,11 @@ public class CreaIter {
     @Autowired
     IterInterceptor interceptor;
 
-    public static enum InsertFascicolo {
-        TRADUCI_VICARI
+    public static enum OperazioniFascicolo {
+        TRADUCI_VICARI,
+        DELETE_ITER_PRECEDENTE,
+        ID_ITER_PRECEDENTE,
+        PROVENIENZA_GIPI
     }
 
     @Value("${insertFascicolo}")
@@ -249,7 +252,7 @@ public class CreaIter {
         log.info("Setto i vicari del fascicolo...");
         fascicolo.setVicari(vicari);
         HashMap additionalData = (HashMap) new java.util.HashMap();
-        additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
+        additionalData.put(OperazioniFascicolo.TRADUCI_VICARI.toString(), true);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
         // String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
         String baseUrl;
