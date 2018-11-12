@@ -1266,7 +1266,7 @@ public class IterController extends ControllerHandledExceptions {
             iter.setIdMotivoPrecedente(mp);
             
             log.info("setto le note motivo precedente");
-            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente").getAsString() != null ? dati.get("noteMotivoPrecedente").getAsString() : "");
+            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente") != null ? dati.get("noteMotivoPrecedente").getAsString() : "");
             
             boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
             log.info("risultato: ", risultatoDellUpdateCatena);
