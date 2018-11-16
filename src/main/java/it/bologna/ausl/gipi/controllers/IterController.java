@@ -45,6 +45,7 @@ import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.SpettanzaAnnullamento;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
@@ -215,7 +216,8 @@ public class IterController extends ControllerHandledExceptions {
         ITER_IN_CORSO("iter_in_corso"),
         MODIFICA_ITER("modifica_iter"),
         AGGIUNTA_PRECEDENTE("aggiunta_precedente"),
-        CANCELLAZIONE_PRECEDENTE("cancellazione_precedente");
+        CANCELLAZIONE_PRECEDENTE("cancellazione_precedente"),
+        ANNULLAMENTO_ITER("annullamento_iter");
 
         private final String text;
 
@@ -1295,7 +1297,7 @@ public class IterController extends ControllerHandledExceptions {
         ei.setDataOraEvento(new Date());
         ei.setIdIter(iter);
         ei.setIdEvento(e);
-        ei.setNote(noteDellEvento);
+        ei.setDettagli(noteDellEvento);
         ei.setIdFaseIter(getFaseIter(iter));
         
         log.info("salvo l'evento iter");
@@ -1337,5 +1339,129 @@ public class IterController extends ControllerHandledExceptions {
             o.addProperty("risultato", "errore nell'associazione cin con il padre della catena fascicolare");
             return new ResponseEntity(o.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+    
+    @RequestMapping(value = "annullaIter", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity annullaIter(@RequestBody int idIter, HttpServletRequest request) throws IOException {
+        // ho l'idIter: carico l'iter;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        Iter iter = iterUtilities.getIterById(idIter);
+        Iter precedente = iter.getIdIterPrecedente() != null ? iterUtilities.getIterById(iter.getIdIterPrecedente().getId()) : null;
+        log.info("Annullamento dell'iter numero", iter.getNumero() + "/" + iter.getAnno());
+        log.info("Setto flag annullato e data annullamento");
+        iter.setAnnullato(true);
+        iter.setDataAnnullamento(new Date());
+        log.info("Setto stato iter 'CHIUSO'");
+        iter.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.CHIUSO.toString(), em));
+        
+        SpettanzaAnnullamento spettanza = new SpettanzaAnnullamento();
+        spettanza.setIdIter(iter);
+        spettanza.setIdUtenteAnnullante(u);
+        //spettanza.setIdStrutturaUtenteAnnullante(); !!!!!!!
+        spettanza.setDataAnnullamento(new Date());
+        
+        
+        
+        // evento iter con dettagli sui documenti cancellati
+        EventoIter ei = new EventoIter();
+        ei.setIdEvento(entitiesCachableUtilities.loadEventoByCodice(CodiceEvento.ANNULLAMENTO_ITER.toString()));
+        ei.setIdIter(iter);
+        ei.setIdFaseIter(getFaseIter(iter));
+        ei.setAutore(u);
+        ei.setDataOraEvento(spettanza.getDataAnnullamento());
+        
+        // COMPOSIZIONE DEL MESSAGGIO DELL'EVENTO (prima devo fare questo perché la web api chiama un mestiere che elimina tutto! Documenti e fascicolazioni)
+        String dettagliEvento = "L'utente " + userInfo.get(UtenteCachable.KEYS.COGNOME).toString() + " " + userInfo.get(UtenteCachable.KEYS.NOME).toString()
+                + " ha annullato l'iter " + iter.getNumero() + "/" + iter.getAnno() + " " + iter.getOggetto() + ".\n";
+        dettagliEvento += "Il fascicolo " + iter.getIdFascicolo() + "/" + iter.getNomeFascicolo() + " è stato declassifficato a tipo \"Affare\" ";
+
+//        JPQLQuery<DocumentoIter> queryDocumentiIterList = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+//        List<DocumentoIter> documenti = (List) queryDocumentiIterList
+//                .from(qDocumentoIter)
+//                .where(qDocumentoIter.idIter.id.eq(iter.getId()));
+        
+        dettagliEvento += "I documenti \n";
+        
+        List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
+        
+        for (DocumentoIter doc : iter.getDocumentiIterList()) {
+            dettagliEvento +=  doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
+        }
+        dettagliEvento += "sono stati rimossi dal fascicolo e non sono più associati all'Iter. \n";
+        log.debug(" --->  dettagliEvento", dettagliEvento);
+        
+        // chiamare web api PDD
+        /**************************/
+        /******  PARTE PDD   ******/
+        /**************************/
+        
+        /*  ***FINE PARTE PDD*** */
+        /*************************/
+        
+        
+        log.info("Procedo con la detipizzazione del fascicolo ", iter.getIdFascicolo(), iter.getNomeFascicolo()," e suo sganciamento dall'iter" );
+        
+        /************************/
+        /****** PARTE IODA ******/
+        /************************/
+        log.info("*** PREPARO LA CHIAMATA A IODA...");
+        Fascicolo fascicolo = new Fascicolo();
+        fascicolo.setIdIter(iter.getId());
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(OperazioniFascicolo.PROVENIENZA_GIPI.toString(), true);
+        additionalData.put(OperazioniFascicolo.UPDATE_PER_ANNULLAMENTO_ITER.toString(), true);
+        log.info("Data to ioda: ", additionalData.toString());
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
+        log.info("IodaObjectDescriptor -> ", ird.getJSONString().getBytes("UTF-8"));
+        String baseUrl;
+        if ( request.getServerName().equalsIgnoreCase("localhost")) {
+            baseUrl = localhostBaseUrl;
+        } else {
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        }
+        log.debug(baseUrl);
+        String urlChiamata = baseUrl + updateFascicoloPath;
+        //String urlChiamata =  " http://localhost:8080/" + updateFascicoloPath;
+        log.info("Url chiamata chiamata = " + urlChiamata);
+        OkHttpClient client = new OkHttpClient();
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        log.info("Preparo la request");
+        Request req = new Request.Builder()
+                .url(urlChiamata)
+                .post(body)
+                .build();
+        log.info("faccio la chimata...");
+        Response response = client.newCall(req).execute();
+        String resString = null;
+        log.info("response --> " + response.toString());
+        if (response != null && response.body() != null) {
+            resString = response.body().string();
+        }
+        /*
+            ***  FINE PARTE IODA ****
+        */
+        
+        
+        
+        // CANCELLAZIONE DEI PRECEDENTI (IRREVERSIBILE)
+        // cancellare precedenti con la funzione postgres (non chiamare tutti gli eventi della funzione)
+        log.info("Procedo alla cancellazione dei precedenti e/o lo sganciamento dei figli");
+        boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
+        log.info("risultato: ", risultatoDellUpdateCatena);
+        if(precedente != null)
+            dettagliEvento += "L'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
+        
+        ei.setDettagli(dettagliEvento);
+        em.persist(ei);
+        em.persist(spettanza);
+        iter.setIdSpettanzaAnnullamento(spettanza);
+        em.persist(iter);
+        
+        JsonObject risultato = new JsonObject();
+        risultato.addProperty("dettagliEvento", dettagliEvento);
+        return new ResponseEntity(risultato.toString(), HttpStatus.OK);
     }
 }
