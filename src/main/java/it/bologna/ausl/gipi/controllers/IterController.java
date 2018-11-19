@@ -29,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
+import it.bologna.ausl.entities.baborg.QStruttura;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
@@ -172,6 +173,9 @@ public class IterController extends ControllerHandledExceptions {
     
     @Value("${updateFascicolo}")
     private String updateFascicoloPath;
+    
+    @Value("${babelAnnullaIter}")
+    private String babelAnnullaIterPath;
 
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
@@ -291,6 +295,7 @@ public class IterController extends ControllerHandledExceptions {
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
+    QStruttura qStruttura = QStruttura.struttura;
     QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
 
     private static final Logger log = LoggerFactory.getLogger(IterController.class);
@@ -1360,9 +1365,16 @@ public class IterController extends ControllerHandledExceptions {
         SpettanzaAnnullamento spettanza = new SpettanzaAnnullamento();
         spettanza.setIdIter(iter);
         spettanza.setIdUtenteAnnullante(u);
-        //spettanza.setIdStrutturaUtenteAnnullante(); !!!!!!!
+        log.info("Ora una parte delicata: mi carico la struttura di afferenza diretta dell'utente loggato");
+        JPQLQuery<Struttura> queryStrutturaUtente = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Struttura strutturaAfferenzaDirettaUtenteAnnullante = (Struttura) queryStrutturaUtente
+                .from(qStruttura)
+                .where(qStruttura.id.eq(userInfo.getIdStruttureAfferenzaDiretta().get(0)))
+                .fetchOne();
+        log.debug("trovata questa: ", strutturaAfferenzaDirettaUtenteAnnullante.getNome());
+        spettanza.setIdStrutturaUtenteAnnullante(strutturaAfferenzaDirettaUtenteAnnullante);
         spettanza.setDataAnnullamento(new Date());
-        
+        em.persist(spettanza);
         
         
         // evento iter con dettagli sui documenti cancellati
@@ -1397,7 +1409,36 @@ public class IterController extends ControllerHandledExceptions {
         /**************************/
         /******  PARTE PDD   ******/
         /**************************/
-        
+        log.info("ora chiamiamo la web api per la cancellazione");
+        log.info("setto i parametri di chiamata");
+        JsonObject o = new JsonObject();
+        o.addProperty("cf", (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE));
+        o.addProperty("idIter", idIter);
+        o.addProperty("codiceFascicolo", iter.getIdFascicolo());  // la numerazione_gerarchica
+        log.info("Dati da passare: " + o.toString());
+
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) 
+                + babelAnnullaIterPath;
+        log.info("Ora chiamo la Web Api -> " + urlChiamata);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+
+        log.info("Preparo la requestg");
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "cancellaDocIer")
+                .post(body)
+                .build();
+        log.info("requestg" , requestg.toString());
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        Response responseg = client.newCall(requestg).execute();
+        log.info("***responseg da babel..." , responseg.toString());
+        if (responseg != null && responseg.body() != null) {
+            log.info("response.body().string()" , responseg.body().string());
+        }
         /*  ***FINE PARTE PDD*** */
         /*************************/
         
@@ -1423,18 +1464,18 @@ public class IterController extends ControllerHandledExceptions {
             baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         }
         log.debug(baseUrl);
-        String urlChiamata = baseUrl + updateFascicoloPath;
+        String urlChiamataUdateFascicolo = baseUrl + updateFascicoloPath;
         //String urlChiamata =  " http://localhost:8080/" + updateFascicoloPath;
-        log.info("Url chiamata chiamata = " + urlChiamata);
-        OkHttpClient client = new OkHttpClient();
-        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        log.info("Url chiamata chiamata = " + urlChiamataUdateFascicolo);
+        OkHttpClient clientPerIoda = new OkHttpClient();
+        okhttp3.RequestBody bodyIoda = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
         log.info("Preparo la request");
         Request req = new Request.Builder()
-                .url(urlChiamata)
-                .post(body)
+                .url(urlChiamataUdateFascicolo)
+                .post(bodyIoda)
                 .build();
         log.info("faccio la chimata...");
-        Response response = client.newCall(req).execute();
+        Response response = clientPerIoda.newCall(req).execute();
         String resString = null;
         log.info("response --> " + response.toString());
         if (response != null && response.body() != null) {
@@ -1456,7 +1497,6 @@ public class IterController extends ControllerHandledExceptions {
         
         ei.setDettagli(dettagliEvento);
         em.persist(ei);
-        em.persist(spettanza);
         iter.setIdSpettanzaAnnullamento(spettanza);
         em.persist(iter);
         
