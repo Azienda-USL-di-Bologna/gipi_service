@@ -1425,7 +1425,7 @@ public class IterController extends ControllerHandledExceptions {
         log.info("Preparo la requestg");
         Request requestg = new Request.Builder()
                 .url(urlChiamata)
-                .addHeader("X-HTTP-Method-Override", "cancellaDocIer")
+                .addHeader("X-HTTP-Method-Override", "cancellaDocIter")
                 .post(body)
                 .build();
         log.info("requestg" , requestg.toString());
