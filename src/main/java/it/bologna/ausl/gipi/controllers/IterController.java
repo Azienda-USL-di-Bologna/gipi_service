@@ -1437,7 +1437,16 @@ public class IterController extends ControllerHandledExceptions {
         Response responseg = client.newCall(requestg).execute();
         log.info("***responseg da babel..." , responseg.toString());
         if (responseg != null && responseg.body() != null) {
-            log.info("response.body().string()" , responseg.body().string());
+            log.info("response.body().string()" , responseg.body().toString());
+            if(!responseg.isSuccessful()){
+                log.error("Risposta non Successful: qualcosa è andato male è faccio il rollback" , responseg.body().toString());
+                log.info("Ho provato a cancellare questi documenti dal fascicolo: " );
+                for (DocumentoIter docX : docIterList) {
+                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                }
+                throw new IOException("La chiamata alla webApi Babel/AnnullaIter non è andata a buon fine. \n "
+                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + responseg);
+            }
         }
         /*  ***FINE PARTE PDD*** */
         /*************************/
@@ -1480,6 +1489,16 @@ public class IterController extends ControllerHandledExceptions {
         log.info("response --> " + response.toString());
         if (response != null && response.body() != null) {
             resString = response.body().string();
+            if(!response.isSuccessful()){
+                log.error("Chiamata a ioda fallita, lancio errore" );
+                log.info("Ho già cancellato però questi documenti dal fascicolo: " );
+                for (DocumentoIter docX : docIterList) {
+                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                }
+                throw new IOException("La chiamata a ioda non è andata a buon fine. \n "
+                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + response);
+                
+            }
         }
         /*
             ***  FINE PARTE IODA ****
@@ -1499,6 +1518,10 @@ public class IterController extends ControllerHandledExceptions {
         em.persist(ei);
         iter.setIdSpettanzaAnnullamento(spettanza);
         em.persist(iter);
+        
+        
+        //Ok, ora chiamo webapi per notificare l'evento di annullamento: ciclo su tutti quelli che hanno permesso sul fascicolo.
+        
         
         JsonObject risultato = new JsonObject();
         risultato.addProperty("dettagliEvento", dettagliEvento);
