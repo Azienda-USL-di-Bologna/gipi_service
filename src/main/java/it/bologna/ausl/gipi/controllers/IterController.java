@@ -1411,17 +1411,18 @@ public class IterController extends ControllerHandledExceptions {
         
         List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
         
-        for (DocumentoIter doc : iter.getDocumentiIterList()) {
-            dettagliEvento +=  doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
-        }
-        dettagliEvento += "sono stati rimossi dal fascicolo e non sono più associati all'Iter. \n";
+//      QUESTA ROBA NON SERVE: NON SONO CANCELLATI DAL FASCICOLO        
+//        for (DocumentoIter doc : iter.getDocumentiIterList()) {
+//            dettagliEvento +=  doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
+//        }
+//        dettagliEvento += "sono stati rimossi dal fascicolo e non sono più associati all'Iter. \n";
         log.debug(" --->  dettagliEvento", dettagliEvento);
         
         // chiamare web api PDD
         /**************************/
         /******  PARTE PDD   ******/
         /**************************/
-        log.info("ora chiamiamo la web api per la cancellazione");
+        log.info("ora chiamiamo la web api su BABEL");
         log.info("setto i parametri di chiamata");
         JsonObject o = new JsonObject();
         o.addProperty("cf", (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE));
@@ -1437,7 +1438,7 @@ public class IterController extends ControllerHandledExceptions {
         log.info("Preparo la requestg");
         Request requestg = new Request.Builder()
                 .url(urlChiamata)
-                .addHeader("X-HTTP-Method-Override", "cancellaDocIter")
+                .addHeader("X-HTTP-Method-Override", "annullaAndGloggaDocIter")
                 .post(body)
                 .build();
         log.info("requestg" , requestg.toString());
@@ -1452,12 +1453,12 @@ public class IterController extends ControllerHandledExceptions {
             log.info("response.body().string()" , responseg.body().toString());
             if(!responseg.isSuccessful()){
                 log.error("Risposta non Successful: qualcosa è andato male è faccio il rollback" , responseg.body().toString());
-                log.info("Ho provato a cancellare questi documenti dal fascicolo: " );
+                log.info("Ho provato a gloggare su questi documenti: " );
                 for (DocumentoIter docX : docIterList) {
                     log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
                 }
                 throw new IOException("La chiamata alla webApi Babel/AnnullaIter non è andata a buon fine. \n "
-                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + responseg);
+                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti. " + responseg);
             }
         }
         /*  ***FINE PARTE PDD*** */
@@ -1503,10 +1504,10 @@ public class IterController extends ControllerHandledExceptions {
             resString = response.body().string();
             if(!response.isSuccessful()){
                 log.error("Chiamata a ioda fallita, lancio errore" );
-                log.info("Ho già cancellato però questi documenti dal fascicolo: " );
-                for (DocumentoIter docX : docIterList) {
-                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
-                }
+//                log.info("Ho già cancellato però questi documenti dal fascicolo: " );
+//                for (DocumentoIter docX : docIterList) {
+//                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+//                }
                 throw new IOException("La chiamata a ioda non è andata a buon fine. \n "
                         + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + response);
                 
