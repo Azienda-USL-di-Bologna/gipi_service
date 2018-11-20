@@ -1360,8 +1360,15 @@ public class IterController extends ControllerHandledExceptions {
     
     @RequestMapping(value = "annullaIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
-    public ResponseEntity annullaIter(@RequestBody int idIter, HttpServletRequest request) throws IOException, org.json.simple.parser.ParseException {
+    public ResponseEntity annullaIter(@RequestBody String params, HttpServletRequest request) throws IOException, org.json.simple.parser.ParseException {
         // ho l'idIter: carico l'iter;
+        log.info("****   SONO ENTRATO IN 'ANNULLAITER()'  ****");
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        int idIter = dati.get("idIter").getAsInt();
+        String noteEventoAnnullamento = dati.get("note").getAsString();
+        
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -1396,22 +1403,23 @@ public class IterController extends ControllerHandledExceptions {
         ei.setIdFaseIter(getFaseIter(iter));
         ei.setAutore(u);
         ei.setDataOraEvento(spettanza.getDataAnnullamento());
+        ei.setNote(noteEventoAnnullamento);
         
         // COMPOSIZIONE DEL MESSAGGIO DELL'EVENTO (prima devo fare questo perché la web api chiama un mestiere che elimina tutto! Documenti e fascicolazioni)
         String dettagliEvento = "L'utente " + userInfo.get(UtenteCachable.KEYS.COGNOME).toString() + " " + userInfo.get(UtenteCachable.KEYS.NOME).toString()
-                + " ha annullato l'iter " + iter.getNumero() + "/" + iter.getAnno() + " " + iter.getOggetto() + ".\n";
-        dettagliEvento += "Il fascicolo " + iter.getIdFascicolo() + "/" + iter.getNomeFascicolo() + " è stato declassifficato a tipo \"Affare\" ";
+                + " ha annullato l'iter " + iter.getNumero() + "/" + iter.getAnno() + " '" + iter.getOggetto() + "'.\n";
+        dettagliEvento += "Il fascicolo " + iter.getIdFascicolo() + " '" + iter.getNomeFascicolo() + "' è stato declassifficato a tipo \"Affare\".\n";
 
 //        JPQLQuery<DocumentoIter> queryDocumentiIterList = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
 //        List<DocumentoIter> documenti = (List) queryDocumentiIterList
 //                .from(qDocumentoIter)
 //                .where(qDocumentoIter.idIter.id.eq(iter.getId()));
         
-        dettagliEvento += "I documenti \n";
         
         List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
         
 //      QUESTA ROBA NON SERVE: NON SONO CANCELLATI DAL FASCICOLO        
+//        dettagliEvento += "I documenti \n";
 //        for (DocumentoIter doc : iter.getDocumentiIterList()) {
 //            dettagliEvento +=  doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
 //        }
