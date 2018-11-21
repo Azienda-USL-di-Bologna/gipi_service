@@ -1419,11 +1419,11 @@ public class IterController extends ControllerHandledExceptions {
         List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
         
 //      QUESTA ROBA NON SERVE: NON SONO CANCELLATI DAL FASCICOLO        
-//        dettagliEvento += "I documenti \n";
-//        for (DocumentoIter doc : iter.getDocumentiIterList()) {
-//            dettagliEvento +=  doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
-//        }
-//        dettagliEvento += "sono stati rimossi dal fascicolo e non sono più associati all'Iter. \n";
+        dettagliEvento += "I documenti: \n";
+        for (DocumentoIter doc : iter.getDocumentiIterList()) {
+            dettagliEvento += " * " + doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
+        }
+        dettagliEvento += "sono stati disassociati dall'iter.";
         log.debug(" --->  dettagliEvento", dettagliEvento);
         
         // chiamare web api PDD
@@ -1512,10 +1512,10 @@ public class IterController extends ControllerHandledExceptions {
             resString = response.body().string();
             if(!response.isSuccessful()){
                 log.error("Chiamata a ioda fallita, lancio errore" );
-//                log.info("Ho già cancellato però questi documenti dal fascicolo: " );
-//                for (DocumentoIter docX : docIterList) {
-//                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
-//                }
+                log.info("Ho già cancellato però questi documenti dall'iter: " );
+                for (DocumentoIter docX : docIterList) {
+                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                }
                 throw new IOException("La chiamata a ioda non è andata a buon fine. \n "
                         + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + response);
                 
@@ -1533,7 +1533,7 @@ public class IterController extends ControllerHandledExceptions {
         boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
         log.info("risultato: ", risultatoDellUpdateCatena);
         if(precedente != null)
-            dettagliEvento += "L'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
+            dettagliEvento += "\nL'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
         
         ei.setDettagli(dettagliEvento);
         em.persist(ei);
