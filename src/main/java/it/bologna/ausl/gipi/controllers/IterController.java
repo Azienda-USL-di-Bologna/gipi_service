@@ -1380,7 +1380,6 @@ public class IterController extends ControllerHandledExceptions {
         iter.setDataAnnullamento(new Date());
         log.info("Setto stato iter 'CHIUSO'");
         iter.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.CHIUSO.toString(), em));
-        
         SpettanzaAnnullamento spettanza = new SpettanzaAnnullamento();
         spettanza.setIdIter(iter);
         spettanza.setIdUtenteAnnullante(u);
@@ -1534,7 +1533,9 @@ public class IterController extends ControllerHandledExceptions {
         log.info("risultato: ", risultatoDellUpdateCatena);
         if(precedente != null)
             dettagliEvento += "\nL'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
-        
+        log.info("Setto a null motivo precedente e note motivo precedente");
+        iter.setIdMotivoPrecedente(null);
+        iter.setNoteMotivoPrecedente(null);
         ei.setDettagli(dettagliEvento);
         em.persist(ei);
         iter.setIdSpettanzaAnnullamento(spettanza);
