@@ -96,6 +96,7 @@ public class CreaIter {
         TRADUCI_VICARI,
         DELETE_ITER_PRECEDENTE,
         ID_ITER_PRECEDENTE,
+        UPDATE_PER_ANNULLAMENTO_ITER,
         PROVENIENZA_GIPI
     }
 

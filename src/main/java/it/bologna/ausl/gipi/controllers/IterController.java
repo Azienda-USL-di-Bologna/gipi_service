@@ -29,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 import com.querydsl.core.types.Predicate;
 import com.querydsl.jpa.JPAExpressions;
 import it.bologna.ausl.entities.baborg.Azienda;
+import it.bologna.ausl.entities.baborg.QStruttura;
 import it.bologna.ausl.entities.baborg.Struttura;
 import it.bologna.ausl.entities.baborg.Utente;
 import it.bologna.ausl.entities.cache.cachableobject.AziendaCachable;
@@ -45,6 +46,7 @@ import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.RegistroTipoProcedimento;
+import it.bologna.ausl.entities.gipi.SpettanzaAnnullamento;
 import it.bologna.ausl.entities.gipi.Stato;
 import it.bologna.ausl.entities.gipi.utilities.EntitiesCachableUtilities;
 import it.bologna.ausl.entities.repository.AziendaRepository;
@@ -56,6 +58,9 @@ import it.bologna.ausl.gipi.config.scheduler.jobs.JobAggiornaCampiIter;
 import it.bologna.ausl.gipi.exceptions.GipiDatabaseException;
 import it.bologna.ausl.gipi.exceptions.GipiPubblicazioneException;
 import it.bologna.ausl.gipi.exceptions.GipiRequestParamsException;
+import it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask;
+import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.JSON;
+import static it.bologna.ausl.gipi.frullinotemp.utils.NotifyScadenzaSospensioneTask.MESSAGGIO;
 import it.bologna.ausl.gipi.process.CreaIter;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.process.CreaIter.OperazioniFascicolo;
@@ -80,12 +85,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.http.client.HttpResponseException;
 import org.joda.time.Days;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -171,6 +180,12 @@ public class IterController extends ControllerHandledExceptions {
     
     @Value("${updateFascicolo}")
     private String updateFascicoloPath;
+    
+    @Value("${babelAnnullaIter}")
+    private String babelAnnullaIterPath;
+    
+    @Value("${inviaNotificheWebApi}")
+    private String inviaNotificheWebApiPath;
 
     public static enum GetFascicoli {
         TIPO_FASCICOLO, SOLO_ITER, CODICE_FISCALE, ANCHE_CHIUSI, DAMMI_PERMESSI
@@ -215,7 +230,8 @@ public class IterController extends ControllerHandledExceptions {
         ITER_IN_CORSO("iter_in_corso"),
         MODIFICA_ITER("modifica_iter"),
         AGGIUNTA_PRECEDENTE("aggiunta_precedente"),
-        CANCELLAZIONE_PRECEDENTE("cancellazione_precedente");
+        CANCELLAZIONE_PRECEDENTE("cancellazione_precedente"),
+        ANNULLAMENTO_ITER("annullamento_iter");
 
         private final String text;
 
@@ -278,6 +294,8 @@ public class IterController extends ControllerHandledExceptions {
             return text;
         }
     }
+    
+    public static final okhttp3.MediaType JSON = okhttp3.MediaType.parse("application/json; charset=utf-8");
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
@@ -289,6 +307,7 @@ public class IterController extends ControllerHandledExceptions {
     QDocumentoIter qDocumentoIter = QDocumentoIter.documentoIter;
     QEventoIter qEventoIter = QEventoIter.eventoIter;
     QEvento qEvento = QEvento.evento;
+    QStruttura qStruttura = QStruttura.struttura;
     QRegistroTipoProcedimento qRegistroTipoProcedimento = QRegistroTipoProcedimento.registroTipoProcedimento;
 
     private static final Logger log = LoggerFactory.getLogger(IterController.class);
@@ -1295,7 +1314,7 @@ public class IterController extends ControllerHandledExceptions {
         ei.setDataOraEvento(new Date());
         ei.setIdIter(iter);
         ei.setIdEvento(e);
-        ei.setNote(noteDellEvento);
+        ei.setDettagli(noteDellEvento);
         ei.setIdFaseIter(getFaseIter(iter));
         
         log.info("salvo l'evento iter");
@@ -1336,6 +1355,262 @@ public class IterController extends ControllerHandledExceptions {
         } else {
             o.addProperty("risultato", "errore nell'associazione cin con il padre della catena fascicolare");
             return new ResponseEntity(o.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @RequestMapping(value = "annullaIter", method = RequestMethod.POST)
+    @Transactional(rollbackFor = {Exception.class, Error.class})
+    public ResponseEntity annullaIter(@RequestBody String params, HttpServletRequest request) throws IOException, org.json.simple.parser.ParseException {
+        // ho l'idIter: carico l'iter;
+        log.info("****   SONO ENTRATO IN 'ANNULLAITER()'  ****");
+        log.info("PARAMS = " + params);
+        JsonParser parser = new JsonParser();
+        JsonObject dati = (JsonObject) parser.parse(params);
+        int idIter = dati.get("idIter").getAsInt();
+        String noteEventoAnnullamento = dati.get("note").getAsString();
+        
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
+        Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
+        Iter iter = iterUtilities.getIterById(idIter);
+        Iter precedente = iter.getIdIterPrecedente() != null ? iterUtilities.getIterById(iter.getIdIterPrecedente().getId()) : null;
+        log.info("Annullamento dell'iter numero", iter.getNumero() + "/" + iter.getAnno());
+        log.info("Setto flag annullato e data annullamento");
+        iter.setAnnullato(true);
+        iter.setDataAnnullamento(new Date());
+        log.info("Setto stato iter 'CHIUSO'");
+        iter.setIdStato(GetEntityById.getStatoByCodice(Stato.CodiciStato.CHIUSO.toString(), em));
+        SpettanzaAnnullamento spettanza = new SpettanzaAnnullamento();
+        spettanza.setIdIter(iter);
+        spettanza.setIdUtenteAnnullante(u);
+        log.info("Ora una parte delicata: mi carico la struttura di afferenza diretta dell'utente loggato");
+        JPQLQuery<Struttura> queryStrutturaUtente = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        Struttura strutturaAfferenzaDirettaUtenteAnnullante = (Struttura) queryStrutturaUtente
+                .from(qStruttura)
+                .where(qStruttura.id.eq(userInfo.getIdStruttureAfferenzaDiretta().get(0)))
+                .fetchOne();
+        log.debug("trovata questa: ", strutturaAfferenzaDirettaUtenteAnnullante.getNome());
+        spettanza.setIdStrutturaUtenteAnnullante(strutturaAfferenzaDirettaUtenteAnnullante);
+        spettanza.setDataAnnullamento(new Date());
+        em.persist(spettanza);
+        
+        
+        // evento iter con dettagli sui documenti cancellati
+        EventoIter ei = new EventoIter();
+        ei.setIdEvento(entitiesCachableUtilities.loadEventoByCodice(CodiceEvento.ANNULLAMENTO_ITER.toString()));
+        ei.setIdIter(iter);
+        ei.setIdFaseIter(getFaseIter(iter));
+        ei.setAutore(u);
+        ei.setDataOraEvento(spettanza.getDataAnnullamento());
+        ei.setNote(noteEventoAnnullamento);
+        
+        // COMPOSIZIONE DEL MESSAGGIO DELL'EVENTO (prima devo fare questo perché la web api chiama un mestiere che elimina tutto! Documenti e fascicolazioni)
+        String dettagliEvento = "L'utente " + userInfo.get(UtenteCachable.KEYS.COGNOME).toString() + " " + userInfo.get(UtenteCachable.KEYS.NOME).toString()
+                + " ha annullato l'iter " + iter.getNumero() + "/" + iter.getAnno() + " '" + iter.getOggetto() + "'.\n";
+        dettagliEvento += "Il fascicolo " + iter.getIdFascicolo() + " '" + iter.getNomeFascicolo() + "' è stato declassifficato a tipo \"Affare\".\n";
+
+//        JPQLQuery<DocumentoIter> queryDocumentiIterList = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+//        List<DocumentoIter> documenti = (List) queryDocumentiIterList
+//                .from(qDocumentoIter)
+//                .where(qDocumentoIter.idIter.id.eq(iter.getId()));
+        
+        
+        List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
+        
+//      QUESTA ROBA NON SERVE: NON SONO CANCELLATI DAL FASCICOLO        
+        dettagliEvento += "I documenti: \n";
+        for (DocumentoIter doc : iter.getDocumentiIterList()) {
+            dettagliEvento += " * " + doc.getRegistro() + doc.getNumeroRegistro() + "/" + doc.getAnno() + "\n";
+        }
+        dettagliEvento += "sono stati disassociati dall'iter.";
+        log.debug(" --->  dettagliEvento", dettagliEvento);
+        
+        // chiamare web api PDD
+        /**************************/
+        /******  PARTE PDD   ******/
+        /**************************/
+        log.info("ora chiamiamo la web api su BABEL");
+        log.info("setto i parametri di chiamata");
+        JsonObject o = new JsonObject();
+        o.addProperty("cf", (String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE));
+        o.addProperty("idIter", idIter);
+        o.addProperty("codiceFascicolo", iter.getIdFascicolo());  // la numerazione_gerarchica
+        log.info("Dati da passare: " + o.toString());
+
+        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) 
+                + babelAnnullaIterPath;
+        log.info("Ora chiamo la Web Api -> " + urlChiamata);
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+
+        log.info("Preparo la requestg");
+        Request requestg = new Request.Builder()
+                .url(urlChiamata)
+                .addHeader("X-HTTP-Method-Override", "annullaAndGloggaDocIter")
+                .post(body)
+                .build();
+        log.info("requestg" , requestg.toString());
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+        Response responseg = client.newCall(requestg).execute();
+        log.info("***responseg da babel..." , responseg.toString());
+        if (responseg != null && responseg.body() != null) {
+            log.info("response.body().string()" , responseg.body().toString());
+            if(!responseg.isSuccessful()){
+                log.error("Risposta non Successful: qualcosa è andato male è faccio il rollback" , responseg.body().toString());
+                log.info("Ho provato a gloggare su questi documenti: " );
+                for (DocumentoIter docX : docIterList) {
+                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                }
+                throw new IOException("La chiamata alla webApi Babel/AnnullaIter non è andata a buon fine. \n "
+                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti. " + responseg);
+            }
+        }
+        /*  ***FINE PARTE PDD*** */
+        /*************************/
+        
+        
+        log.info("Procedo con la detipizzazione del fascicolo ", iter.getIdFascicolo(), iter.getNomeFascicolo()," e suo sganciamento dall'iter" );
+        
+        /************************/
+        /****** PARTE IODA ******/
+        /************************/
+        log.info("*** PREPARO LA CHIAMATA A IODA...");
+        Fascicolo fascicolo = new Fascicolo();
+        fascicolo.setIdIter(iter.getId());
+        HashMap additionalData = (HashMap) new java.util.HashMap();
+        additionalData.put(OperazioniFascicolo.PROVENIENZA_GIPI.toString(), true);
+        additionalData.put(OperazioniFascicolo.UPDATE_PER_ANNULLAMENTO_ITER.toString(), true);
+        log.info("Data to ioda: ", additionalData.toString());
+        IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
+        log.info("IodaObjectDescriptor -> ", ird.getJSONString().getBytes("UTF-8"));
+        String baseUrl;
+        if ( request.getServerName().equalsIgnoreCase("localhost")) {
+            baseUrl = localhostBaseUrl;
+        } else {
+            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+        }
+        log.debug(baseUrl);
+        String urlChiamataUdateFascicolo = baseUrl + updateFascicoloPath;
+        //String urlChiamata =  " http://localhost:8080/" + updateFascicoloPath;
+        log.info("Url chiamata chiamata = " + urlChiamataUdateFascicolo);
+        OkHttpClient clientPerIoda = new OkHttpClient();
+        okhttp3.RequestBody bodyIoda = okhttp3.RequestBody.create(JSON, ird.getJSONString().getBytes("UTF-8"));
+        log.info("Preparo la request");
+        Request req = new Request.Builder()
+                .url(urlChiamataUdateFascicolo)
+                .post(bodyIoda)
+                .build();
+        log.info("faccio la chimata...");
+        Response response = clientPerIoda.newCall(req).execute();
+        String resString = null;
+        log.info("response --> " + response.toString());
+        if (response != null && response.body() != null) {
+            resString = response.body().string();
+            if(!response.isSuccessful()){
+                log.error("Chiamata a ioda fallita, lancio errore" );
+                log.info("Ho già cancellato però questi documenti dall'iter: " );
+                for (DocumentoIter docX : docIterList) {
+                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                }
+                throw new IOException("La chiamata a ioda non è andata a buon fine. \n "
+                        + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + response);
+                
+            }
+        }
+        /*
+            ***  FINE PARTE IODA ****
+        */
+        
+        
+        
+        // CANCELLAZIONE DEI PRECEDENTI (IRREVERSIBILE)
+        // cancellare precedenti con la funzione postgres (non chiamare tutti gli eventi della funzione)
+        log.info("Procedo alla cancellazione dei precedenti e/o lo sganciamento dei figli");
+        boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
+        log.info("risultato: ", risultatoDellUpdateCatena);
+        if(precedente != null)
+            dettagliEvento += "\nL'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
+        log.info("Setto a null motivo precedente e note motivo precedente");
+        iter.setIdMotivoPrecedente(null);
+        iter.setNoteMotivoPrecedente(null);
+        ei.setDettagli(dettagliEvento);
+        em.persist(ei);
+        iter.setIdSpettanzaAnnullamento(spettanza);
+        em.persist(iter);
+        
+        
+        //Ok, ora chiamo webapi per notificare l'evento di annullamento: ciclo su tutti quelli che hanno permesso sul fascicolo.
+        log.info("Ora invio le notifiche a Babel");
+        JSONObject datiDaInviare = new JSONObject();
+        ArrayList<String> utenti = new ArrayList<String>();
+        utenti.add((String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE));
+        log.info("getIdResponsabileProcedimento ", iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        if(!utenti.contains(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale()))
+            utenti.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        log.info("getIdResponsabileAdozioneAttoFinale ", iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        if(!utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
+            utenti.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        log.info("getIdTitolarePotereSostitutivo ", iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        if(!utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
+            utenti.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        datiDaInviare.put("cfUtenti", utenti);
+        datiDaInviare.put("messaggio", String.format("Notifica Annullamento Iter %s: %s", iter.getNumero() + "/" + iter.getAnno().toString(), iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome()));
+        datiDaInviare.put("idIter", iter.getId());
+        datiDaInviare.put("descrizioneNotifica", "Annullamento Iter " + iter.getNumero() + "/" + iter.getAnno().toString());
+        log.info("dati da inviare ", datiDaInviare.toString());
+        
+        log.info("aggiungo i dati al json array");
+        JSONArray ja = new JSONArray();
+        ja.add(datiDaInviare);
+        log.info("aggiungo i dati al json array");
+        try{
+            mandaNotificheSuBabel(iter, ja);
+        }
+        catch (Error e){
+            log.error("AHIA! ERRORE NELL'INVIO DELLA NOTIFICA... MA ORMAI TUTTO IL RESTO E' FATTO", e.toString());
+        }        
+        
+        JsonObject risultato = new JsonObject();
+        risultato.addProperty("dettagliEvento", dettagliEvento);
+        return new ResponseEntity(risultato.toString(), HttpStatus.OK);
+    }
+    
+    public void mandaNotificheSuBabel(Iter iter, JSONArray ja) throws org.json.simple.parser.ParseException{
+        String functionName = "IterController.mandaNotificheSuBabel";
+        try{
+            String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + inviaNotificheWebApiPath;
+            JSONObject jo = new JSONObject();
+            jo.put("ja", ja.toString());
+            okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, jo.toString().getBytes("UTF-8"));
+            log.info(functionName + " -> url aziendale " + urlChiamata);
+            OkHttpClient client = new OkHttpClient();
+            Request requestg = new Request.Builder()
+                    .url(urlChiamata)
+                    .addHeader("X-HTTP-Method-Override", "inviaNotifiche")
+                    .post(body)
+                    .build();
+            log.info(functionName + " -> chiamo babel");
+
+            Response responseg = client.newCall(requestg).execute();
+
+            if (!responseg.isSuccessful()) {
+                log.error(functionName + " ERRORE -> la response non è successful");
+                throw new IOException("La chiamata a Babel non è andata a buon fine.");
+            }
+            log.info(functionName + " -> parso la risposta");
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(responseg.body().string());
+            System.out.println(json.toString());
+
+            log.info(functionName + " -> parso il risultato della risposta...");
+            String risultato = (String) json.get("risultato");
+            log.info(functionName + " risposta -> " + risultato);
+            System.out.println(risultato.toString());
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(NotifyScadenzaSospensioneTask.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }
