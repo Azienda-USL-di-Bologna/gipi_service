@@ -1,4 +1,4 @@
 syntax: glob
-target/
-nbactions.xml
+target
 logs
+nbactions.xml

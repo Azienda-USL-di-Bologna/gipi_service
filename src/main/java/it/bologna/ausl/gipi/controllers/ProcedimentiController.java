@@ -137,7 +137,7 @@ public class ProcedimentiController extends ControllerHandledExceptions {
             throw new GipiDatabaseException("procedimento non trovato");
         }
 
-        String queryString = "select * from organigramma.get_strutture_figlie(?);";
+        String queryString = "select * from baborg.get_strutture_figlie(?);";
         Query queryStruttureFiglie = em.createNativeQuery(queryString);
         queryStruttureFiglie.setParameter(1, procedimentoPassato.getIdStruttura().getId());
         List<Integer> struttureFiglie = queryStruttureFiglie.getResultList();

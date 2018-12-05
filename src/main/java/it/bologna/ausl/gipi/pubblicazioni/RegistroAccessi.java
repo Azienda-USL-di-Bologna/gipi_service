@@ -1,24 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package it.bologna.ausl.gipi.pubblicazioni;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
-import it.bologna.ausl.ioda.iodaobjectlibrary.Requestable;
-import java.io.IOException;
-import java.io.InputStream;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
-import java.util.TimeZone;
 
 /**
  *
  * @author Giuseppe Russo <g.russo@nsi.it>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RegistroAccessi implements Marshaller{
     
     private Integer id;
@@ -39,17 +28,16 @@ public class RegistroAccessi implements Marshaller{
     private String numeroRegistroChiusura;
     private int annoRegistroChiusura;
     private String dataChiusura;
-    private String controinteressati;
+    private Boolean controinteressati;
     private String esito;
     private String sintesiMotivazioneRifuto;
     private LocalDateTime dataInserimentoRiga;
     private LocalDateTime dataUltimaModificaRiga;
-    private Azienda idAzienda;
 
     public RegistroAccessi() {
     }
 
-    public RegistroAccessi(Integer id, String oggetto, Integer annoPubblicazione, Integer numeroPubblicazione, String tipoProcedimento, String modalitaCollegamento, String uoProcedente, String responsabileProcedimento, String codiceRegistroIniziativa, String registroIniziativa, String numeroRegistroIniziativa, int annoRegistroIniziativa, String dataIniziativa, String codiceRegistroChiusura, String registroChiusura, String numeroRegistroChiusura, int annoRegistroChiusura, String dataChiusura, String controinteressati, String esito, String sintesiMotivazioneRifuto, LocalDateTime dataInserimentoRiga, LocalDateTime dataUltimaModificaRiga, Azienda idAzienda) {
+    public RegistroAccessi(Integer id, String oggetto, Integer annoPubblicazione, Integer numeroPubblicazione, String tipoProcedimento, String modalitaCollegamento, String uoProcedente, String responsabileProcedimento, String codiceRegistroIniziativa, String registroIniziativa, String numeroRegistroIniziativa, int annoRegistroIniziativa, String dataIniziativa, String codiceRegistroChiusura, String registroChiusura, String numeroRegistroChiusura, int annoRegistroChiusura, String dataChiusura, Boolean controinteressati, String esito, String sintesiMotivazioneRifuto, LocalDateTime dataInserimentoRiga, LocalDateTime dataUltimaModificaRiga, Azienda idAzienda) {
         this.id = id;
         this.oggetto = oggetto;
         this.annoPubblicazione = annoPubblicazione;
@@ -73,7 +61,6 @@ public class RegistroAccessi implements Marshaller{
         this.sintesiMotivazioneRifuto = sintesiMotivazioneRifuto;
         this.dataInserimentoRiga = dataInserimentoRiga;
         this.dataUltimaModificaRiga = dataUltimaModificaRiga;
-        this.idAzienda = idAzienda;
     }
 
     public Integer getId() {
@@ -220,11 +207,11 @@ public class RegistroAccessi implements Marshaller{
         this.dataChiusura = dataChiusura;
     }
 
-    public String getControinteressati() {
+    public Boolean getControinteressati() {
         return controinteressati;
     }
 
-    public void setControinteressati(String controinteressati) {
+    public void setControinteressati(Boolean controinteressati) {
         this.controinteressati = controinteressati;
     }
 
@@ -259,14 +246,6 @@ public class RegistroAccessi implements Marshaller{
     public void setDataUltimaModificaRiga(LocalDateTime dataUltimaModificaRiga) {
         this.dataUltimaModificaRiga = dataUltimaModificaRiga;
     }
-
-    public Azienda getIdAzienda() {
-        return idAzienda;
-    }
-
-    public void setIdAzienda(Azienda idAzienda) {
-        this.idAzienda = idAzienda;
-    }  
     
 //    @JsonIgnore
 //    public String getJSONString() throws JsonProcessingException {

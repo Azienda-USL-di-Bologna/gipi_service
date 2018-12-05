@@ -92,8 +92,12 @@ public class CreaIter {
     @Autowired
     IterInterceptor interceptor;
 
-    public static enum InsertFascicolo {
-        TRADUCI_VICARI
+    public static enum OperazioniFascicolo {
+        TRADUCI_VICARI,
+        DELETE_ITER_PRECEDENTE,
+        ID_ITER_PRECEDENTE,
+        UPDATE_PER_ANNULLAMENTO_ITER,
+        PROVENIENZA_GIPI
     }
 
     @Value("${insertFascicolo}")
@@ -233,8 +237,9 @@ public class CreaIter {
         Fascicolo fascicolo = new Fascicolo(null, iterParams.getOggettoIter(), null, null, new DateTime(), 0,
                 Calendar.getInstance().get(Calendar.YEAR), "1", null, new DateTime(), null, null, "a",
                 0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
-                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId());
+                p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId(), us.getIdStruttura().getId());
         fascicolo.setIdTipoFascicolo(2);
+        fascicolo.setVisibile(iterParams.getVisibile());
         // Aggiungo l'elenco dei codicifiscali dei vicari
         Set<String> set = new HashSet<String>();
         if (!uLoggato.getIdPersona().getCodiceFiscale().equals(uResponsabile.getIdPersona().getCodiceFiscale())) {
@@ -248,7 +253,7 @@ public class CreaIter {
         log.info("Setto i vicari del fascicolo...");
         fascicolo.setVicari(vicari);
         HashMap additionalData = (HashMap) new java.util.HashMap();
-        additionalData.put(InsertFascicolo.TRADUCI_VICARI.toString(), true);
+        additionalData.put(OperazioniFascicolo.TRADUCI_VICARI.toString(), true);
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
         // String baseUrl = "http://localhost:8084/bds_tools/InsertFascicolo";             // Questo va spostato e reso parametrico
         String baseUrl;
@@ -339,6 +344,7 @@ public class CreaIter {
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
+        datiAggiuntivi.addProperty("sendAcipByEmail", String.valueOf(iterParams.getSendAcipByEmail()));
         
         JsonObject acipParams = new JsonObject();
         acipParams.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
@@ -393,7 +399,7 @@ public class CreaIter {
         ei.setIdEvento(e);
         ei.setIdIter(i);
         ei.setIdFaseIter(fi);
-        ei.setDataOraEvento(iterParams.getDataCreazioneIter());
+        ei.setDataOraEvento(iterParams.getDataAvvioIter());
         ei.setIdDocumentoIter(di);
         ei.setAutore(uLoggato);
         em.persist(ei);

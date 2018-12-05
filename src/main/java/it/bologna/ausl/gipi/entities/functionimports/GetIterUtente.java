@@ -10,6 +10,7 @@ import it.bologna.ausl.entities.gipi.QDocumentoIter;
 import it.bologna.ausl.entities.gipi.QIter;
 import it.bologna.ausl.entities.utilities.FunctionImportSorting;
 import it.bologna.ausl.gipi.controllers.IterController;
+import it.bologna.ausl.gipi.odata.complextypes.StrutturaCheckTipoProcedimento;
 import static it.bologna.ausl.gipi.process.CreaIter.JSON;
 import it.bologna.ausl.gipi.utils.GetBaseUrls;
 import it.bologna.ausl.ioda.iodaobjectlibrary.Fascicoli;
@@ -40,6 +41,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.sql2o.Connection;
+import org.sql2o.Sql2o;
 
 /**
  *
@@ -59,10 +62,16 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
     private String baseUrlBdsGetFascicoliUtente;
 
     @Autowired
+    private Sql2o sql2o;
+    
+    @Autowired
     ObjectMapper objectMapper;
 
     @PersistenceContext
     private EntityManager em;
+    
+    @Value("${functionimports.query-iter-stato-non-cambiabile}")
+    private String incredibleQuery;
 
     @EdmFunctionImport(
             name = "GetIterUtente",
@@ -84,6 +93,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
             @EdmFunctionImportParameter(name = "dataAvvio", facets = @EdmFacets(nullable = true)) final String dataAvvio,
             @EdmFunctionImportParameter(name = "idStato_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneStato,
             @EdmFunctionImportParameter(name = "idResponsabileProcedimento_sep_idPersona_sep_descrizione", facets = @EdmFacets(nullable = true)) final String descrizioneRespProc,
+            @EdmFunctionImportParameter(name = "dataRegistrazione", facets = @EdmFacets(nullable = true)) final String dataRegistrazione,
             // sort
             @EdmFunctionImportParameter(name = "sort", facets = @EdmFacets(nullable = true)) final String sort
     ) throws IOException {
@@ -119,6 +129,28 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
 
         JPAQuery queryDSL = new JPAQuery(em);
 
+        /* QUESTA NON E' PIU' UTILIZZATA */
+        if (StringUtils.hasText(dataRegistrazione)) {
+            // raffinare la lista iter
+            log.info("***LISTA --> " + listaIter.toString());
+            log.info("***TOTALE LISTA -->" + listaIter.size());
+            List<Integer> iterDaEscludere = new ArrayList<>();
+            
+            try (Connection con = sql2o.open()) {
+                iterDaEscludere = con.createQuery(incredibleQuery)
+                        .addParameter("data_ora_evento", dataRegistrazione)
+                        .addParameter("lista_iter", listaIter)
+                        //.withParams(paramValues)addParameter("lista_iter", java.util.List.class<Integer>, listaIter)
+                        .executeAndFetch(Integer.class);
+            }
+            log.info("***LISTA da escludere --> " + iterDaEscludere.toString());
+            log.info("***TOTALE LISTA da esclidere-->" + iterDaEscludere.size());
+//            iterDaEscludere.sort(null);
+            listaIter.removeAll(iterDaEscludere);
+            log.info("***LISTA raffinata --> " + listaIter.toString());
+            log.info("***TOTALE LISTA raffinata -->" + listaIter.size());
+        }
+        
         if (idOggettoOrigine != null && !idOggettoOrigine.equals("")) {
             queryDSL
                     .select(QIter.iter)
@@ -158,8 +190,7 @@ public class GetIterUtente extends EdmFunctionImportClassBase implements Functio
         
         if (sort != null && !sort.isEmpty()) {
             addSorting(queryDSL, sort, Iter.class);
-        }
-        else {
+        } else {
             queryDSL.orderBy(QIter.iter.numero.desc());
         }
         return createQueryInfo(queryDSL, QIter.iter.id.count(), em);

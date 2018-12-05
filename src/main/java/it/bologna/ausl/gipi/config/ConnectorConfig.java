@@ -9,8 +9,8 @@ import org.apache.olingo.odata2.core.rest.ODataExceptionMapperImpl;
 import org.apache.olingo.odata2.core.rest.app.ODataApplication;
 import org.apache.olingo.odata2.spring.OlingoRootLocator;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
-import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -23,32 +23,21 @@ import org.springframework.context.annotation.DependsOn;
 public class ConnectorConfig {
 
     @Bean
-    public EmbeddedServletContainerFactory servletContainer(@Value("${gipi.server.protocol.ajp.port:8202}") int ajpPort) {
-        TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory();
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory> servletContainer(@Value("${gipi.server.protocol.ajp.port:8202}") int ajpPort) {
+        return server -> {
+            if (server instanceof TomcatServletWebServerFactory) {
+                ((TomcatServletWebServerFactory) server).addAdditionalTomcatConnectors(redirectConnector(ajpPort));
+            }
+        };
+    }
 
-        /**
-         * Da doc di tomcat: The standard protocol value for an AJP connector is
-         * AJP/1.3 which uses an auto-switching mechanism to select either a
-         * Java NIO based connector or an APR/native based connector. If the
-         * PATH (Windows) or LD_LIBRARY_PATH (on most unix systems) environment
-         * variables contain the Tomcat native library, the native/APR connector
-         * will be used. If the native library cannot be found, the Java NIO
-         * based connector will be used. To use an explicit protocol rather than
-         * rely on the auto-switching mechanism described above, the following
-         * values may be used: org.apache.coyote.ajp.AjpProtocol - blocking Java
-         * connector org.apache.coyote.ajp.AjpNioProtocol - non blocking Java
-         * NIO connector org.apache.coyote.ajp.AjpNio2Protocol - non blocking
-         * Java NIO2 connector org.apache.coyote.ajp.AjpAprProtocol - the
-         * APR/native connector
-         */
-        Connector ajpConnector = new Connector("org.apache.coyote.ajp.AjpNioProtocol");
-        //ajpConnector.setProtocol("AJP/1.3");
-        ajpConnector.setPort(ajpPort);
-        ajpConnector.setSecure(false);
-        ajpConnector.setAllowTrace(false);
-        ajpConnector.setScheme("http");
-        tomcat.addAdditionalTomcatConnectors(ajpConnector);
-        return tomcat;
+    private Connector redirectConnector(int ajpPort) {
+        Connector connector = new Connector("AJP/1.3");
+        connector.setScheme("http");
+        connector.setPort(ajpPort);
+        connector.setSecure(false);
+        connector.setAllowTrace(false);
+        return connector;
     }
 
     /**

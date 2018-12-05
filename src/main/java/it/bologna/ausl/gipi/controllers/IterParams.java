@@ -34,6 +34,8 @@ public class IterParams {
     private String idApplicazione;
     private String glogParams;
     private Date dataRegistrazioneDocumento;
+    private Integer visibile;
+    private Integer sendAcipByEmail;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
@@ -177,6 +179,22 @@ public class IterParams {
 
     public void setIdApplicazione(String idApplicazione) {
         this.idApplicazione = idApplicazione;
+    }
+
+    public Integer getVisibile() {
+        return visibile;
+    }
+
+    public void setVisibile(Integer visibile) {
+        this.visibile = visibile;
+    }
+
+    public Integer getSendAcipByEmail() {
+        return sendAcipByEmail;
+    }
+
+    public void setSendAcipByEmail(Integer sendAcipByEmail) {
+        this.sendAcipByEmail = sendAcipByEmail;
     }
     
 //    public int getIdIter() {

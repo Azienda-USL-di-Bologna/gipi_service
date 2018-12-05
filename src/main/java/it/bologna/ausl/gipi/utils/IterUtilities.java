@@ -19,10 +19,12 @@ import it.bologna.ausl.entities.gipi.Evento;
 import it.bologna.ausl.entities.gipi.EventoIter;
 import it.bologna.ausl.entities.gipi.FaseIter;
 import it.bologna.ausl.entities.gipi.Iter;
+import it.bologna.ausl.entities.gipi.MotivoPrecedente;
 import it.bologna.ausl.entities.gipi.ProcedimentoCache;
 import it.bologna.ausl.entities.gipi.QEventoIter;
 import it.bologna.ausl.entities.gipi.QFaseIter;
 import it.bologna.ausl.entities.gipi.QIter;
+import it.bologna.ausl.entities.gipi.QMotivoPrecedente;
 import it.bologna.ausl.entities.gipi.QRegistroTipoProcedimento;
 import it.bologna.ausl.entities.gipi.Registro;
 import it.bologna.ausl.entities.gipi.RegistroIter;
@@ -56,6 +58,8 @@ import org.springframework.stereotype.Component;
 import it.bologna.ausl.gipi.pubblicazioni.Marshaller;
 import java.util.Date;
 import java.util.EnumMap;
+import javax.persistence.Query;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -214,7 +218,7 @@ public class IterUtilities {
 //                .where(qEventoIter.idIter.id.eq(i.getId()).and(qEventoIter.idEvento.id.eq(2)))
 //                .fetchOne();
 
-        EnumMap<Esiti, String> esitiMap = new EnumMap<Esiti, String>(Esiti.class);
+        EnumMap<Esiti, String> esitiMap = new EnumMap(Esiti.class);
         esitiMap.put(Esiti.ACCOLTO, "Accolto");
         esitiMap.put(Esiti.RIFIUTO_TOTALE, "Rifiuto totale");
         esitiMap.put(Esiti.RIFIUTO_PARZIALE, "Rifiuto parziale");
@@ -233,7 +237,8 @@ public class IterUtilities {
         iterAlbo.setAnnoRegistroIniziativa(evIniz.getIdDocumentoIter().getAnno());
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         iterAlbo.setDataIniziativa(formatter.format(i.getDataAvvio()));
-        iterAlbo.setControinteressati(i.getNoteControinteressati());
+        Boolean presenzaControinteressati = i.getPresenzaControinteressati();
+        iterAlbo.setControinteressati(presenzaControinteressati == null? false: presenzaControinteressati);
         iterAlbo.setEsito(esitiMap.get(Esiti.valueOf(i.getEsito())));
         iterAlbo.setCodiceRegistroChiusura(doc.getRegistro());
         iterAlbo.setRegistroChiusura(doc.getRegistro());
@@ -297,6 +302,15 @@ public class IterUtilities {
         return iter;
     }
     
+    public MotivoPrecedente getMotivoPrecedenteByCodice(String codiceMotivoPrecedente){
+        JPQLQuery<MotivoPrecedente> queryMotivoPrecedente = new JPAQuery(em, EclipseLinkTemplates.DEFAULT);
+        MotivoPrecedente mp = queryMotivoPrecedente
+                .from(QMotivoPrecedente.motivoPrecedente)
+                .where(QMotivoPrecedente.motivoPrecedente.codice.eq(codiceMotivoPrecedente))
+                .fetchOne();
+        return mp;
+    }
+    
     public void eventoIterCambioOggetto(Iter iNew, Iter iOld, EntityManager entityManager, UtenteCachable utente) {
         Utente autore = GetEntityById.getUtente((int) utente.get(UtenteCachable.KEYS.ID), em);
         
@@ -314,5 +328,19 @@ public class IterUtilities {
                 + iOld.getOggetto() + "\" a:\n\""
                 + iNew.getOggetto() + "\".");
         entityManager.persist(ei);
+    }
+    
+    public String setIdCatenaAndPrecedenza(Integer idIter, Integer catena, Integer precedente){
+        String q = "select * from gipi.update_catena(?, ?, ?)";
+        Query query = em.createNativeQuery(q);
+        query.setParameter(1, idIter);
+        query.setParameter(2, catena);
+        query.setParameter(3, precedente);
+        log.info("Query che lancio", query.toString());
+        log.info("LANCIO....");
+//        query.getSingleResult();
+//        JSONObject jo = new JSONObject();
+//        jo.put("risultato", "OK");
+        return query.getSingleResult().toString();
     }
 }
