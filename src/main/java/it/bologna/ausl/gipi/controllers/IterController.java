@@ -1437,7 +1437,7 @@ public class IterController extends ControllerHandledExceptions {
         o.addProperty("codiceFascicolo", iter.getIdFascicolo());  // la numerazione_gerarchica
         log.info("Dati da passare: " + o.toString());
 
-        String urlChiamata = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) 
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) 
                 + babelAnnullaIterPath;
         log.info("Ora chiamo la Web Api -> " + urlChiamata);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
