@@ -181,8 +181,15 @@ public class CreaIter {
         List<UtenteStruttura> utenteStrutturaDelCreatore = new ArrayList<>();
         utenteStrutturaDelCreatore = query.select(this.qUtenteStruttura)
                 .from(this.qUtenteStruttura)
-                .where(this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
-                .and(this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())))
+                .where(
+                    this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
+                    .and(
+                        this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())
+                        .or(
+                            this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString()) 
+                        )
+                    )
+                )
                 .fetch();
         log.info("Quante strutture utente ho trovato con afferenza diretta per l'utente loggato? " + utenteStrutturaDelCreatore.size());
         Struttura idStrutturaUtenteLoggato = utenteStrutturaDelCreatore.size() > 0 ? utenteStrutturaDelCreatore.get(0).getIdStruttura() : new Struttura();
