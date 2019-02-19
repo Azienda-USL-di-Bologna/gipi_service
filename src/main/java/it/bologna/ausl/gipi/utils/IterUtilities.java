@@ -246,6 +246,8 @@ public class IterUtilities {
         iterAlbo.setAnnoRegistroChiusura(doc.getAnno());
         iterAlbo.setDataChiusura(formatter.format(i.getDataChiusura()));
         iterAlbo.setSintesiMotivazioneRifuto(i.getEsitoMotivazione());
+        iterAlbo.setAnnoIter(i.getAnno());
+        iterAlbo.setNumeroIter(i.getNumero());
 
         return iterAlbo;
     }
