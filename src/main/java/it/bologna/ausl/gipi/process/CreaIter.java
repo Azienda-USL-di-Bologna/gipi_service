@@ -88,7 +88,7 @@ public class CreaIter {
 
     @Autowired
     private EntitiesCachableUtilities entitiesCachableUtilities;
-    
+
     @Autowired
     IterInterceptor interceptor;
 
@@ -108,13 +108,13 @@ public class CreaIter {
 
     @Value("${babelGestisciIter}")
     private String babelGestisciIterPath;
-    
+
     @Value("${proctonGestisciIter}")
     private String proctonGestisciIterPath;
-    
+
     @Value("${deteGestisciIter}")
     private String deteGestisciIterPath;
-    
+
     @Value("${deliGestisciIter}")
     private String deliGestisciIterPath;
 
@@ -126,15 +126,14 @@ public class CreaIter {
 
     @Autowired
     ObjectMapper objectMapper;
-       
+
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static final Logger log = LoggerFactory.getLogger(CreaIter.class);
-    
+
     @Autowired
     @Qualifier("GipiUtilityFunctions")
     GipiUtilityFunctions utilityFunctions;
-    
 
     public Fase getFaseIniziale(int idAzienda) {
         JPQLQuery<Fase> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
@@ -169,35 +168,34 @@ public class CreaIter {
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
         log.info("IdUtenteLoggato" + idUtenteLoggato.toString());
-        
+
         // Mi carico i dati di cui ho bisogno per creare l'iter.
         Procedimento p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
-        
+
         log.info("Carico utente loggato");
         Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
         log.info("Carico la struttura di afferenza diretta dell'utente loggato");
-        
+
         JPQLQuery<UtenteStruttura> query = new JPAQuery(this.em, EclipseLinkTemplates.DEFAULT);
         List<UtenteStruttura> utenteStrutturaDelCreatore = new ArrayList<>();
         utenteStrutturaDelCreatore = query.select(this.qUtenteStruttura)
                 .from(this.qUtenteStruttura)
                 .where(
-                    this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
-                    .and(
-                        this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())
-                        .or(
-                            this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString()) 
-                        )
-                    )
+                        this.qUtenteStruttura.idUtente.id.eq(uLoggato.getId())
+                                .and(
+                                        this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.DIRETTA.toString())
+                                                .or(
+                                                        this.qUtenteStruttura.idAfferenzaStruttura.codice.eq(AfferenzaStruttura.CodiciAfferenzaStruttura.UNIFICATA.toString())
+                                                )
+                                )
                 )
                 .fetch();
         log.info("Quante strutture utente ho trovato con afferenza diretta per l'utente loggato? " + utenteStrutturaDelCreatore.size());
         Struttura idStrutturaUtenteLoggato = utenteStrutturaDelCreatore.size() > 0 ? utenteStrutturaDelCreatore.get(0).getIdStruttura() : new Struttura();
-        
-        
+
         log.info("Carico utente responsabile");
         Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
-        
+
         log.info("Carico utente_struttura del responsabile");
         UtenteStruttura us = GetEntityById.getUtenteStruttura(iterParams.getIdUtenteStrutturaResponsabile(), em);
         log.info("Carico utente resp. adoz.");
@@ -289,7 +287,7 @@ public class CreaIter {
         fascicolo = (Fascicolo) it.bologna.ausl.ioda.iodaobjectlibrary.Requestable.parse(resString, Fascicolo.class);
 
         // Aggiungo la numerazione gerarchica del fascicolo all'iter
-        log.info("Aggiungo la numerazione gerarchica del fascicolo all'iter" );
+        log.info("Aggiungo la numerazione gerarchica del fascicolo all'iter");
         i.setIdFascicolo(fascicolo.getNumerazioneGerarchica());
         em.persist(i);
         log.info("fascicolo salvato!");
@@ -336,7 +334,7 @@ public class CreaIter {
         pc.setDurataMassimaSospensione(p.getIdAziendaTipoProcedimento().getDurataMassimaSospensione());
         em.persist(pc);
         log.info("procedimento salvato");
-        
+
         // Buildo la fase Iter
         log.info("buildo la faseIter");
         FaseIter fi = new FaseIter();
@@ -345,14 +343,14 @@ public class CreaIter {
         fi.setDataInizioFase(i.getDataAvvio());
         em.persist(fi);
         log.info("fase iter salvata");
-        
+
         // Mi preparo il json dati aggiuntivi. Lo userò due volte
         log.info("preparo il json dati_aggiuntivi");
         JsonObject datiAggiuntivi = new JsonObject();
         datiAggiuntivi.addProperty("azione", IterController.AzioneRichiesta.CREAZIONE.toString());
         datiAggiuntivi.addProperty("statoRichiesto", Stato.CodiciStato.IN_CORSO.toString());
         datiAggiuntivi.addProperty("sendAcipByEmail", String.valueOf(iterParams.getSendAcipByEmail()));
-        
+
         JsonObject acipParams = new JsonObject();
         acipParams.addProperty("codiceRegistroDocumento", iterParams.getCodiceRegistroDocumento());
         acipParams.addProperty("numeroDocumento", String.valueOf(iterParams.getNumeroDocumento()));
@@ -365,26 +363,26 @@ public class CreaIter {
         acipParams.addProperty("responsabileDelProcedimento", uResponsabile.getIdPersona().getCodiceFiscale());
         acipParams.addProperty("responsabileAdozioneAttoFinale", uResponsabileAdozione.getIdPersona().getCodiceFiscale());
         acipParams.addProperty("titolarePotereEsecutivo", uTitolare.getIdPersona().getCodiceFiscale());
-        
+
         acipParams.addProperty("azienda", p.getIdAziendaTipoProcedimento().getIdAzienda().getDescrizione());
         acipParams.addProperty("oggettoIter", i.getOggetto());
         acipParams.addProperty("StrutturaResponsabileDelProcedimento", p.getIdStrutturaTitolarePotereSostitutivo().getNome());
         // questi poi?? come faremo??
         acipParams.addProperty("dataRegistrazione", new SimpleDateFormat("dd/MM/yyyy").format(iterParams.getDataRegistrazioneDocumento()));
-        
+
         Date chiusuraPrevista = new Date();
-        
+
         int durataMassimaProcedimento = i.getIdProcedimento().getIdAziendaTipoProcedimento().getDurataMassimaProcedimento();
         Calendar cal = Calendar.getInstance();
         cal.setTime(i.getDataAvvio());
         cal.add(Calendar.DATE, durataMassimaProcedimento); // aggiungo la durata massima del procedimento.
         chiusuraPrevista = cal.getTime();
-        
+
         acipParams.addProperty("dataConclusionePrevista", new SimpleDateFormat("dd/MM/yyyy").format(chiusuraPrevista));
-        
+
         datiAggiuntivi.addProperty("acipParams", acipParams.toString());
         log.info("dati_aggiuntivi --> " + datiAggiuntivi.toString());
-        
+
         // Buildo il documento
         DocumentoIter di = new DocumentoIter();
         log.info("preparo il documentoIter");
@@ -399,7 +397,7 @@ public class CreaIter {
         di.setDatiAggiuntivi(datiAggiuntivi.toString());
         em.persist(di);
         log.info("documentoIter salvato");
-        
+
         // Buildo l'evento Iter
         log.info("Buildo evento iter");
         EventoIter ei = new EventoIter();
@@ -411,17 +409,15 @@ public class CreaIter {
         ei.setAutore(uLoggato);
         em.persist(ei);
         log.info("eventoIter salvato");
-        
-        
+
         // Comunico a Babel l'iter appena creato
         baseUrl = GetBaseUrls.getBabelSuiteWebApiUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         urlChiamata = baseUrl + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
 
         // logalhost da commentare
         // urlChiamata = "http://localhost:8080" + switchGestisciIterPahtByCodiceRegistro(iterParams.getCodiceRegistroDocumento());
-        
         log.info("urlChiamata per la web api PDD --> " + urlChiamata);
-        
+
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId());
         o.addProperty("numeroIter", i.getNumero());
@@ -439,9 +435,9 @@ public class CreaIter {
         body = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
 
         log.info("JSON inviato --> " + o.toString());
-        
+
         log.info("body a pdd questi dati --> " + body.toString());
-        
+
         log.info("chiamo pdd...");
         requestg = new Request.Builder()
                 .url(urlChiamata)
@@ -465,32 +461,32 @@ public class CreaIter {
             log.info("la risposta non è successful --> La chiamata a Babel non è andata a buon fine");
             throw new IOException("La chiamata a Babel non è andata a buon fine.");
         }
-        
+
         log.info("mando messaggio a primus di aggiornare finestra aperta pdd");
         // Lancio comando a primus per aggiornamento istantaneo del box dati di archivio
         List<String> cfUtentiDaRefreshare = new ArrayList<>();
         cfUtentiDaRefreshare.add(uLoggato.getIdPersona().getCodiceFiscale());
         PrimusCommandParams command = new RefreshBoxDatiDiArchivioCommandParams();
         utilityFunctions.sendPrimusCommand(uLoggato.getIdAzienda(), cfUtentiDaRefreshare, command, iterParams.getIdApplicazione());
-        
+
         log.info("Ritorno l'iter");
         return i;
     }
-    
-    public String switchGestisciIterPahtByCodiceRegistro(String codiceRegistroDocumento){
+
+    public String switchGestisciIterPahtByCodiceRegistro(String codiceRegistroDocumento) {
         String path = babelGestisciIterPath;
-        switch(codiceRegistroDocumento){
+        switch (codiceRegistroDocumento) {
             case "DETE":
                 path = deteGestisciIterPath;
-            break;
-            
+                break;
+
             case "DELI":
                 path = deliGestisciIterPath;
-            break;
-            
+                break;
+
             case "PG":
                 path = proctonGestisciIterPath;
-            break;
+                break;
         }
         return path;
     }

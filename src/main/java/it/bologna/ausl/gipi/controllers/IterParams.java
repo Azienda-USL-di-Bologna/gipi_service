@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import java.util.Date;
 import java.util.TimeZone;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -36,6 +37,7 @@ public class IterParams {
     private Date dataRegistrazioneDocumento;
     private Integer visibile;
     private Integer sendAcipByEmail;
+    private String iterPrecedenteString;
 //    private int idIter;
 //    private String cfResponsabileProcedimento;
 //    private int annoIter;
@@ -44,7 +46,7 @@ public class IterParams {
     public Date getDataRegistrazioneDocumento() {
         return dataRegistrazioneDocumento;
     }
-    
+
     public int getIdUtenteStrutturaResponsabile() {
         return idUtenteStrutturaResponsabile;
     }
@@ -196,7 +198,20 @@ public class IterParams {
     public void setSendAcipByEmail(Integer sendAcipByEmail) {
         this.sendAcipByEmail = sendAcipByEmail;
     }
-    
+
+    public String getIterPrecedenteString() {
+        return iterPrecedenteString;
+    }
+
+    public void setIterPrecedenteString(String iterPrecedenteString) {
+        this.iterPrecedenteString = iterPrecedenteString;
+    }
+
+    @Override
+    public String toString() {
+        return "IterParams{" + "idUtenteResponsabile=" + idUtenteResponsabile + ", idUtenteStrutturaResponsabile=" + idUtenteStrutturaResponsabile + ", idUtenteLoggato=" + idUtenteLoggato + ", idProcedimento=" + idProcedimento + ", idAzienda=" + idAzienda + ", oggettoIter=" + oggettoIter + ", dataCreazioneIter=" + dataCreazioneIter + ", dataAvvioIter=" + dataAvvioIter + ", codiceRegistroDocumento=" + codiceRegistroDocumento + ", numeroDocumento=" + numeroDocumento + ", annoDocumento=" + annoDocumento + ", oggettoDocumento=" + oggettoDocumento + ", promotore=" + promotore + ", idOggettoOrigine=" + idOggettoOrigine + ", tipoOggettoOrigine=" + tipoOggettoOrigine + ", descrizione=" + descrizione + ", idApplicazione=" + idApplicazione + ", glogParams=" + glogParams + ", dataRegistrazioneDocumento=" + dataRegistrazioneDocumento + ", visibile=" + visibile + ", sendAcipByEmail=" + sendAcipByEmail + ", iterPrecedenteString=" + iterPrecedenteString + '}';
+    }
+
 //    public int getIdIter() {
 //        return idIter;
 //    }
