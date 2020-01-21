@@ -48,8 +48,9 @@ public class TokenGenerator {
         try {
             JWTGenerator jWTGenerator = new JWTGenerator();
             Key key = jWTGenerator.generateKey(JWTGenerator.AMBIENTE.valueOf(keyStoreEntry), keyStorePassword);
-            String codiceAziendaConRegione = azienda.getCodiceRegione() + azienda.getCodice();
-            token = jWTGenerator.createJWS(key, certAuthority, "gipi", mode, codiceAziendaConRegione);
+//            String codiceAziendaConRegione = azienda.getCodiceRegione() + azienda.getCodice();
+            //token = jWTGenerator.createJWS(key, certAuthority, "gipi", mode, codiceAziendaConRegione, false);
+            token = jWTGenerator.createJWS(key, certAuthority, null, "gipi", azienda.getCodice(), mode, azienda.getCodiceRegione(), false);
         }
         catch (KeyStoreException | FileNotFoundException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | JoseException ex) {
             throw new GipiPubblicazioneException("errore nella generazione del token", ex);
