@@ -54,12 +54,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
+import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.internal.http2.Header;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.joda.time.DateTime;
@@ -173,9 +175,11 @@ public class CreaIter {
 
     public Iter creaIter(IterParams iterParams, boolean isLocalHost) throws IOException, OlingoRequestRollbackException, Throwable {
         String idFascicoloCreato = null;
+        String cfResponsabileProcedimento = null;
         Iter i = new Iter();
         Procedimento p = null;
         Fascicolo fascicolo = null;
+        Integer idIterTemp = null;
         try {
             // Mi prendo l'idUtente loggato
             log.debug("Carico authentication...");
@@ -184,14 +188,16 @@ public class CreaIter {
             UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
             log.debug("Carico idUtenteLoggato...");
             Integer idUtenteLoggato = (Integer) userInfo.get(UtenteCachable.KEYS.ID);
-            log.info("IdUtenteLoggato" + idUtenteLoggato.toString());
+            log.info("IdUtenteLoggato " + idUtenteLoggato.toString());
 
             // Mi carico i dati di cui ho bisogno per creare l'iter.
             log.debug("Mi carico i dati di cui ho bisogno per creare l'iter:");
             log.debug("recupero il procedimento...");
             p = GetEntityById.getProcedimento(iterParams.getIdProcedimento(), em);
+
             log.info("Carico utente loggato...");
             Utente uLoggato = GetEntityById.getUtente(idUtenteLoggato, em);
+            log.info("Utente caricato -> " + uLoggato.getUsername());
 
             log.info("Carico la struttura di afferenza diretta dell'utente loggato:");
             log.info("preparazione della query...");
@@ -215,7 +221,7 @@ public class CreaIter {
 
             log.info("Carico utente responsabile...");
             Utente uResponsabile = GetEntityById.getUtente(iterParams.getIdUtenteResponsabile(), em);
-
+            cfResponsabileProcedimento = uResponsabile.getIdPersona().getCodiceFiscale(); // questo ci servirà poi dopo SE dovremo rollbackare
             log.info("Carico utente_struttura del responsabile...");
             UtenteStruttura us = GetEntityById.getUtenteStruttura(iterParams.getIdUtenteStrutturaResponsabile(), em);
             log.info("Carico utente resp. adoz. ...");
@@ -275,6 +281,8 @@ public class CreaIter {
             em.persist(i);
             em.flush();
             log.info("Iter salvato");
+
+            idIterTemp = i.getId();
             // *********************************************
             // Creo il fascicolo dell'iter.
             log.info("Creazione fascicolo");
@@ -283,6 +291,11 @@ public class CreaIter {
                     0, null, -1, null, null, uLoggato.getIdPersona().getCodiceFiscale(), uResponsabile.getIdPersona().getCodiceFiscale(), null,
                     p.getIdAziendaTipoProcedimento().getIdTitolo().getClassificazione(), i.getId(), us.getIdStruttura().getId());
             fascicolo.setIdTipoFascicolo(2);
+            // per uno strano bug, pare che l'id_iter del fascicolo potrebbe non essere valorizzato
+            if (fascicolo.getIdIter() == null) {
+                fascicolo.setIdIter(i.getId());
+            }
+
             log.info("setto visibilità del fascicolo: " + iterParams.getVisibile().toString());
             fascicolo.setVisibile(iterParams.getVisibile());
             // Aggiungo l'elenco dei codicifiscali dei vicari
@@ -529,6 +542,7 @@ public class CreaIter {
                 log.error("LocalizedMessage: " + t.getLocalizedMessage());
                 log.error("Vado avanti lo stesso");
             }
+
         } catch (Throwable t) {
             log.error("ERRORE in creatIter! --> " + t.getMessage());
             log.error("Messaggio localizzato: " + t.toString());
@@ -538,7 +552,7 @@ public class CreaIter {
             log.error("Ora arriva la parte difficile: eliminare il fascicolo e la fascicolazione appena create....");
             boolean eliminazioneOk = false;
             try {
-                eliminazioneOk = procedureEliminazionePerErroreCreazione(fascicolo, p, isLocalHost);
+                eliminazioneOk = procedureEliminazionePerErroreCreazione(fascicolo, p, isLocalHost, idIterTemp, cfResponsabileProcedimento);
             } catch (Throwable error) {
                 log.error("Non sono riuscito a sistemare le cose..." + error.toString());
             }
@@ -602,22 +616,28 @@ public class CreaIter {
         return fatto;
     }
 
-    public boolean deleteDocumentoIterFromBabelPerErroreCreazione(int idIter, Procedimento p, boolean isLocalHost) throws IOException {
-        String baseUrl = "";
-        if (isLocalHost) {
-            baseUrl = localhostBaseUrl;
-        } else {
-            baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
-        }
-        boolean fatto = false;
+    public boolean deleteDocumentoIterFromBabelPerErroreCreazione(int idIter, Procedimento p, boolean isLocalHost, String cfResponsabileProcedimento) throws IOException {
         log.info("Ora mi occupo di eliminare le associazioni del documento con l'iter " + idIter);
+        boolean fatto = false;
+        log.info("Calcolo il BaseUrl per Babel...");
+        String baseUrl = GetBaseUrls.getBabelSuiteWebApiUrl(p.getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
+
+        log.info("Get Utente loggato...");
         Utente uLoggato = getUtenteLoggatoFromAutenticationCache();
-        JsonObject o = new JsonObject();
-        o.addProperty("idIter", idIter);
-        o.addProperty("cfResponsabileProcedimento", uLoggato.getIdPersona().getCodiceFiscale());
 
         String urlChiamataPDD = baseUrl + deleteDocumentoIterPerErroreCreazione;
+        log.info("chiamo pdd... --> " + urlChiamataPDD);
+
+        // Ora, se abbiamo il cf del responsabile procedimento, usiamo quello per gloggare, altrimenti usiamo l'utente loggato.
+        String cf = cfResponsabileProcedimento != null ? cfResponsabileProcedimento : uLoggato.getIdPersona().getCodiceFiscale();
+        JsonObject o = new JsonObject();
+        o.addProperty("idIter", idIter);
+        o.addProperty("cf", cf);
+        log.info("JSON inviato per cancellazione--> " + o.toString());
+
         RequestBody bodyPDD = RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
+        log.info("body per cancellazione questi dati --> " + bodyPDD.toString());
+
         Request requestPDD = new Request.Builder()
                 .url(urlChiamataPDD)
                 .addHeader("X-HTTP-Method-Override", "main")
@@ -626,28 +646,31 @@ public class CreaIter {
 
         OkHttpClient client = new OkHttpClient();
 
-        log.info("chiamo pdd...");
         Response responsePDD = client.newCall(requestPDD).execute();
         log.info("responsePDD --> " + responsePDD.toString());
         if (responsePDD.isSuccessful()) {
             fatto = true;
+        } else {
+            log.error("Response Message: " + responsePDD.message());
+            log.error("Response body: " + responsePDD.body().toString());
         }
 
         return fatto;
     }
 
-    public boolean procedureEliminazionePerErroreCreazione(Fascicolo fascicolo, Procedimento p, boolean isLocalHost) throws JsonProcessingException, UnsupportedEncodingException, IOException {
+    public boolean procedureEliminazionePerErroreCreazione(Fascicolo fascicolo, Procedimento p, boolean isLocalHost,
+            Integer idIterTemp, String cfResponsabileProcedimento) throws JsonProcessingException, UnsupportedEncodingException, IOException {
         log.info("Entrato in procedureEliminazionePerErroreCreazione()");
         boolean fatto = false;
 
-        int idIter = fascicolo.getIdIter();
+        int idIter = idIterTemp;
 
         // eliminare da documenti_iter by id_iter
         fatto = deleteFascicoloPerErroreCreazione(fascicolo, p, isLocalHost); // eliminare da fascicoligd by id_fascicolo
 
         // eliminare da fascicoli_gddocs by id_fascicolo
         if (fatto) {
-            fatto = deleteDocumentoIterFromBabelPerErroreCreazione(idIter, p, isLocalHost);
+            fatto = deleteDocumentoIterFromBabelPerErroreCreazione(idIter, p, isLocalHost, cfResponsabileProcedimento);
         }
         return fatto;
     }
