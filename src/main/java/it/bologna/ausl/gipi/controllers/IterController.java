@@ -315,7 +315,7 @@ public class IterController extends ControllerHandledExceptions {
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data, HttpServletRequest request)
-            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException, OlingoRequestRollbackException, org.json.simple.parser.ParseException {
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException, OlingoRequestRollbackException, org.json.simple.parser.ParseException, Throwable {
 
         Iter i = creaIter.creaIter(data, request.getServerName().equalsIgnoreCase("localhost"));
         if (data.getIterPrecedenteString() != null) {
