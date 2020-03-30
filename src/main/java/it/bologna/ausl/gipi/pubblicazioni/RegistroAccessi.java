@@ -33,6 +33,8 @@ public class RegistroAccessi implements Marshaller{
     private String sintesiMotivazioneRifuto;
     private LocalDateTime dataInserimentoRiga;
     private LocalDateTime dataUltimaModificaRiga;
+    private Integer numeroIter;
+    private Integer annoIter;
 
     public RegistroAccessi() {
     }
@@ -271,5 +273,21 @@ public class RegistroAccessi implements Marshaller{
 //        mapper.setTimeZone(TimeZone.getDefault());
 //        return mapper.readValue(value, RegistroAccessi.class);
 //    }
+
+    public Integer getNumeroIter() {
+        return numeroIter;
+    }
+
+    public void setNumeroIter(Integer numeroIter) {
+        this.numeroIter = numeroIter;
+    }
+
+    public Integer getAnnoIter() {
+        return annoIter;
+    }
+
+    public void setAnnoIter(Integer annoIter) {
+        this.annoIter = annoIter;
+    }
     
 }

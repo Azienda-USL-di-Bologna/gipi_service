@@ -174,16 +174,16 @@ public class IterController extends ControllerHandledExceptions {
 
     @Value("${updateFascicoloGediPath}")
     private String updateFascicoloGediPath;
-    
+
     @Value("${babelsuite.uri.localhost}")
     private String localhostBaseUrl;
-    
+
     @Value("${updateFascicolo}")
     private String updateFascicoloPath;
-    
+
     @Value("${babelAnnullaIter}")
     private String babelAnnullaIterPath;
-    
+
     @Value("${inviaNotificheWebApi}")
     private String inviaNotificheWebApiPath;
 
@@ -278,23 +278,23 @@ public class IterController extends ControllerHandledExceptions {
             return text;
         }
     }
-    
-    public static enum AzioneSuiPrecedenti{
+
+    public static enum AzioneSuiPrecedenti {
         ADD("ADD"),
         DEL("DEL");
-        
+
         private final String text;
-        
+
         AzioneSuiPrecedenti(final String text) {
             this.text = text;
         }
-        
+
         @Override
         public String toString() {
             return text;
         }
     }
-    
+
     public static final okhttp3.MediaType JSON = okhttp3.MediaType.parse("application/json; charset=utf-8");
 
     @Autowired
@@ -315,9 +315,28 @@ public class IterController extends ControllerHandledExceptions {
     @RequestMapping(value = "avviaNuovoIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity<Iter> AvviaNuovoIter(@RequestBody IterParams data, HttpServletRequest request)
-            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException, OlingoRequestRollbackException {
+            throws NoSuchFieldException, IllegalArgumentException, IllegalAccessException, IOException, OlingoRequestRollbackException, org.json.simple.parser.ParseException, Throwable {
 
         Iter i = creaIter.creaIter(data, request.getServerName().equalsIgnoreCase("localhost"));
+        if (data.getIterPrecedenteString() != null) {
+            log.debug("Devo aggiungere anche il precedente: " + data.getIterPrecedenteString());
+            try {
+                JSONObject jo = (JSONObject) new JSONParser().parse(data.getIterPrecedenteString());
+                JsonObject params = new JsonObject();
+                params.addProperty("idIter", i.getId());
+                params.addProperty("azione", AzioneSuiPrecedenti.ADD.toString());
+                params.addProperty("idIterPrecedente", (Number) jo.get("idIterPrecedente"));
+                JSONObject motivoPrecedente = (JSONObject) jo.get("motivoPrecedente");
+                params.addProperty("codiceMotivo", (String) motivoPrecedente.get("codice"));
+                params.addProperty("noteMotivoPrecedente", jo.get("noteMotivoPrecedente") != null ? (String) jo.get("noteMotivoPrecedente") : null);
+                ResponseEntity res = settaPrecedente(params.toString(), request);
+                log.debug(res.toString());
+
+            } catch (Throwable t) {
+                log.error("ERRORE NEL SETTING DEL PRECEDENTE");
+                t.printStackTrace();
+            }
+        }
 
         JsonObject o = new JsonObject();
         o.addProperty("idIter", i.getId().toString());
@@ -1236,11 +1255,16 @@ public class IterController extends ControllerHandledExceptions {
         log.info("Lo stato dell'iter è -> " + i.getIdStato().toString());
         return i;
     }
-    
+
     @RequestMapping(value = "setPrecedente", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity setPrecedente(@RequestBody String params, HttpServletRequest request) throws IOException {
-        
+        log.info("********   CHIAMATA WEB      ********");
+        ResponseEntity settaPrecedente = settaPrecedente(params, request);
+        return settaPrecedente;
+    }
+
+    public ResponseEntity settaPrecedente(String params, HttpServletRequest request) throws IOException {
         HashMap additionalData = (HashMap) new java.util.HashMap();
         additionalData.put(OperazioniFascicolo.PROVENIENZA_GIPI.toString(), true);
         log.info("********  ENTRATO IN SET PRECEDENTE   ********");
@@ -1248,7 +1272,7 @@ public class IterController extends ControllerHandledExceptions {
         log.info("***********************");
 
         String noteDellEvento = ""; // queste note verranno mostrate in interfaccia
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -1258,56 +1282,56 @@ public class IterController extends ControllerHandledExceptions {
         Evento e = new Evento();
         EventoIter ei = new EventoIter();
         Iter iter = iterUtilities.getIterById(dati.get("idIter").getAsInt());
-        
+
         Fascicolo fascicolo = new Fascicolo();
         fascicolo.setIdIter(iter.getId());
-        
+
         String codiceDellEvento = dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString()) ? "aggiunta_precedente" : "cancellazione_precedente";
         e = entitiesCachableUtilities.loadEventoByCodice(codiceDellEvento);
         log.info("Evento --> " + e.getNome());
-        
+
         log.info("..iter caricato");
-        
+
         log.info("Evento --> " + e.getNome());
-        
+
         log.info("..iter caricato");
         // cosa faccio? aggiungo o cancello?
-        if(dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString())){
+        if (dati.get("azione").getAsString().equals(AzioneSuiPrecedenti.ADD.toString())) {
             log.info("Sto aggiungendo un precedente");
-            
+
             // prendo i dati e li setto
             log.info("carico e setto l'iter precedente");
             Iter iterPrecedente = iterUtilities.getIterById(dati.get("idIterPrecedente").getAsInt());
-            
+
             log.info("carico e setto il motivo precedente");
             MotivoPrecedente mp = iterUtilities.getMotivoPrecedenteByCodice(dati.get("codiceMotivo").getAsString());
             log.info("MOTIVO --> " + mp.getDescrizione());
             iter.setIdMotivoPrecedente(mp);
-            
+
             log.info("setto le note motivo precedente");
-            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente") != null ? dati.get("noteMotivoPrecedente").getAsString() : "");
-            
+            log.info(dati.get("noteMotivoPrecedente").toString());
+            iter.setNoteMotivoPrecedente(dati.get("noteMotivoPrecedente") != null ? dati.get("noteMotivoPrecedente").toString() : null);
+
             boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), iterPrecedente.getIdCatena(), iterPrecedente.getId());
             log.info("risultato: ", risultatoDellUpdateCatena);
-            
+
             additionalData.put(OperazioniFascicolo.ID_ITER_PRECEDENTE.toString(), iterPrecedente.getId());
             noteDellEvento = "Collegamento all'iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
-        }
-        else { // sto cancellando l'associazione al precedente
+        } else { // sto cancellando l'associazione al precedente
             log.info("Sto camncellando il precedente all'iter");
             log.info("Prima però lo carico per recuperarmi le sue informazioni");
             Iter iterPrecedente = iterUtilities.getIterById(iter.getIdIterPrecedente().getId());
-            log.info("Iter Precedente: id ",iterPrecedente.getId(), "numero", iterPrecedente.getNumero(), "anno", iterPrecedente.getAnno());
+            log.info("Iter Precedente: id ", iterPrecedente.getId(), "numero", iterPrecedente.getNumero(), "anno", iterPrecedente.getAnno());
             iter.setIdMotivoPrecedente(null);
             iter.setNoteMotivoPrecedente(null);
-            
+
             boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
             log.info("risultato: ", risultatoDellUpdateCatena);
-            
+
             additionalData.put(OperazioniFascicolo.DELETE_ITER_PRECEDENTE.toString(), true);
             noteDellEvento = "Cancellazione collegamento ad Iter " + iterPrecedente.getNumero() + "/" + iterPrecedente.getAnno();
         }
-        
+
         // setto l'evento iter
         log.info("setto l'evento iter");
         ei.setAutore(u);
@@ -1316,16 +1340,16 @@ public class IterController extends ControllerHandledExceptions {
         ei.setIdEvento(e);
         ei.setDettagli(noteDellEvento);
         ei.setIdFaseIter(getFaseIter(iter));
-        
+
         log.info("salvo l'evento iter");
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
         String baseUrl;
-        if ( request.getServerName().equalsIgnoreCase("localhost")) {
+        if (request.getServerName().equalsIgnoreCase("localhost")) {
             baseUrl = localhostBaseUrl;
         } else {
             baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
         }
-        
+
         String urlChiamata = baseUrl + updateFascicoloPath;
         log.info("Url chiamata chiamata = " + urlChiamata);
         OkHttpClient client = new OkHttpClient();
@@ -1342,13 +1366,13 @@ public class IterController extends ControllerHandledExceptions {
         if (response != null && response.body() != null) {
             resString = response.body().string();
         }
-        
-        if (response.isSuccessful()){
+
+        if (response.isSuccessful()) {
             em.persist(ei);
-        log.info("FATTO");
-        
-        log.info("Salvo l'iter (persist)");
-        
+            log.info("FATTO");
+
+            log.info("Salvo l'iter (persist)");
+
             em.persist(iter);
             o.addProperty("risultato", "tutto ok");
             return new ResponseEntity(o.toString(), HttpStatus.OK);
@@ -1357,7 +1381,7 @@ public class IterController extends ControllerHandledExceptions {
             return new ResponseEntity(o.toString(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @RequestMapping(value = "annullaIter", method = RequestMethod.POST)
     @Transactional(rollbackFor = {Exception.class, Error.class})
     public ResponseEntity annullaIter(@RequestBody String params, HttpServletRequest request) throws IOException, org.json.simple.parser.ParseException {
@@ -1368,7 +1392,7 @@ public class IterController extends ControllerHandledExceptions {
         JsonObject dati = (JsonObject) parser.parse(params);
         int idIter = dati.get("idIter").getAsInt();
         String noteEventoAnnullamento = dati.get("note").getAsString();
-        
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UtenteCachable userInfo = (UtenteCachable) authentication.getPrincipal();
         Utente u = GetEntityById.getUtente((int) userInfo.get(UtenteCachable.KEYS.ID), em);
@@ -1393,8 +1417,7 @@ public class IterController extends ControllerHandledExceptions {
         spettanza.setIdStrutturaUtenteAnnullante(strutturaAfferenzaDirettaUtenteAnnullante);
         spettanza.setDataAnnullamento(new Date());
         em.persist(spettanza);
-        
-        
+
         // evento iter con dettagli sui documenti cancellati
         EventoIter ei = new EventoIter();
         ei.setIdEvento(entitiesCachableUtilities.loadEventoByCodice(CodiceEvento.ANNULLAMENTO_ITER.toString()));
@@ -1403,7 +1426,7 @@ public class IterController extends ControllerHandledExceptions {
         ei.setAutore(u);
         ei.setDataOraEvento(spettanza.getDataAnnullamento());
         ei.setNote(noteEventoAnnullamento);
-        
+
         // COMPOSIZIONE DEL MESSAGGIO DELL'EVENTO (prima devo fare questo perché la web api chiama un mestiere che elimina tutto! Documenti e fascicolazioni)
         String dettagliEvento = "L'utente " + userInfo.get(UtenteCachable.KEYS.COGNOME).toString() + " " + userInfo.get(UtenteCachable.KEYS.NOME).toString()
                 + " ha annullato l'iter " + iter.getNumero() + "/" + iter.getAnno() + " '" + iter.getOggetto() + "'.\n";
@@ -1413,10 +1436,8 @@ public class IterController extends ControllerHandledExceptions {
 //        List<DocumentoIter> documenti = (List) queryDocumentiIterList
 //                .from(qDocumentoIter)
 //                .where(qDocumentoIter.idIter.id.eq(iter.getId()));
-        
-        
         List<DocumentoIter> docIterList = new ArrayList<DocumentoIter>(iter.getDocumentiIterList());
-        
+
 //      QUESTA ROBA NON SERVE: NON SONO CANCELLATI DAL FASCICOLO        
         dettagliEvento += "I documenti: \n";
         for (DocumentoIter doc : iter.getDocumentiIterList()) {
@@ -1424,11 +1445,17 @@ public class IterController extends ControllerHandledExceptions {
         }
         dettagliEvento += "sono stati disassociati dall'iter.";
         log.debug(" --->  dettagliEvento", dettagliEvento);
-        
+
         // chiamare web api PDD
-        /**************************/
-        /******  PARTE PDD   ******/
-        /**************************/
+        /**
+         * ***********************
+         */
+        /**
+         * **** PARTE PDD *****
+         */
+        /**
+         * ***********************
+         */
         log.info("ora chiamiamo la web api su BABEL");
         log.info("setto i parametri di chiamata");
         JsonObject o = new JsonObject();
@@ -1437,7 +1464,7 @@ public class IterController extends ControllerHandledExceptions {
         o.addProperty("codiceFascicolo", iter.getIdFascicolo());  // la numerazione_gerarchica
         log.info("Dati da passare: " + o.toString());
 
-        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) 
+        String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper)
                 + babelAnnullaIterPath;
         log.info("Ora chiamo la Web Api -> " + urlChiamata);
         okhttp3.RequestBody body = okhttp3.RequestBody.create(JSON, o.toString().getBytes("UTF-8"));
@@ -1448,35 +1475,42 @@ public class IterController extends ControllerHandledExceptions {
                 .addHeader("X-HTTP-Method-Override", "annullaAndGloggaDocIter")
                 .post(body)
                 .build();
-        log.info("requestg" , requestg.toString());
+        log.info("requestg", requestg.toString());
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
         Response responseg = client.newCall(requestg).execute();
-        log.info("***responseg da babel..." , responseg.toString());
+        log.info("***responseg da babel...", responseg.toString());
         if (responseg != null && responseg.body() != null) {
-            log.info("response.body().string()" , responseg.body().toString());
-            if(!responseg.isSuccessful()){
-                log.error("Risposta non Successful: qualcosa è andato male è faccio il rollback" , responseg.body().toString());
-                log.info("Ho provato a gloggare su questi documenti: " );
+            log.info("response.body().string()", responseg.body().toString());
+            if (!responseg.isSuccessful()) {
+                log.error("Risposta non Successful: qualcosa è andato male è faccio il rollback", responseg.body().toString());
+                log.info("Ho provato a gloggare su questi documenti: ");
                 for (DocumentoIter docX : docIterList) {
-                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                    log.info(docX.getNumeroRegistro(), docX.getAnno(), docX.getIdOggetto(), docX.getDatiAggiuntivi());
                 }
                 throw new IOException("La chiamata alla webApi Babel/AnnullaIter non è andata a buon fine. \n "
                         + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti. " + responseg);
             }
         }
         /*  ***FINE PARTE PDD*** */
-        /*************************/
-        
-        
-        log.info("Procedo con la detipizzazione del fascicolo ", iter.getIdFascicolo(), iter.getNomeFascicolo()," e suo sganciamento dall'iter" );
-        
-        /************************/
-        /****** PARTE IODA ******/
-        /************************/
+        /**
+         * **********************
+         */
+
+        log.info("Procedo con la detipizzazione del fascicolo ", iter.getIdFascicolo(), iter.getNomeFascicolo(), " e suo sganciamento dall'iter");
+
+        /**
+         * *********************
+         */
+        /**
+         * **** PARTE IODA *****
+         */
+        /**
+         * *********************
+         */
         log.info("*** PREPARO LA CHIAMATA A IODA...");
         Fascicolo fascicolo = new Fascicolo();
         fascicolo.setIdIter(iter.getId());
@@ -1487,7 +1521,7 @@ public class IterController extends ControllerHandledExceptions {
         IodaRequestDescriptor ird = new IodaRequestDescriptor("gipi", "gipi", fascicolo, additionalData);
         log.info("IodaObjectDescriptor -> ", ird.getJSONString().getBytes("UTF-8"));
         String baseUrl;
-        if ( request.getServerName().equalsIgnoreCase("localhost")) {
+        if (request.getServerName().equalsIgnoreCase("localhost")) {
             baseUrl = localhostBaseUrl;
         } else {
             baseUrl = GetBaseUrls.getBabelSuiteBdsToolsUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper);
@@ -1509,30 +1543,29 @@ public class IterController extends ControllerHandledExceptions {
         log.info("response --> " + response.toString());
         if (response != null && response.body() != null) {
             resString = response.body().string();
-            if(!response.isSuccessful()){
-                log.error("Chiamata a ioda fallita, lancio errore" );
-                log.info("Ho già cancellato però questi documenti dall'iter: " );
+            if (!response.isSuccessful()) {
+                log.error("Chiamata a ioda fallita, lancio errore");
+                log.info("Ho già cancellato però questi documenti dall'iter: ");
                 for (DocumentoIter docX : docIterList) {
-                    log.info(docX.getNumeroRegistro(),docX.getAnno(),docX.getIdOggetto(),docX.getDatiAggiuntivi());
+                    log.info(docX.getNumeroRegistro(), docX.getAnno(), docX.getIdOggetto(), docX.getDatiAggiuntivi());
                 }
                 throw new IOException("La chiamata a ioda non è andata a buon fine. \n "
                         + "Controllare i log sul tomcat-mestieri per i dettagli dei documenti cancellati. " + response);
-                
+
             }
         }
         /*
             ***  FINE PARTE IODA ****
-        */
-        
-        
-        
+         */
+
         // CANCELLAZIONE DEI PRECEDENTI (IRREVERSIBILE)
         // cancellare precedenti con la funzione postgres (non chiamare tutti gli eventi della funzione)
         log.info("Procedo alla cancellazione dei precedenti e/o lo sganciamento dei figli");
         boolean risultatoDellUpdateCatena = iterRepository.setIdCatenaAndPrecedenza(iter.getId(), null, null);
         log.info("risultato: ", risultatoDellUpdateCatena);
-        if(precedente != null)
+        if (precedente != null) {
             dettagliEvento += "\nL'iter non è più associato con il suo precedente " + precedente.getNumero() + "/" + precedente.getAnno() + ".";
+        }
         log.info("Setto a null motivo precedente e note motivo precedente");
         iter.setIdMotivoPrecedente(null);
         iter.setNoteMotivoPrecedente(null);
@@ -1540,47 +1573,48 @@ public class IterController extends ControllerHandledExceptions {
         em.persist(ei);
         iter.setIdSpettanzaAnnullamento(spettanza);
         em.persist(iter);
-        
-        
+
         //Ok, ora chiamo webapi per notificare l'evento di annullamento: ciclo su tutti quelli che hanno permesso sul fascicolo.
         log.info("Ora invio le notifiche a Babel");
         JSONObject datiDaInviare = new JSONObject();
         ArrayList<String> utenti = new ArrayList<String>();
         utenti.add((String) userInfo.get(UtenteCachable.KEYS.CODICE_FISCALE));
         log.info("getIdResponsabileProcedimento ", iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
-        if(!utenti.contains(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale()))
+        if (!utenti.contains(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale())) {
             utenti.add(iter.getIdResponsabileProcedimento().getIdPersona().getCodiceFiscale());
+        }
         log.info("getIdResponsabileAdozioneAttoFinale ", iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
-        if(!utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale()))
+        if (!utenti.contains(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale())) {
             utenti.add(iter.getIdProcedimento().getIdResponsabileAdozioneAttoFinale().getIdPersona().getCodiceFiscale());
+        }
         log.info("getIdTitolarePotereSostitutivo ", iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
-        if(!utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale()))
+        if (!utenti.contains(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale())) {
             utenti.add(iter.getIdProcedimento().getIdTitolarePotereSostitutivo().getIdPersona().getCodiceFiscale());
+        }
         datiDaInviare.put("cfUtenti", utenti);
         datiDaInviare.put("messaggio", String.format("Notifica Annullamento Iter %s: %s", iter.getNumero() + "/" + iter.getAnno().toString(), iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdTipoProcedimento().getNome()));
         datiDaInviare.put("idIter", iter.getId());
         datiDaInviare.put("descrizioneNotifica", "Annullamento Iter " + iter.getNumero() + "/" + iter.getAnno().toString());
         log.info("dati da inviare ", datiDaInviare.toString());
-        
+
         log.info("aggiungo i dati al json array");
         JSONArray ja = new JSONArray();
         ja.add(datiDaInviare);
         log.info("aggiungo i dati al json array");
-        try{
+        try {
             mandaNotificheSuBabel(iter, ja);
-        }
-        catch (Error e){
+        } catch (Error e) {
             log.error("AHIA! ERRORE NELL'INVIO DELLA NOTIFICA... MA ORMAI TUTTO IL RESTO E' FATTO", e.toString());
-        }        
-        
+        }
+
         JsonObject risultato = new JsonObject();
         risultato.addProperty("dettagliEvento", dettagliEvento);
         return new ResponseEntity(risultato.toString(), HttpStatus.OK);
     }
-    
-    public void mandaNotificheSuBabel(Iter iter, JSONArray ja) throws org.json.simple.parser.ParseException{
+
+    public void mandaNotificheSuBabel(Iter iter, JSONArray ja) throws org.json.simple.parser.ParseException {
         String functionName = "IterController.mandaNotificheSuBabel";
-        try{
+        try {
             String urlChiamata = GetBaseUrls.getBabelSuiteWebApiUrl(iter.getIdProcedimento().getIdAziendaTipoProcedimento().getIdAzienda().getId(), em, objectMapper) + inviaNotificheWebApiPath;
             JSONObject jo = new JSONObject();
             jo.put("ja", ja.toString());
