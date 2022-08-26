@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOG_DIR" value="logs"/>
+    
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+  
+    <appender name="GIPI_SERVICE-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/gipi_service.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n 
+            </pattern>
+        </encoder>
+    
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">    	
+            <!-- daily rollover: /logs/example.%d  
+            daily rollover, time and date pattern for the %d token specifier is omitted. 
+            So the default pattern is “yyyy-MM-dd”, which corresponds to daily rollover.-->
+            <fileNamePattern>${LOG_DIR}/archived/gipi_service.%d.log</fileNamePattern>
+            <!--
+            controllo del numero massimo di file da tenere, cancellando i vecchi.
+            Se si specifica un rollover giornaliero e si setta il maxHistory a 31
+            allora tutti i file più vecchi di 31 giorni, saranno eliminati
+            -->
+            <maxHistory>31</maxHistory>
+    	</rollingPolicy>
+    
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archived/gipi_service.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>3MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>-->
+    </appender>
+  
+    <appender name="SCHEDULER-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/scheduler.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
+            </pattern>
+        </encoder>
+    
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">    	
+            <!-- daily rollover: /logs/example.%d  
+            daily rollover, time and date pattern for the %d token specifier is omitted. 
+            So the default pattern is “yyyy-MM-dd”, which corresponds to daily rollover.-->
+            <fileNamePattern>${LOG_DIR}/archived/scheduler.%d.log</fileNamePattern>
+            <!--
+            controllo del numero massimo di file da tenere, cancellando i vecchi.
+            Se si specifica un rollover giornaliero e si setta il maxHistory a 31
+            allora tutti i file più vecchi di 31 giorni, saranno eliminati
+            -->
+            <maxHistory>31</maxHistory>
+    	</rollingPolicy>
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archived/scheduler.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>3MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>-->
+    </appender>
+  
+<!--    <appender name="OTHER-FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/other.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36}.%M - %msg%n
+            </pattern>
+        </encoder>
+      
+       <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">    	
+             daily rollover: /logs/example.%d  
+            daily rollover, time and date pattern for the %d token specifier is omitted. 
+            So the default pattern is “yyyy-MM-dd”, which corresponds to daily rollover.
+            <fileNamePattern>${LOG_DIR}/archived/other.%d.log</fileNamePattern>
+            
+            controllo del numero massimo di file da tenere, cancellando i vecchi.
+            Se si specifica un rollover giornaliero e si setta il maxHistory a 31
+            allora tutti i file più vecchi di 31 giorni, saranno eliminati
+            
+            <maxHistory>31</maxHistory>
+    	</rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/archived/other.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>3MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>-->
+  
+    <root level="INFO">
+        <appender-ref ref="GIPI_SERVICE-FILE" />
+        <appender-ref ref="STDOUT"/>
+    </root>
+  
+<!--    <logger name="otherlog" level="DEBUG" additivity="false">
+        <appender-ref ref="OTHER-FILE"/>
+    </logger>-->
+  
+    <logger name="it.bologna.ausl.gipi.config.scheduler">
+        <level value="ALL" />
+        <appender-ref ref="SCHEDULER-FILE"/>
+    </logger>
+ 
+</configuration>
